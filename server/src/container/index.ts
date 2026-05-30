@@ -4,18 +4,22 @@ import { UserRepository } from "../infra/repositories/UserRepository";
 import { BcryptHashService } from "../infra/services/BcryptHashService";
 import { RegisterUserUseCase } from "../application/use-cases/auth/RegisterUserUseCase";
 import { AuthController } from "../interfaces/controllers/AuthController";
-
-// 1. Services
+import { OtpModel } from "../infra/database/models/OtpModel";
+import { OtpRepository } from "../infra/repositories/OtpRepository";
+import { ConsoleEmailService } from "../infra/services/ConsoleEmailService";
+import { SendOtpUseCase } from "../application/use-cases/auth/SendOtpUseCase";
+import { VerifyOtpUseCase } from "../application/use-cases/auth/VerifyOtpUseCase";
 const logger = new WinstonLogger();
 const hashService = new BcryptHashService();
+const emailService = new ConsoleEmailService();
 
-// 2. Repositories
 const userRepository = new UserRepository(UserModel);
+const otpRepository = new OtpRepository(OtpModel);
 
-// 3. Use Cases
 const registerUserUseCase = new RegisterUserUseCase(userRepository, hashService);
+const sendOtpUseCase = new SendOtpUseCase(otpRepository, emailService);
+const verifyOtpUseCase = new VerifyOtpUseCase(otpRepository, userRepository);
 
-// 4. Controllers
-const authController = new AuthController(registerUserUseCase);
+const authController = new AuthController(registerUserUseCase, sendOtpUseCase, verifyOtpUseCase);
 
 export { logger, authController };
