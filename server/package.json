@@ -12,6 +12,7 @@
   "description": "",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/bcrypt": "^6.0.0",
     "@types/express": "^5.0.6",
     "@types/mongoose": "^5.11.96",
     "@types/node": "^25.9.1",
@@ -24,6 +25,7 @@
     "typescript-eslint": "^8.60.0"
   },
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "express": "^5.2.1",
     "mongoose": "^9.6.3",
     "winston": "^3.19.0",
