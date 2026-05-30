@@ -2,6 +2,7 @@ import { IUserRepository } from "../../repositories/IUserRepository";
 import { IHashService } from "../../services/IHashService";
 import { RegisterUserDto } from "../../dto/RegisterUserDto";
 import { User } from "../../../domain/entities/User";
+import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 
 export class RegisterUserUseCase {
     constructor(
@@ -12,7 +13,7 @@ export class RegisterUserUseCase {
     async execute(data: RegisterUserDto): Promise<User> {
         const existingUser = await this.userRepository.findByEmail(data.email)
         if (existingUser) {
-            throw new Error("User with this email already exists!");
+            throw new Error(ErrorMessage.EMAIL_ALREADY_EXISTS);
         }
         let hashedPassword = data.password
         if (data.password) {
