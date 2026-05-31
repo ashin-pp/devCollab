@@ -15,6 +15,15 @@ import { ForgotPasswordUseCase } from "../application/use-cases/auth/ForgotPassw
 import { ResetPasswordUseCase } from "../application/use-cases/auth/ResetPasswordUseCase";
 import { JwtService } from "../infra/services/JwtService";
 
+// Admin Imports
+import { AdminModel } from "../infra/database/models/AdminModel";
+import { AdminRepository } from "../infra/repositories/AdminRepository";
+import { CreateAdminUseCase } from "../application/use-cases/admin/CreateAdminUseCase";
+import { AdminLoginUseCase } from "../application/use-cases/admin/AdminLoginUseCase";
+import { AdminForgotPasswordUseCase } from "../application/use-cases/admin/AdminForgotPasswordUseCase";
+import { AdminResetPasswordUseCase } from "../application/use-cases/admin/AdminResetPasswordUseCase";
+import { AdminController } from "../interfaces/controllers/AdminController";
+
 const logger = new WinstonLogger();
 const hashService = new BcryptHashService();
 const emailService = new NodemailerEmailService();
@@ -22,6 +31,7 @@ const jwtService = new JwtService();
 
 const userRepository = new UserRepository(UserModel);
 const otpRepository = new OtpRepository(OtpModel);
+const adminRepository = new AdminRepository(AdminModel);
 
 const registerUserUseCase = new RegisterUserUseCase(userRepository, hashService);
 const sendOtpUseCase = new SendOtpUseCase(otpRepository, emailService);
@@ -41,4 +51,17 @@ const authController = new AuthController(
     resetPasswordUseCase
 );
 
-export { logger, authController };
+// Admin Use Cases
+const createAdminUseCase = new CreateAdminUseCase(adminRepository, hashService);
+const adminLoginUseCase = new AdminLoginUseCase(adminRepository, hashService, jwtService);
+const adminForgotPasswordUseCase = new AdminForgotPasswordUseCase(adminRepository, sendOtpUseCase);
+const adminResetPasswordUseCase = new AdminResetPasswordUseCase(adminRepository, otpRepository, hashService);
+
+const adminController = new AdminController(
+    createAdminUseCase,
+    adminLoginUseCase,
+    adminForgotPasswordUseCase,
+    adminResetPasswordUseCase
+);
+
+export { logger, authController, adminController };
