@@ -15,13 +15,16 @@ export class RegisterUserUseCase {
         if (existingUser) {
             throw new Error(ErrorMessage.EMAIL_ALREADY_EXISTS);
         }
+
+        if (data.password !== data.confirmPassword) {
+            throw new Error(ErrorMessage.PASSWORDS_DO_NOT_MATCH);
+        }
         let hashedPassword = data.password
         if (data.password) {
             hashedPassword = await this.hashService.hash(data.password)
         }
         const newUser = new User(
             data.name,
-            data.username,
             data.email,
             hashedPassword
         );

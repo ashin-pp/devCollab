@@ -2,15 +2,16 @@ import express from "express";
 import { ApiResponse } from "./interfaces/http/helpers/implementation/apiResponse";
 import { authRouter } from "./interfaces/routes/auth.routes";
 import { errorHandler } from "./interfaces/middlewares/errorHandler";
+import { SuccessMessage } from "./domain/enums/SuccessMessage";
 
 const app = express();
 app.use(express.json());
 
 // API Routes
-app.use("/api/v1/auth", authRouter);
+app.use("/api/auth", authRouter);
 
 app.get("/", (req, res) => {
-    const responsePayload = ApiResponse.success("DevCollab API is running!");
+    const responsePayload = ApiResponse.success(SuccessMessage.API_RUNNING);
     res.status(200).json(responsePayload);
 });
 

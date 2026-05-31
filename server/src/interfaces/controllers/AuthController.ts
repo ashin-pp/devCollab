@@ -5,12 +5,20 @@ import { ApiResponse } from "../http/helpers/implementation/apiResponse";
 import { VerifyOtpUseCase } from "../../application/use-cases/auth/VerifyOtpUseCase";
 import { HttpStatusCode } from "../../domain/enums/HttpStatusCode";
 import { SuccessMessage } from "../../domain/enums/SuccessMessage";
+import { LoginUserUseCase } from "../../application/use-cases/auth/LoginUserUseCase";
+import { GoogleAuthUseCase } from "../../application/use-cases/auth/GoogleAuthUseCase";
+import { ForgotPasswordUseCase } from "../../application/use-cases/auth/ForgotPasswordUseCase";
+import { ResetPasswordUseCase } from "../../application/use-cases/auth/ResetPasswordUseCase";
 
 export class AuthController {
   constructor(
     private registerUserUseCase: RegisterUserUseCase,
     private sendOtpUseCase: SendOtpUseCase,
     private verifyOtpUseCase: VerifyOtpUseCase,
+    private loginUserUseCase: LoginUserUseCase,
+    private googleAuthUseCase: GoogleAuthUseCase,
+    private forgotPasswordUseCase: ForgotPasswordUseCase,
+    private resetPasswordUseCase: ResetPasswordUseCase
   ) { }
 
   public register = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -42,4 +50,88 @@ export class AuthController {
       next(err);
     }
   }
+  public login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { user, accessToken, refreshToken } = await this.loginUserUseCase.execute(req.body);
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7*24*60*60*1000
+      });
+      const response = ApiResponse.success(SuccessMessage.LOGIN_SUCCESS, {
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: 'user'
+        },
+        accessToken
+      });
+      res.status(HttpStatusCode.OK).json(response);
+    } catch (err) {
+      next(err);
+    }
+  }
+  public logout=async (req:Request,res:Response,next:NextFunction):Promise<void>=>{
+    try{
+      res.clearCookie('refreshToken',{
+        httpOnly:true,
+        secure:process.env.NODE_ENV=="production",
+        sameSite:"strict",
+      })
+      
+      const response=ApiResponse.success(SuccessMessage.LOGOUT_SUCCESS);
+      res.status(HttpStatusCode.OK).json(response);
+    }catch(err){
+      next(err)
+    }
+  }
+
+  public googleAuth = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { user, accessToken, refreshToken } = await this.googleAuthUseCase.execute(req.body);
+      
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000
+      });
+
+      const response = ApiResponse.success(SuccessMessage.LOGIN_SUCCESS, {
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          profileImage: user.profileImage,
+          role: 'user'
+        },
+        accessToken
+      });
+      res.status(HttpStatusCode.OK).json(response);
+    } catch (err) {
+      next(err);
+    }
+  }
+  public forgotPassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      await this.forgotPasswordUseCase.execute(req.body.email);
+      const response = ApiResponse.success(SuccessMessage.OTP_SENT_FOR_RESET);
+      res.status(HttpStatusCode.OK).json(response);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  public resetPassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      await this.resetPasswordUseCase.execute(req.body);
+      const response = ApiResponse.success(SuccessMessage.PASSWORD_RESET_SUCCESS);
+      res.status(HttpStatusCode.OK).json(response);
+    } catch (err) {
+      next(err);
+    }
+  }
+
 }

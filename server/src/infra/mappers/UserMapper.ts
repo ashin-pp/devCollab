@@ -7,7 +7,6 @@ export class UserMapper implements IMapper<User, IUserModel> {
     toDomain(persistence: IUserModel): User {
         return new User(
             persistence.name,
-            persistence.username,
             persistence.email,
             persistence.password,
             persistence.profile_image,
@@ -30,7 +29,6 @@ export class UserMapper implements IMapper<User, IUserModel> {
     toPersistence(domain: Partial<User>): any {
         return {
             name: domain.name,
-            username: domain.username,
             email: domain.email,
             password: domain.password,
             profile_image: domain.profileImage,

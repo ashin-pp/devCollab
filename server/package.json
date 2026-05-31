@@ -14,8 +14,10 @@
     "@eslint/js": "^10.0.1",
     "@types/bcrypt": "^6.0.0",
     "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/mongoose": "^5.11.96",
     "@types/node": "^25.9.1",
+    "@types/nodemailer": "^8.0.0",
     "dotenv": "^17.4.2",
     "eslint": "^10.4.0",
     "ts-node": "^10.9.2",
@@ -27,7 +29,10 @@
   "dependencies": {
     "bcrypt": "^6.0.0",
     "express": "^5.2.1",
+    "google-auth-library": "^10.6.2",
+    "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.6.3",
+    "nodemailer": "^8.0.10",
     "winston": "^3.19.0",
     "winston-daily-rotate-file": "^5.0.0"
   }
