@@ -5,6 +5,7 @@ import { OtpVerificationPage } from '../pages/auth/OtpVerificationPage';
 import { ForgotPasswordPage } from '../pages/auth/ForgotPasswordPage';
 import { VerifyOtpForgotPage } from '../pages/auth/VerifyOtpForgotPage';
 import { ResetPasswordPage } from '../pages/auth/ResetPasswordPage';
+import { NotFoundPage } from '../pages/NotFoundPage';
 
 export const AuthRoutes = () => {
   return (
@@ -15,6 +16,7 @@ export const AuthRoutes = () => {
       <Route path="forgot-password" element={<ForgotPasswordPage />} />
       <Route path="verify-forgot" element={<VerifyOtpForgotPage />} />
       <Route path="reset-password" element={<ResetPasswordPage />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 };

@@ -1,6 +1,35 @@
 import { ShieldAlert, Mail, Terminal, AlertTriangle, ArrowRight, ArrowLeft } from 'lucide-react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { AdminService } from '../../api/admin/admin.service';
+import toast from 'react-hot-toast';
+import { isAxiosError } from 'axios';
 
 export const AdminForgotPasswordPage = () => {
+  const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return toast.error("Admin identifier required");
+
+    setIsLoading(true);
+    try {
+      await AdminService.forgotPassword(email);
+      toast.success("Recovery code dispatched");
+      localStorage.setItem('adminOtpEndTime', (Date.now() + 60000).toString());
+      navigate('/admin/verify', { state: { email } });
+    } catch (err: unknown) {
+      if (isAxiosError(err)) {
+        toast.error(err.response?.data?.error?.message || err.response?.data?.message || "Failed to initiate recovery");
+      } else {
+        toast.error("An unexpected error occurred");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
   return (
     <div className="min-h-screen w-full bg-[#0d1117] flex items-center justify-center font-mono relative overflow-hidden">
       {/* Background Grid Pattern */}
@@ -45,7 +74,7 @@ export const AdminForgotPasswordPage = () => {
           </div>
 
           {/* Form */}
-          <form onSubmit={(e) => e.preventDefault()} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex justify-between">
                 <span>Admin Identifier</span>
@@ -57,14 +86,17 @@ export const AdminForgotPasswordPage = () => {
                 </div>
                 <input 
                   type="email" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="block w-full pl-10 pr-3 py-3 bg-[#010409] border border-[#30363d] rounded text-sm text-white placeholder-slate-600 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors font-sans" 
                   placeholder="admin@devcollab.com"
+                  required
                 />
               </div>
             </div>
 
-            <button type="submit" className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-black py-3 rounded font-bold text-sm tracking-widest transition-colors mt-6 uppercase">
-              TRANSMIT CODE
+            <button disabled={isLoading} type="submit" className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-black py-3 rounded font-bold text-sm tracking-widest transition-colors mt-6 uppercase disabled:opacity-50">
+              {isLoading ? "TRANSMITTING..." : "TRANSMIT CODE"}
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>

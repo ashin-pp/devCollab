@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { Box, Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import { AuthService } from '../../api/auth/auth.service';
 import { setCredentials } from '../../store/slices/authSlice';
 import toast from 'react-hot-toast';
+import { isAxiosError } from 'axios';
+
 export const LoginPage = () => {
 
   const [showPassword, setShowPassword] = useState(false);
@@ -15,6 +18,16 @@ export const LoginPage = () => {
   const [error, setError] = useState('');
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.state?.error) {
+      setError(location.state.error);
+      toast.error(location.state.error);
+      // Clear state so refresh doesn't show it again
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,8 +44,13 @@ export const LoginPage = () => {
       toast.success('Successfully logged in!');
       navigate('/user/dashboard');
 
-    } catch (err: any) {
-      const errMsg = err.response?.data?.error?.message || err.response?.data?.message || 'Login failed. Please try again.';
+    } catch (err: unknown) {
+      let errMsg = 'Login failed. Please try again.';
+      if (isAxiosError(err)) {
+        errMsg = err.response?.data?.error?.message || err.response?.data?.message || errMsg;
+      } else if (err instanceof Error) {
+        errMsg = err.message;
+      }
       setError(errMsg);
       toast.error(errMsg);
     } finally {

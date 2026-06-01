@@ -5,6 +5,7 @@ import { useDispatch } from 'react-redux';
 import { AuthService } from '../../api/auth/auth.service';
 import { setCredentials } from '../../store/slices/authSlice';
 import toast from 'react-hot-toast';
+import { isAxiosError } from 'axios';
 
 export const OtpVerificationPage = () => {
   const getInitialTimer = () => {
@@ -40,7 +41,7 @@ export const OtpVerificationPage = () => {
   }, [email, navigate]);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setTimeout>;
     if (resendTimer > 0) {
       localStorage.setItem('otpResendTimer', resendTimer.toString());
       localStorage.setItem('otpResendTimestamp', Date.now().toString());
@@ -82,9 +83,14 @@ export const OtpVerificationPage = () => {
     try {
       await AuthService.sendOtp(email);
       toast.success('OTP resent successfully!');
-    } catch (err: any) {
+    } catch (err: unknown) {
       setResendTimer(0); // Reset timer if failed
-      const errMsg = err.response?.data?.error?.message || err.response?.data?.message || 'Failed to resend OTP.';
+      let errMsg = 'Failed to resend OTP.';
+      if (isAxiosError(err)) {
+        errMsg = err.response?.data?.error?.message || err.response?.data?.message || errMsg;
+      } else if (err instanceof Error) {
+        errMsg = err.message;
+      }
       setError(errMsg);
       toast.error(errMsg);
     }
@@ -121,8 +127,13 @@ export const OtpVerificationPage = () => {
         navigate('/login');
       }
       
-    } catch (err: any) {
-      const errMsg = err.response?.data?.error?.message || err.response?.data?.message || 'Invalid OTP. Please try again.';
+    } catch (err: unknown) {
+      let errMsg = 'Invalid OTP. Please try again.';
+      if (isAxiosError(err)) {
+        errMsg = err.response?.data?.error?.message || err.response?.data?.message || errMsg;
+      } else if (err instanceof Error) {
+        errMsg = err.message;
+      }
       setError(errMsg);
       toast.error(errMsg);
       // Clear OTP inputs on error

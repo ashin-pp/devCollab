@@ -29,6 +29,10 @@ export class LoginUserUseCase {
             throw new Error(ErrorMessage.EMAIL_NOT_VERIFIED);
         }
 
+        if (user.status === 'blocked') {
+            throw new Error(ErrorMessage.USER_BLOCKED);
+        }
+
         const role = 'user';
         const accessToken = this.jwtService.generateAccessToken(user.id!, role);
         const refreshToken = this.jwtService.generateRefreshToken(user.id!, role);

@@ -10,6 +10,12 @@ export interface LoginData {
     email: string
     password: string
 }
+export interface ResetPasswordData {
+    email: string;
+    otp: string;
+    newPassword: string;
+    confirmPassword: string;
+}
 export const AuthService = {
     login: async (data: LoginData) => {
         const response = await api.post('/auth/login', data)
@@ -43,7 +49,7 @@ export const AuthService = {
         const response = await api.post('/auth/verify-reset-otp', { email, otp })
         return response.data
     },
-    resetPassword: async (data: any) => {
+    resetPassword: async (data: ResetPasswordData) => {
         const response = await api.post('/auth/reset-password', data)
         return response.data
     }

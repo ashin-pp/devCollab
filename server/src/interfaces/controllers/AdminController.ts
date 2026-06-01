@@ -5,6 +5,7 @@ import { AdminForgotPasswordUseCase } from "../../application/use-cases/admin/Ad
 import { AdminResetPasswordUseCase } from "../../application/use-cases/admin/AdminResetPasswordUseCase";
 import { GetAllUsersUseCase } from "../../application/use-cases/admin/GetAllUsersUseCase";
 import { ToggleUserStatusUseCase } from "../../application/use-cases/admin/ToggleUserStatusUseCase";
+import { VerifyResetOtpUseCase } from "../../application/use-cases/auth/VerifyResetOtpUseCase";
 import { ApiResponse } from "../http/helpers/implementation/apiResponse";
 import { HttpStatusCode } from "../../domain/enums/HttpStatusCode";
 import { SuccessMessage } from "../../domain/enums/SuccessMessage";
@@ -16,7 +17,8 @@ export class AdminController {
     private adminForgotPasswordUseCase: AdminForgotPasswordUseCase,
     private adminResetPasswordUseCase: AdminResetPasswordUseCase,
     private getAllUsersUseCase: GetAllUsersUseCase,
-    private toggleUserStatusUseCase: ToggleUserStatusUseCase
+    private toggleUserStatusUseCase: ToggleUserStatusUseCase,
+    private verifyResetOtpUseCase: VerifyResetOtpUseCase
   ) { }
 
   public createAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -31,7 +33,7 @@ export class AdminController {
 
   public login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { accessToken, refreshToken } = await this.adminLoginUseCase.execute(req.body);
+      const { admin, accessToken, refreshToken } = await this.adminLoginUseCase.execute(req.body);
       
       res.cookie('adminRefreshToken', refreshToken, {
         httpOnly: true,
@@ -40,7 +42,14 @@ export class AdminController {
         maxAge: 7 * 24 * 60 * 60 * 1000
       });
 
-      const response = ApiResponse.success(SuccessMessage.LOGIN_SUCCESS, { accessToken });
+      const response = ApiResponse.success(SuccessMessage.LOGIN_SUCCESS, { 
+        admin: {
+          id: admin.id,
+          email: admin.email,
+          role: 'admin'
+        }, 
+        accessToken 
+      });
       res.status(HttpStatusCode.OK).json(response);
     } catch (err) {
       next(err);
@@ -51,6 +60,16 @@ export class AdminController {
     try {
       await this.adminForgotPasswordUseCase.execute(req.body.email);
       const response = ApiResponse.success(SuccessMessage.OTP_SENT_FOR_RESET);
+      res.status(HttpStatusCode.OK).json(response);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  public verifyResetOtp = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      await this.verifyResetOtpUseCase.execute(req.body.email, req.body.otp);
+      const response = ApiResponse.success("OTP verified successfully");
       res.status(HttpStatusCode.OK).json(response);
     } catch (err) {
       next(err);

@@ -62,7 +62,7 @@ const authController = new AuthController(
 // Admin Use Cases
 const createAdminUseCase = new CreateAdminUseCase(adminRepository, hashService);
 const adminLoginUseCase = new AdminLoginUseCase(adminRepository, hashService, jwtService);
-const adminForgotPasswordUseCase = new AdminForgotPasswordUseCase(adminRepository, sendOtpUseCase);
+const adminForgotPasswordUseCase = new AdminForgotPasswordUseCase(adminRepository, sendOtpUseCase, otpRepository);
 const adminResetPasswordUseCase = new AdminResetPasswordUseCase(adminRepository, otpRepository, hashService);
 const getAllUsersUseCase = new GetAllUsersUseCase(userRepository);
 const toggleUserStatusUseCase = new ToggleUserStatusUseCase(userRepository);
@@ -73,7 +73,8 @@ const adminController = new AdminController(
     adminForgotPasswordUseCase,
     adminResetPasswordUseCase,
     getAllUsersUseCase,
-    toggleUserStatusUseCase
+    toggleUserStatusUseCase,
+    verifyResetOtpUseCase
 );
 
 export { logger, authController, adminController };

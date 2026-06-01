@@ -6,21 +6,66 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { AuthService } from '../../api/auth/auth.service';
 import { logout } from '../../store/slices/authSlice';
-import type { RootState } from '../../store'; // Assuming this exists
+import type { RootState } from '../../store';
+import { useEffect } from 'react';
+import { api } from '../../api/axios';
+import toast from 'react-hot-toast';
+import { isAxiosError } from 'axios';
+import Swal from 'sweetalert2';
+
 
 export const DashboardPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const user = useSelector((state: RootState) => state.auth.user);
 
+  useEffect(() => {
+    // Check if the user is still active or has been blocked by admin
+    const checkStatus = async () => {
+      try {
+        await api.get('/auth/refresh');
+      } catch (err: unknown) {
+        if (isAxiosError(err)) {
+          if (err.response?.data?.message === 'Blocked by Admin' || err.response?.data?.error?.message === 'Blocked by Admin') {
+            dispatch(logout());
+            navigate('/login', { state: { error: "Your account has been blocked by an Administrator." } });
+            return;
+          }
+        }
+        dispatch(logout());
+        navigate('/login');
+      }
+    };
+    
+    // Check immediately on mount
+    checkStatus();
+
+    // Poll every 15 seconds to simulate real-time block checks
+    const interval = setInterval(checkStatus, 15000);
+
+    return () => clearInterval(interval);
+  }, [dispatch, navigate]);
+
   const handleLogout = async () => {
-    try {
-      await AuthService.logout();
-    } catch (err) {
-      console.error("Logout error", err);
-    } finally {
-      dispatch(logout());
-      navigate('/login');
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: "You will be securely logged out of your account.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3b82f6', // blue-500
+      cancelButtonColor: '#ef4444', // red-500
+      confirmButtonText: 'Yes, logout'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await AuthService.logout();
+      } catch (err) {
+        console.error("Logout error", err);
+      } finally {
+        dispatch(logout());
+        navigate('/login');
+      }
     }
   };
 

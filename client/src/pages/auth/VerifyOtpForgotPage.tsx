@@ -3,7 +3,7 @@ import { Box, Mail, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthService } from '../../api/auth/auth.service';
 import toast from 'react-hot-toast';
-
+import { isAxiosError } from 'axios';
 
 export const VerifyOtpForgotPage = () => {
   const getInitialTimer = () => {
@@ -32,7 +32,7 @@ export const VerifyOtpForgotPage = () => {
   }, [email, navigate]);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setTimeout>;
     if (resendTimer > 0) {
       localStorage.setItem('forgotOtpResendTimer', resendTimer.toString());
       localStorage.setItem('forgotOtpResendTimestamp', Date.now().toString());
@@ -70,9 +70,14 @@ export const VerifyOtpForgotPage = () => {
     try {
       await AuthService.forgotPassword(email);
       toast.success('OTP resent successfully!');
-    } catch (err: any) {
+    } catch (err: unknown) {
       setResendTimer(0);
-      const errMsg = err.response?.data?.error?.message || err.response?.data?.message || 'Failed to resend OTP.';
+      let errMsg = 'Failed to resend OTP.';
+      if (isAxiosError(err)) {
+        errMsg = err.response?.data?.error?.message || err.response?.data?.message || errMsg;
+      } else if (err instanceof Error) {
+        errMsg = err.message;
+      }
       setError(errMsg);
       toast.error(errMsg);
     }
@@ -93,8 +98,13 @@ export const VerifyOtpForgotPage = () => {
       await AuthService.verifyResetOtp(email, otpString);
       toast.success('OTP verified!');
       navigate('/reset-password', { state: { email, otp: otpString } });
-    } catch (err: any) {
-      const errMsg = err.response?.data?.error?.message || err.response?.data?.message || 'Invalid OTP. Please try again.';
+    } catch (err: unknown) {
+      let errMsg = 'Invalid OTP. Please try again.';
+      if (isAxiosError(err)) {
+        errMsg = err.response?.data?.error?.message || err.response?.data?.message || errMsg;
+      } else if (err instanceof Error) {
+        errMsg = err.message;
+      }
       setError(errMsg);
       toast.error(errMsg);
       setOtp(['', '', '', '']);

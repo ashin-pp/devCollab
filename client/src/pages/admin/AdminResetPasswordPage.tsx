@@ -1,9 +1,59 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ShieldAlert, Lock, Eye, EyeOff, Terminal, AlertTriangle, ArrowRight, CheckCircle2, Circle } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { AdminService } from '../../api/admin/admin.service';
+import toast from 'react-hot-toast';
+import { isAxiosError } from 'axios';
 
 export const AdminResetPasswordPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const location = useLocation();
+  const navigate = useNavigate();
+  const email = location.state?.email;
+  const otp = location.state?.otp;
+
+  useEffect(() => {
+    if (!email || !otp) {
+      toast.error("Invalid session. Please start over.");
+      navigate('/admin/forgot-password');
+    }
+  }, [email, otp, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPassword || !confirmPassword) return toast.error("Please fill all fields");
+    if (newPassword !== confirmPassword) return toast.error("Security keys do not match");
+
+    setIsLoading(true);
+    try {
+      await AdminService.resetPassword({ email, otp, newPassword, confirmPassword });
+      toast.success("Security key updated successfully");
+      navigate('/admin/login', { state: { message: "Password reset successful. Please login with your new key." } });
+    } catch (err: unknown) {
+      if (isAxiosError(err)) {
+        toast.error(err.response?.data?.error?.message || err.response?.data?.message || "Failed to update security key");
+      } else {
+        toast.error("An unexpected error occurred");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Password strength logic
+  const hasMinLength = newPassword.length >= 12;
+  const hasAlphaNumeric = /[a-zA-Z]/.test(newPassword) && /\d/.test(newPassword);
+  const hasUppercase = /[A-Z]/.test(newPassword);
+  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(newPassword);
+  
+  const strengthScore = [hasMinLength, hasAlphaNumeric, hasUppercase, hasSpecialChar].filter(Boolean).length;
+  const strengthText = strengthScore <= 1 ? 'Weak' : strengthScore <= 3 ? 'Medium' : 'Strong';
 
   return (
     <div className="min-h-screen w-full bg-[#0d1117] flex items-center justify-center font-mono relative overflow-hidden">
@@ -42,7 +92,7 @@ export const AdminResetPasswordPage = () => {
           </div>
 
           {/* Form */}
-          <form onSubmit={(e) => e.preventDefault()} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex justify-between">
                 <span>New Security Key</span>
@@ -54,8 +104,11 @@ export const AdminResetPasswordPage = () => {
                 </div>
                 <input 
                   type={showPassword ? "text" : "password"} 
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
                   className="block w-full pl-10 pr-10 py-3 bg-[#010409] border border-[#30363d] rounded text-sm text-white placeholder-slate-600 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors font-sans" 
                   placeholder="••••••••••••••••"
+                  required
                 />
                 <button 
                   type="button" 
@@ -71,29 +124,29 @@ export const AdminResetPasswordPage = () => {
             <div className="bg-[#010409] border border-[#30363d] p-3 rounded-lg">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Complexity</span>
-                <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider">Medium</span>
+                <span className={`text-[10px] font-bold uppercase tracking-wider ${strengthScore <= 1 ? 'text-red-500' : strengthScore <= 3 ? 'text-amber-500' : 'text-emerald-500'}`}>{strengthText}</span>
               </div>
               <div className="flex gap-1 mb-3">
-                <div className="h-1 flex-1 bg-amber-500 rounded-sm"></div>
-                <div className="h-1 flex-1 bg-amber-500 rounded-sm"></div>
-                <div className="h-1 flex-1 bg-[#30363d] rounded-sm"></div>
-                <div className="h-1 flex-1 bg-[#30363d] rounded-sm"></div>
+                <div className={`h-1 flex-1 rounded-sm ${strengthScore >= 1 ? (strengthScore <= 1 ? 'bg-red-500' : strengthScore <= 3 ? 'bg-amber-500' : 'bg-emerald-500') : 'bg-[#30363d]'}`}></div>
+                <div className={`h-1 flex-1 rounded-sm ${strengthScore >= 2 ? (strengthScore <= 3 ? 'bg-amber-500' : 'bg-emerald-500') : 'bg-[#30363d]'}`}></div>
+                <div className={`h-1 flex-1 rounded-sm ${strengthScore >= 3 ? (strengthScore <= 3 ? 'bg-amber-500' : 'bg-emerald-500') : 'bg-[#30363d]'}`}></div>
+                <div className={`h-1 flex-1 rounded-sm ${strengthScore >= 4 ? 'bg-emerald-500' : 'bg-[#30363d]'}`}></div>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <div className="flex items-center gap-1.5 text-[10px] text-slate-300">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                <div className={`flex items-center gap-1.5 text-[10px] ${hasMinLength ? 'text-emerald-500' : 'text-slate-500'}`}>
+                  {hasMinLength ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Circle className="w-3.5 h-3.5" />}
                   <span>12+ characters</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-[10px] text-slate-300">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                <div className={`flex items-center gap-1.5 text-[10px] ${hasAlphaNumeric ? 'text-emerald-500' : 'text-slate-500'}`}>
+                  {hasAlphaNumeric ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Circle className="w-3.5 h-3.5" />}
                   <span>Alpha-numeric</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
-                  <Circle className="w-3.5 h-3.5 text-[#30363d]" />
+                <div className={`flex items-center gap-1.5 text-[10px] ${hasUppercase ? 'text-emerald-500' : 'text-slate-500'}`}>
+                  {hasUppercase ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Circle className="w-3.5 h-3.5" />}
                   <span>Uppercase</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
-                  <Circle className="w-3.5 h-3.5 text-[#30363d]" />
+                <div className={`flex items-center gap-1.5 text-[10px] ${hasSpecialChar ? 'text-emerald-500' : 'text-slate-500'}`}>
+                  {hasSpecialChar ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Circle className="w-3.5 h-3.5" />}
                   <span>Special char</span>
                 </div>
               </div>
@@ -110,8 +163,11 @@ export const AdminResetPasswordPage = () => {
                 </div>
                 <input 
                   type={showConfirmPassword ? "text" : "password"} 
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                   className="block w-full pl-10 pr-10 py-3 bg-[#010409] border border-[#30363d] rounded text-sm text-white placeholder-slate-600 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors font-sans" 
                   placeholder="••••••••••••••••"
+                  required
                 />
                 <button 
                   type="button" 
@@ -123,8 +179,8 @@ export const AdminResetPasswordPage = () => {
               </div>
             </div>
 
-            <button type="submit" className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-black py-3 rounded font-bold text-sm tracking-widest transition-colors mt-6 uppercase">
-              APPLY_UPDATE
+            <button disabled={isLoading} type="submit" className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-black py-3 rounded font-bold text-sm tracking-widest transition-colors mt-6 uppercase disabled:opacity-50">
+              {isLoading ? "UPDATING..." : "APPLY_UPDATE"}
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>

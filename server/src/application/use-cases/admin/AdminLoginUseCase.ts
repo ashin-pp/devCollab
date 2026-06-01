@@ -3,6 +3,7 @@ import { IHashService } from "../../services/IHashService";
 import { IJwtService } from "../../services/IJwtService";
 import { LoginUserDto } from "../../dto/LoginUserDto";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
+import { Admin } from "../../../domain/entities/Admin";
 
 export class AdminLoginUseCase {
     constructor(
@@ -11,7 +12,7 @@ export class AdminLoginUseCase {
         private jwtService: IJwtService
     ) { }
 
-    async execute(data: LoginUserDto): Promise<{ accessToken: string, refreshToken: string }> {
+    async execute(data: LoginUserDto): Promise<{ admin: Admin, accessToken: string, refreshToken: string }> {
         const admin = await this.adminRepository.findByEmail(data.email);
         if (!admin || !admin.password || !data.password) {
             throw new Error(ErrorMessage.INVALID_CREDENTIALS);
@@ -30,6 +31,6 @@ export class AdminLoginUseCase {
         const accessToken = this.jwtService.generateAccessToken(admin.id, role);
         const refreshToken = this.jwtService.generateRefreshToken(admin.id, role);
 
-        return { accessToken, refreshToken };
+        return { admin, accessToken, refreshToken };
     }
 }

@@ -1,8 +1,48 @@
 import { useState } from 'react';
-import { ShieldAlert, User, Lock, Eye, EyeOff, ShieldCheck, Terminal, AlertTriangle } from 'lucide-react';
+import { ShieldAlert, User, Lock, Eye, EyeOff, ShieldCheck, Terminal, AlertTriangle, Loader2 } from 'lucide-react';
+import { useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { AdminService } from '../../api/admin/admin.service';
+import { setCredentials } from '../../store/slices/authSlice';
+import toast from 'react-hot-toast';
+import { isAxiosError } from 'axios';
 
 export const AdminLoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
+    try {
+      const response = await AdminService.login({ email, password });
+      
+      dispatch(setCredentials({
+        user: { id: response.data.admin.id, name: 'System Admin', email: response.data.admin.email, role: 'admin' },
+        accessToken: response.data.accessToken
+      }));
+      toast.success('Admin authenticated securely.');
+      navigate('/admin/dashboard');
+    } catch (err: unknown) {
+      let errMsg = 'Authentication failed. Unauthorized.';
+      if (isAxiosError(err)) {
+        errMsg = err.response?.data?.error?.message || err.response?.data?.message || errMsg;
+      } else if (err instanceof Error) {
+        errMsg = err.message;
+      }
+      setError(errMsg);
+      toast.error(errMsg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen w-full bg-[#0d1117] flex items-center justify-center font-mono relative overflow-hidden">
@@ -42,8 +82,14 @@ export const AdminLoginPage = () => {
             </div>
           </div>
 
+          {error && (
+            <div className="mb-6 p-3 bg-red-500/10 border border-red-500/20 text-red-500 rounded text-xs font-bold tracking-widest text-center uppercase">
+              {error}
+            </div>
+          )}
+
           {/* Form */}
-          <form onSubmit={(e) => e.preventDefault()} className="space-y-5">
+          <form onSubmit={handleLogin} className="space-y-5">
             <div>
               <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex justify-between">
                 <span>Admin Identifier</span>
@@ -55,6 +101,10 @@ export const AdminLoginPage = () => {
                 </div>
                 <input 
                   type="text" 
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={isLoading}
                   className="block w-full pl-10 pr-3 py-3 bg-[#010409] border border-[#30363d] rounded text-sm text-white placeholder-slate-600 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors" 
                   placeholder="Enter admin ID or email"
                 />
@@ -72,6 +122,10 @@ export const AdminLoginPage = () => {
                 </div>
                 <input 
                   type={showPassword ? "text" : "password"} 
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={isLoading}
                   className="block w-full pl-10 pr-10 py-3 bg-[#010409] border border-[#30363d] rounded text-sm text-white placeholder-slate-600 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors font-sans" 
                   placeholder="••••••••••••••••"
                 />
@@ -85,14 +139,15 @@ export const AdminLoginPage = () => {
               </div>
             </div>
 
-            <button type="submit" className="w-full bg-amber-500 hover:bg-amber-400 text-black py-3 rounded font-bold text-sm tracking-widest transition-colors mt-6 uppercase">
-              Authenticate
+            <button type="submit" disabled={isLoading} className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 disabled:bg-amber-700 disabled:text-amber-500 text-black py-3 rounded font-bold text-sm tracking-widest transition-colors mt-6 uppercase">
+              {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+              {isLoading ? 'AUTHENTICATING...' : 'Authenticate'}
             </button>
           </form>
 
           {/* Links */}
           <div className="mt-6 flex items-center justify-between text-[10px] font-bold tracking-widest text-slate-500 uppercase">
-            <a href="#" className="hover:text-amber-500 transition-colors">Reset Credentials</a>
+            <a href="/admin/forgot-password" className="hover:text-amber-500 transition-colors">Reset Credentials</a>
             <span className="flex items-center gap-1">
               <Lock className="w-3 h-3" />
               2FA Required

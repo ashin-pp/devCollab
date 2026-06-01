@@ -20,4 +20,9 @@ export class OtpRepository extends MongoBaseRepository<OtpVerification, IOtpMode
         
         return found ? this.mapper.toDomain(found) : null;
     }
+
+    async findLatestOtpByEmail(email: string): Promise<OtpVerification | null> {
+        const found = await this.model.findOne({ email }).sort({ createdAt: -1 });
+        return found ? this.mapper.toDomain(found) : null;
+    }
 }

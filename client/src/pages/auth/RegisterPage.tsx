@@ -3,6 +3,7 @@ import { Box, Hash, Sparkles, RefreshCw, User, Mail, Lock, Eye, EyeOff, ArrowRig
 import { useNavigate } from 'react-router-dom';
 import { AuthService } from '../../api/auth/auth.service';
 import toast from 'react-hot-toast';
+import { isAxiosError } from 'axios';
 
 export const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -36,8 +37,13 @@ export const RegisterPage = () => {
       toast.success('Registration successful! OTP sent to your email.', { duration: 4000 });
       
       navigate('/verify', { state: { email, password } });
-    } catch (err: any) {
-      const errMsg = err.response?.data?.error?.message || err.response?.data?.message || 'Registration failed. Please try again.';
+    } catch (err: unknown) {
+      let errMsg = 'Registration failed. Please try again.';
+      if (isAxiosError(err)) {
+        errMsg = err.response?.data?.error?.message || err.response?.data?.message || errMsg;
+      } else if (err instanceof Error) {
+        errMsg = err.message;
+      }
       setError(errMsg);
       toast.error(errMsg);
     } finally {

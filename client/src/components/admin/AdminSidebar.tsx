@@ -1,8 +1,39 @@
 import { LayoutDashboard, Server, Users, BarChart3, Wallet, LogOut, Settings } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { logout } from '../../store/slices/authSlice';
+import { AdminService } from '../../api/admin/admin.service';
+import Swal from 'sweetalert2';
 
 export const AdminSidebar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const handleAdminLogout = async () => {
+    const result = await Swal.fire({
+      title: 'SYSTEM LOGOUT?',
+      text: "You are about to securely exit the administrative console.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#f59e0b', // amber-500
+      cancelButtonColor: '#30363d',
+      confirmButtonText: 'CONFIRM LOGOUT',
+      background: '#161b22',
+      color: '#fff'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await AdminService.logout();
+      } catch (err) {
+        console.error("Admin logout error", err);
+      } finally {
+        dispatch(logout());
+        navigate('/admin/login');
+      }
+    }
+  };
 
   const navItems = [
     { name: 'DASHBOARD', icon: LayoutDashboard, path: '/admin/dashboard' },
@@ -65,7 +96,10 @@ export const AdminSidebar = () => {
           <Settings className="w-4 h-4 text-slate-500" />
           SETTINGS
         </a>
-        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-md text-sm font-bold tracking-widest text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all">
+        <button 
+          onClick={handleAdminLogout}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-md text-sm font-bold tracking-widest text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all"
+        >
           <LogOut className="w-4 h-4 text-slate-500" />
           LOG OUT
         </button>

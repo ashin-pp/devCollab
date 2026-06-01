@@ -20,6 +20,10 @@ export class RefreshTokenUseCase {
             throw new Error(ErrorMessage.USER_NOT_FOUND);
         }
 
+        if (user.status === 'blocked') {
+            throw new Error(ErrorMessage.USER_BLOCKED);
+        }
+
         const newAccessToken = this.jwtService.generateAccessToken(user.id!, decoded.role);
 
         return { user, accessToken: newAccessToken };

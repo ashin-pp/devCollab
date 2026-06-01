@@ -3,6 +3,7 @@ import { Box, Lock, Eye, EyeOff, ArrowRight, CheckCircle2, Circle, Loader2 } fro
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthService } from '../../api/auth/auth.service';
 import toast from 'react-hot-toast';
+import { isAxiosError } from 'axios';
 
 export const ResetPasswordPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -32,8 +33,13 @@ export const ResetPasswordPage = () => {
       await AuthService.resetPassword({ email, otp, newPassword, confirmPassword });
       toast.success('Password reset successfully! Please login.');
       navigate('/login');
-    } catch (error: any) {
-      const errMsg = error.response?.data?.error?.message || error.response?.data?.message || 'Failed to reset password';
+    } catch (error: unknown) {
+      let errMsg = 'Failed to reset password';
+      if (isAxiosError(error)) {
+        errMsg = error.response?.data?.error?.message || error.response?.data?.message || errMsg;
+      } else if (error instanceof Error) {
+        errMsg = error.message;
+      }
       toast.error(errMsg);
     } finally {
       setIsLoading(false);

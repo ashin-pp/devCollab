@@ -3,6 +3,7 @@ import { Box, Mail, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { AuthService } from '../../api/auth/auth.service';
 import toast from 'react-hot-toast';
+import { isAxiosError } from 'axios';
 
 export const ForgotPasswordPage = () => {
   const [email, setEmail] = useState('');
@@ -21,8 +22,13 @@ export const ForgotPasswordPage = () => {
       await AuthService.forgotPassword(email);
       toast.success('OTP sent to your email');
       navigate('/verify-forgot', { state: { email } });
-    } catch (error: any) {
-      const errMsg = error.response?.data?.error?.message || error.response?.data?.message || 'Failed to send reset link';
+    } catch (error: unknown) {
+      let errMsg = 'Failed to send reset link';
+      if (isAxiosError(error)) {
+        errMsg = error.response?.data?.error?.message || error.response?.data?.message || errMsg;
+      } else if (error instanceof Error) {
+        errMsg = error.message;
+      }
       toast.error(errMsg);
     } finally {
       setIsLoading(false);
