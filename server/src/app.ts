@@ -1,16 +1,21 @@
 import express from "express";
 import { ApiResponse } from "./interfaces/http/helpers/implementation/apiResponse";
+import { authRouter } from "./interfaces/routes/auth.routes";
+import { errorHandler } from "./interfaces/middlewares/errorHandler";
+import { SuccessMessage } from "./domain/enums/SuccessMessage";
 
 const app = express();
 app.use(express.json());
 
-// Test route
+// API Routes
+app.use("/api/auth", authRouter);
+
 app.get("/", (req, res) => {
-    // 1. We create the formatted object using your screenshot's class
-    const responsePayload = ApiResponse.success("DevCollab API is running!");
-    
-    // 2. We send it using express!
+    const responsePayload = ApiResponse.success(SuccessMessage.API_RUNNING);
     res.status(200).json(responsePayload);
 });
+
+// Global Error Handler must be the LAST middleware
+app.use(errorHandler);
 
 export default app;
