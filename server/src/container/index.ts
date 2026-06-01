@@ -22,6 +22,8 @@ import { CreateAdminUseCase } from "../application/use-cases/admin/CreateAdminUs
 import { AdminLoginUseCase } from "../application/use-cases/admin/AdminLoginUseCase";
 import { AdminForgotPasswordUseCase } from "../application/use-cases/admin/AdminForgotPasswordUseCase";
 import { AdminResetPasswordUseCase } from "../application/use-cases/admin/AdminResetPasswordUseCase";
+import { GetAllUsersUseCase } from "../application/use-cases/admin/GetAllUsersUseCase";
+import { ToggleUserStatusUseCase } from "../application/use-cases/admin/ToggleUserStatusUseCase";
 import { AdminController } from "../interfaces/controllers/AdminController";
 
 const logger = new WinstonLogger();
@@ -56,12 +58,16 @@ const createAdminUseCase = new CreateAdminUseCase(adminRepository, hashService);
 const adminLoginUseCase = new AdminLoginUseCase(adminRepository, hashService, jwtService);
 const adminForgotPasswordUseCase = new AdminForgotPasswordUseCase(adminRepository, sendOtpUseCase);
 const adminResetPasswordUseCase = new AdminResetPasswordUseCase(adminRepository, otpRepository, hashService);
+const getAllUsersUseCase = new GetAllUsersUseCase(userRepository);
+const toggleUserStatusUseCase = new ToggleUserStatusUseCase(userRepository);
 
 const adminController = new AdminController(
     createAdminUseCase,
     adminLoginUseCase,
     adminForgotPasswordUseCase,
-    adminResetPasswordUseCase
+    adminResetPasswordUseCase,
+    getAllUsersUseCase,
+    toggleUserStatusUseCase
 );
 
 export { logger, authController, adminController };

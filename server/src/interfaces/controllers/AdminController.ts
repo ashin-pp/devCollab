@@ -3,6 +3,8 @@ import { CreateAdminUseCase } from "../../application/use-cases/admin/CreateAdmi
 import { AdminLoginUseCase } from "../../application/use-cases/admin/AdminLoginUseCase";
 import { AdminForgotPasswordUseCase } from "../../application/use-cases/admin/AdminForgotPasswordUseCase";
 import { AdminResetPasswordUseCase } from "../../application/use-cases/admin/AdminResetPasswordUseCase";
+import { GetAllUsersUseCase } from "../../application/use-cases/admin/GetAllUsersUseCase";
+import { ToggleUserStatusUseCase } from "../../application/use-cases/admin/ToggleUserStatusUseCase";
 import { ApiResponse } from "../http/helpers/implementation/apiResponse";
 import { HttpStatusCode } from "../../domain/enums/HttpStatusCode";
 import { SuccessMessage } from "../../domain/enums/SuccessMessage";
@@ -12,7 +14,9 @@ export class AdminController {
     private createAdminUseCase: CreateAdminUseCase,
     private adminLoginUseCase: AdminLoginUseCase,
     private adminForgotPasswordUseCase: AdminForgotPasswordUseCase,
-    private adminResetPasswordUseCase: AdminResetPasswordUseCase
+    private adminResetPasswordUseCase: AdminResetPasswordUseCase,
+    private getAllUsersUseCase: GetAllUsersUseCase,
+    private toggleUserStatusUseCase: ToggleUserStatusUseCase
   ) { }
 
   public createAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -72,6 +76,27 @@ export class AdminController {
       })
       
       const response = ApiResponse.success(SuccessMessage.LOGOUT_SUCCESS);
+      res.status(HttpStatusCode.OK).json(response);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  public getUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const users = await this.getAllUsersUseCase.execute();
+      const response = ApiResponse.success("Users fetched successfully", users);
+      res.status(HttpStatusCode.OK).json(response);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  public toggleUserStatus = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const id = req.params.id as string;
+      const newStatus = await this.toggleUserStatusUseCase.execute(id);
+      const response = ApiResponse.success(`User status changed to ${newStatus}`);
       res.status(HttpStatusCode.OK).json(response);
     } catch (err) {
       next(err);
