@@ -1,16 +1,43 @@
-// TODO: Implement your authentication slice here.
-// You will need to use createSlice from '@reduxjs/toolkit'.
-// Manage state for user info, tokens, loading states, and errors.
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
-// Example:
-// import { createSlice } from '@reduxjs/toolkit';
-// 
-// const initialState = {
-//   user: null,
-//   token: null,
-//   isAuthenticated: false,
-// };
-//
-// const authSlice = createSlice({ ... });
-// export const { login, logout } = authSlice.actions;
-// export default authSlice.reducer;
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
+interface AuthState {
+  user: User | null;
+  accessToken: string | null;
+  isAuthenticated: boolean;
+}
+
+const initialState: AuthState = {
+  user: null,
+  accessToken: null,
+  isAuthenticated: false,
+};
+
+const authSlice = createSlice({
+  name: 'auth',
+  initialState,
+  reducers: {
+    setCredentials: (
+      state,
+      action: PayloadAction<{ user: User; accessToken: string }>
+    ) => {
+      state.user = action.payload.user;
+      state.accessToken = action.payload.accessToken;
+      state.isAuthenticated = true;
+    },
+    logout: (state) => {
+      state.user = null;
+      state.accessToken = null;
+      state.isAuthenticated = false;
+    },
+  },
+});
+
+export const { setCredentials, logout } = authSlice.actions;
+export default authSlice.reducer;

@@ -1,9 +1,44 @@
-import { useState } from 'react';
-import { Box, Lock, Eye, EyeOff, ArrowRight, CheckCircle2, Circle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Box, Lock, Eye, EyeOff, ArrowRight, CheckCircle2, Circle, Loader2 } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { AuthService } from '../../api/auth/auth.service';
+import toast from 'react-hot-toast';
 
 export const ResetPasswordPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const navigate = useNavigate();
+  const location = useLocation();
+  const email = location.state?.email;
+  const otp = location.state?.otp;
+
+  useEffect(() => {
+    if (!email || !otp) navigate('/forgot-password');
+  }, [email, otp, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await AuthService.resetPassword({ email, otp, newPassword, confirmPassword });
+      toast.success('Password reset successfully! Please login.');
+      navigate('/login');
+    } catch (error: any) {
+      const errMsg = error.response?.data?.error?.message || error.response?.data?.message || 'Failed to reset password';
+      toast.error(errMsg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#f4f7fb] font-sans relative overflow-hidden p-4">
@@ -28,7 +63,7 @@ export const ResetPasswordPage = () => {
           </p>
         </div>
 
-        <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
               New Password
@@ -39,6 +74,10 @@ export const ResetPasswordPage = () => {
               </div>
               <input 
                 type={showPassword ? "text" : "password"} 
+                required
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                disabled={isLoading}
                 className="block w-full pl-10 pr-10 py-3 border border-slate-300 rounded-xl text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" 
                 placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"
               />
@@ -94,6 +133,10 @@ export const ResetPasswordPage = () => {
               </div>
               <input 
                 type={showConfirmPassword ? "text" : "password"} 
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                disabled={isLoading}
                 className="block w-full pl-10 pr-10 py-3 border border-slate-300 rounded-xl text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" 
                 placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"
               />
@@ -107,9 +150,10 @@ export const ResetPasswordPage = () => {
             </div>
           </div>
 
-          <button type="submit" className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-bold text-sm transition-all shadow-md shadow-blue-200">
-            Reset Password & Login
-            <ArrowRight className="w-4 h-4" />
+          <button type="submit" disabled={isLoading} className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-3.5 rounded-xl font-bold text-sm transition-all shadow-md shadow-blue-200">
+            {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+            {isLoading ? 'Resetting...' : 'Reset Password & Login'}
+            {!isLoading && <ArrowRight className="w-4 h-4" />}
           </button>
         </form>
 

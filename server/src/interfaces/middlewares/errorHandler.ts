@@ -13,7 +13,13 @@ export const errorHandler = (
 
     logger.error(err.message, { stack: err.stack, path: req.path });
 
-    const errorPayload = ApiResponse.error(ErrorMessage.INTERNAL_SERVER_ERROR);
+    // Check if the error is a known domain error message
+    const isDomainError = Object.values(ErrorMessage).includes(err.message as any);
 
-    res.status(HttpStatusCode.INTERNAL_SERVER).json(errorPayload);
+    const message = isDomainError ? err.message : ErrorMessage.INTERNAL_SERVER_ERROR;
+    const statusCode = isDomainError ? HttpStatusCode.BAD_REQUEST : HttpStatusCode.INTERNAL_SERVER;
+
+    const errorPayload = ApiResponse.error(message);
+
+    res.status(statusCode).json(errorPayload);
 };

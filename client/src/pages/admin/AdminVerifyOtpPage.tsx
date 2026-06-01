@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { ShieldAlert, Terminal, AlertTriangle, ArrowRight, RefreshCw, KeyRound } from 'lucide-react';
+import { Terminal, AlertTriangle, ArrowRight, RefreshCw, KeyRound } from 'lucide-react';
 
 export const AdminVerifyOtpPage = () => {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -67,7 +67,7 @@ export const AdminVerifyOtpPage = () => {
               {otp.map((digit, index) => (
                 <input
                   key={index}
-                  ref={(el) => (inputRefs.current[index] = el)}
+                  ref={(el) => { inputRefs.current[index] = el; }}
                   type="text"
                   maxLength={1}
                   value={digit}

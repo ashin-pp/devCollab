@@ -10,7 +10,9 @@ authRouter.post("/login", authController.login);
 authRouter.post("/google", authController.googleAuth);
 
 authRouter.post("/logout", authController.logout);
+authRouter.get("/refresh", authController.refresh);
 authRouter.post("/forgot-password", authController.forgotPassword);
+authRouter.post("/verify-reset-otp", authController.verifyResetOtp);
 authRouter.post("/reset-password", authController.resetPassword);
 
 export { authRouter };

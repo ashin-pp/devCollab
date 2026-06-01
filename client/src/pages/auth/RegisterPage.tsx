@@ -1,9 +1,49 @@
 import { useState } from 'react';
 import { Box, Hash, Sparkles, RefreshCw, User, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { AuthService } from '../../api/auth/auth.service';
+import toast from 'react-hot-toast';
 
 export const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const navigate = useNavigate();
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match!");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      await AuthService.register({ name, email, password, confirmPassword });
+      
+      // Request an OTP immediately after registering
+      await AuthService.sendOtp(email);
+      toast.success('Registration successful! OTP sent to your email.', { duration: 4000 });
+      
+      navigate('/verify', { state: { email, password } });
+    } catch (err: any) {
+      const errMsg = err.response?.data?.error?.message || err.response?.data?.message || 'Registration failed. Please try again.';
+      setError(errMsg);
+      toast.error(errMsg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen w-full flex bg-white font-sans">
@@ -15,12 +55,12 @@ export const RegisterPage = () => {
 
         <div className="relative z-10">
           {/* Logo */}
-          <div className="flex items-center gap-2 mb-8">
+          <a href="/" className="flex items-center gap-2 mb-8 hover:opacity-80 transition-opacity">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-md">
               <Box className="w-5 h-5 text-white" />
             </div>
             <span className="font-bold text-xl tracking-tight text-slate-900">DevCollab</span>
-          </div>
+          </a>
 
           {/* Status Badge */}
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-100/50 border border-blue-200 mb-16">
@@ -88,6 +128,12 @@ export const RegisterPage = () => {
             <h2 className="text-3xl font-extrabold text-slate-900 mb-2 font-serif tracking-tight">Create your account</h2>
             <p className="text-sm text-slate-500 font-medium">Set up your identity to access the engineering ecosystem.</p>
           </div>
+          
+          {error && (
+            <div className="mb-6 p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-medium text-center">
+              {error}
+            </div>
+          )}
 
           <button className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors mb-6 shadow-sm">
             <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -105,7 +151,7 @@ export const RegisterPage = () => {
             <div className="flex-1 h-px bg-slate-200"></div>
           </div>
 
-          <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-4" onSubmit={handleRegister}>
             <div>
               <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Full Name</label>
               <div className="relative">
@@ -114,6 +160,9 @@ export const RegisterPage = () => {
                 </div>
                 <input 
                   type="text" 
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
                   className="block w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-xl text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" 
                   placeholder="e.g. Jane Doe"
                 />
@@ -128,6 +177,9 @@ export const RegisterPage = () => {
                 </div>
                 <input 
                   type="email" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
                   className="block w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-xl text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" 
                   placeholder="name@company.com"
                 />
@@ -142,6 +194,9 @@ export const RegisterPage = () => {
                 </div>
                 <input 
                   type={showPassword ? "text" : "password"} 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
                   className="block w-full pl-10 pr-10 py-2.5 border border-slate-300 rounded-xl text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" 
                   placeholder="Create a strong password"
                 />
@@ -163,6 +218,9 @@ export const RegisterPage = () => {
                 </div>
                 <input 
                   type={showConfirmPassword ? "text" : "password"} 
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
                   className="block w-full pl-10 pr-10 py-2.5 border border-slate-300 rounded-xl text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" 
                   placeholder="Confirm your password"
                 />
@@ -176,9 +234,13 @@ export const RegisterPage = () => {
               </div>
             </div>
 
-            <button type="submit" className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold text-sm transition-all shadow-md shadow-blue-200 mt-6">
-              CREATE ACCOUNT
-              <ArrowRight className="w-4 h-4" />
+            <button 
+              type="submit" 
+              disabled={isLoading}
+              className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-3 rounded-xl font-bold text-sm transition-all shadow-md shadow-blue-200 mt-6"
+            >
+              {isLoading ? 'CREATING ACCOUNT...' : 'CREATE ACCOUNT'}
+              {!isLoading && <ArrowRight className="w-4 h-4" />}
             </button>
           </form>
 
@@ -191,3 +253,4 @@ export const RegisterPage = () => {
     </div>
   );
 };
+

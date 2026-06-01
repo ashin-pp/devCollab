@@ -1,16 +1,58 @@
-import { useState, useRef } from 'react';
-import { Box, Mail, ArrowRight, ArrowLeft } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Box, Mail, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { AuthService } from '../../api/auth/auth.service';
+import toast from 'react-hot-toast';
+
 
 export const VerifyOtpForgotPage = () => {
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const getInitialTimer = () => {
+    const savedTime = localStorage.getItem('forgotOtpResendTimer');
+    const savedTimestamp = localStorage.getItem('forgotOtpResendTimestamp');
+    if (savedTime && savedTimestamp) {
+      const timePassed = Math.floor((Date.now() - parseInt(savedTimestamp)) / 1000);
+      const timeLeft = parseInt(savedTime) - timePassed;
+      return timeLeft > 0 ? timeLeft : 0;
+    }
+    return 60;
+  };
+
+  const [otp, setOtp] = useState(['', '', '', '']);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [resendTimer, setResendTimer] = useState(getInitialTimer());
+
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const email = location.state?.email;
+
+  useEffect(() => {
+    if (!email) navigate('/forgot-password');
+  }, [email, navigate]);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (resendTimer > 0) {
+      localStorage.setItem('forgotOtpResendTimer', resendTimer.toString());
+      localStorage.setItem('forgotOtpResendTimestamp', Date.now().toString());
+
+      interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+    } else {
+      localStorage.removeItem('forgotOtpResendTimer');
+      localStorage.removeItem('forgotOtpResendTimestamp');
+    }
+    return () => clearInterval(interval);
+  }, [resendTimer]);
 
   const handleChange = (index: number, value: string) => {
     if (value && !/^\d+$/.test(value)) return;
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
-    if (value && index < 5 && inputRefs.current[index + 1]) {
+    if (value && index < 3 && inputRefs.current[index + 1]) {
       inputRefs.current[index + 1]?.focus();
     }
   };
@@ -18,6 +60,47 @@ export const VerifyOtpForgotPage = () => {
   const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Backspace' && !otp[index] && index > 0 && inputRefs.current[index - 1]) {
       inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleResend = async () => {
+    if (resendTimer > 0) return;
+    setError('');
+    setResendTimer(60);
+    try {
+      await AuthService.forgotPassword(email);
+      toast.success('OTP resent successfully!');
+    } catch (err: any) {
+      setResendTimer(0);
+      const errMsg = err.response?.data?.error?.message || err.response?.data?.message || 'Failed to resend OTP.';
+      setError(errMsg);
+      toast.error(errMsg);
+    }
+  };
+
+  const handleContinue = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const otpString = otp.join('');
+    if (otpString.length !== 4) {
+      setError("Please enter all 4 digits.");
+      return;
+    }
+
+    setError('');
+    setIsLoading(true);
+
+    try {
+      await AuthService.verifyResetOtp(email, otpString);
+      toast.success('OTP verified!');
+      navigate('/reset-password', { state: { email, otp: otpString } });
+    } catch (err: any) {
+      const errMsg = err.response?.data?.error?.message || err.response?.data?.message || 'Invalid OTP. Please try again.';
+      setError(errMsg);
+      toast.error(errMsg);
+      setOtp(['', '', '', '']);
+      inputRefs.current[0]?.focus();
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -55,36 +138,51 @@ export const VerifyOtpForgotPage = () => {
           </div>
           <h2 className="text-2xl font-bold text-slate-900 mb-3 tracking-tight">Verify your identity</h2>
           <p className="text-sm text-slate-500 leading-relaxed">
-            We've sent a 6-digit verification code to <br />
-            <span className="font-bold text-slate-700">name@company.com</span>
+            We've sent a 4-digit verification code to <br />
+            <span className="font-bold text-slate-700">{email}</span>
           </p>
         </div>
 
-        <form onSubmit={(e) => e.preventDefault()} className="w-full">
+        {error && (
+          <div className="mb-6 p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-medium text-center">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleContinue} className="w-full">
           <div className="flex justify-center gap-2 sm:gap-4 mb-8">
             {otp.map((digit, index) => (
               <input
                 key={index}
-                ref={(el) => (inputRefs.current[index] = el)}
+                ref={(el) => { inputRefs.current[index] = el; }}
                 type="text"
                 maxLength={1}
                 value={digit}
                 onChange={(e) => handleChange(index, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(index, e)}
-                className="w-12 h-14 sm:w-14 sm:h-16 border border-slate-300 rounded-xl text-center text-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm"
+                disabled={isLoading}
+                className="w-12 h-14 sm:w-14 sm:h-16 border border-slate-300 rounded-xl text-center text-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm disabled:opacity-50"
                 placeholder="-"
               />
             ))}
           </div>
 
-          <button type="submit" className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-bold text-sm transition-all shadow-md shadow-blue-200 mb-6">
-            Verify & Continue
-            <ArrowRight className="w-4 h-4" />
+          <button type="submit" disabled={isLoading} className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-3.5 rounded-xl font-bold text-sm transition-all shadow-md shadow-blue-200 mb-6">
+            {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+            {isLoading ? 'VERIFYING...' : 'Verify & Continue'}
+            {!isLoading && <ArrowRight className="w-4 h-4" />}
           </button>
         </form>
 
         <div className="text-center text-sm text-slate-500 font-medium mb-8">
-          Didn't receive the code? <button className="text-blue-600 font-bold hover:text-blue-700 transition-colors ml-1">Resend Code</button>
+          Didn't receive the code?{' '}
+          <button 
+            onClick={handleResend}
+            disabled={isLoading || resendTimer > 0}
+            className="text-blue-600 font-bold hover:text-blue-700 disabled:text-blue-400 transition-colors ml-1"
+          >
+            {resendTimer > 0 ? `Resend Code in ${resendTimer}s` : 'Resend Code'}
+          </button>
         </div>
 
         <div className="pt-6 border-t border-slate-100 text-center">

@@ -1,7 +1,34 @@
-
-import { Box, Mail, ArrowRight, ArrowLeft } from 'lucide-react';
+import { useState } from 'react';
+import { Box, Mail, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { AuthService } from '../../api/auth/auth.service';
+import toast from 'react-hot-toast';
 
 export const ForgotPasswordPage = () => {
+  const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      toast.error('Please enter your email address');
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      await AuthService.forgotPassword(email);
+      toast.success('OTP sent to your email');
+      navigate('/verify-forgot', { state: { email } });
+    } catch (error: any) {
+      const errMsg = error.response?.data?.error?.message || error.response?.data?.message || 'Failed to send reset link';
+      toast.error(errMsg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#f4f7fb] font-sans relative overflow-hidden p-4">
       {/* Subtle Background Elements */}
@@ -25,7 +52,7 @@ export const ForgotPasswordPage = () => {
           </p>
         </div>
 
-        <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
               Professional Email Address
@@ -36,15 +63,20 @@ export const ForgotPasswordPage = () => {
               </div>
               <input
                 type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isLoading}
                 className="block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-xl text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 placeholder="name@company.com"
               />
             </div>
           </div>
 
-          <button type="submit" className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-bold text-sm transition-all shadow-md shadow-blue-200">
-            Send Reset Link
-            <ArrowRight className="w-4 h-4" />
+          <button type="submit" disabled={isLoading} className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-3.5 rounded-xl font-bold text-sm transition-all shadow-md shadow-blue-200">
+            {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+            {isLoading ? 'Sending...' : 'Send OTP'}
+            {!isLoading && <ArrowRight className="w-4 h-4" />}
           </button>
         </form>
 

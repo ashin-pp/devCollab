@@ -5,7 +5,19 @@ import { adminRouter } from "./interfaces/routes/admin.routes";
 import { errorHandler } from "./interfaces/middlewares/errorHandler";
 import { SuccessMessage } from "./domain/enums/SuccessMessage";
 
+import cors from "cors";
+import cookieParser from "cookie-parser";
+
 const app = express();
+
+app.use(cookieParser());
+
+app.use(cors({
+    origin: [process.env.CLIENT_URL || "http://localhost:5173", "http://localhost:5174"],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+}));
+
 app.use(express.json());
 
 // API Routes
@@ -17,7 +29,6 @@ app.get("/", (req, res) => {
     res.status(200).json(responsePayload);
 });
 
-// Global Error Handler must be the LAST middleware
 app.use(errorHandler);
 
 export default app;

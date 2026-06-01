@@ -13,7 +13,7 @@ export class AdminLoginUseCase {
 
     async execute(data: LoginUserDto): Promise<{ accessToken: string, refreshToken: string }> {
         const admin = await this.adminRepository.findByEmail(data.email);
-        if (!admin || !admin.password) {
+        if (!admin || !admin.password || !data.password) {
             throw new Error(ErrorMessage.INVALID_CREDENTIALS);
         }
 

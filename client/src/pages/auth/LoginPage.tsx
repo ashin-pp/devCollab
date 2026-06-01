@@ -1,8 +1,44 @@
 import { useState } from 'react';
 import { Box, Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck } from 'lucide-react';
-
+import { useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { AuthService } from '../../api/auth/auth.service';
+import { setCredentials } from '../../store/slices/authSlice';
+import toast from 'react-hot-toast';
 export const LoginPage = () => {
+
   const [showPassword, setShowPassword] = useState(false);
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
+    try {
+      const response = await AuthService.login({ email, password });
+
+      // Update Redux Store
+      dispatch(setCredentials({
+        user: response.data.user,
+        accessToken: response.data.accessToken
+      }));
+      toast.success('Successfully logged in!');
+      navigate('/user/dashboard');
+
+    } catch (err: any) {
+      const errMsg = err.response?.data?.error?.message || err.response?.data?.message || 'Login failed. Please try again.';
+      setError(errMsg);
+      toast.error(errMsg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen w-full flex bg-white font-sans">
@@ -14,12 +50,12 @@ export const LoginPage = () => {
 
         <div className="relative z-10">
           {/* Logo */}
-          <div className="flex items-center gap-2 mb-8">
+          <a href="/" className="flex items-center gap-2 mb-8 hover:opacity-80 transition-opacity">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-md">
               <Box className="w-5 h-5 text-white" />
             </div>
             <span className="font-bold text-xl tracking-tight text-slate-900">DevCollab</span>
-          </div>
+          </a>
 
           {/* Status Badge */}
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100/50 border border-emerald-200 mb-16">
@@ -99,17 +135,26 @@ export const LoginPage = () => {
             <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Or log in with email</span>
             <div className="flex-1 h-px bg-slate-200"></div>
           </div>
+          
+          {error && (
+            <div className="mb-6 p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-medium text-center">
+              {error}
+            </div>
+          )}
 
-          <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-4" onSubmit={handleLogin}>
             <div>
               <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Professional Email</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Mail className="h-4 w-4 text-slate-400" />
                 </div>
-                <input 
-                  type="email" 
-                  className="block w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-xl text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" 
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="block w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-xl text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                   placeholder="name@company.com"
                 />
               </div>
@@ -118,19 +163,22 @@ export const LoginPage = () => {
             <div>
               <div className="flex justify-between items-end mb-1.5">
                 <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Password</label>
-                <a href="#" className="text-[11px] font-bold text-blue-600 hover:text-blue-700 transition-colors">Forgot password?</a>
+                <a href="/forgot-password" className="text-[11px] font-bold text-blue-600 hover:text-blue-700 transition-colors">Forgot password?</a>
               </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Lock className="h-4 w-4 text-slate-400" />
                 </div>
-                <input 
-                  type={showPassword ? "text" : "password"} 
-                  className="block w-full pl-10 pr-10 py-2.5 border border-slate-300 rounded-xl text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" 
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="block w-full pl-10 pr-10 py-2.5 border border-slate-300 rounded-xl text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                   placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"
                 />
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
                 >
@@ -139,9 +187,13 @@ export const LoginPage = () => {
               </div>
             </div>
 
-            <button type="submit" className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold text-sm transition-all shadow-md shadow-blue-200 mt-6">
-              LOG IN TO WORKSPACE
-              <ArrowRight className="w-4 h-4" />
+            <button 
+              type="submit" 
+              disabled={isLoading}
+              className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-3 rounded-xl font-bold text-sm transition-all shadow-md shadow-blue-200 mt-6"
+            >
+              {isLoading ? 'LOGGING IN...' : 'LOG IN TO WORKSPACE'}
+              {!isLoading && <ArrowRight className="w-4 h-4" />}
             </button>
           </form>
 

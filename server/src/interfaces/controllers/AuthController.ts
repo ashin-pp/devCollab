@@ -9,6 +9,8 @@ import { LoginUserUseCase } from "../../application/use-cases/auth/LoginUserUseC
 import { GoogleAuthUseCase } from "../../application/use-cases/auth/GoogleAuthUseCase";
 import { ForgotPasswordUseCase } from "../../application/use-cases/auth/ForgotPasswordUseCase";
 import { ResetPasswordUseCase } from "../../application/use-cases/auth/ResetPasswordUseCase";
+import { RefreshTokenUseCase } from "../../application/use-cases/auth/RefreshTokenUseCase";
+import { VerifyResetOtpUseCase } from "../../application/use-cases/auth/VerifyResetOtpUseCase";
 
 export class AuthController {
   constructor(
@@ -18,7 +20,9 @@ export class AuthController {
     private loginUserUseCase: LoginUserUseCase,
     private googleAuthUseCase: GoogleAuthUseCase,
     private forgotPasswordUseCase: ForgotPasswordUseCase,
-    private resetPasswordUseCase: ResetPasswordUseCase
+    private resetPasswordUseCase: ResetPasswordUseCase,
+    private refreshTokenUseCase: RefreshTokenUseCase,
+    private verifyResetOtpUseCase: VerifyResetOtpUseCase
   ) { }
 
   public register = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -124,6 +128,16 @@ export class AuthController {
     }
   }
 
+  public verifyResetOtp = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      await this.verifyResetOtpUseCase.execute(req.body.email, req.body.otp);
+      const response = ApiResponse.success("OTP verified");
+      res.status(HttpStatusCode.OK).json(response);
+    } catch (err) {
+      next(err);
+    }
+  }
+
   public resetPassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       await this.resetPasswordUseCase.execute(req.body);
@@ -134,4 +148,26 @@ export class AuthController {
     }
   }
 
+  public refresh = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const refreshToken = req.cookies?.refreshToken;
+      
+      const { user, accessToken } = await this.refreshTokenUseCase.execute(refreshToken);
+      
+      const response = ApiResponse.success("Token refreshed successfully", {
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: 'user'
+        },
+        accessToken
+      });
+
+      res.status(HttpStatusCode.OK).json(response);
+    } catch (err) {
+      res.clearCookie('refreshToken');
+      next(err);
+    }
+  }
 }

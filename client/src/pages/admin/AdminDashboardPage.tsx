@@ -1,5 +1,5 @@
 import { AdminLayout } from '../../layouts/AdminLayout';
-import { Activity, Network, Users, Wallet, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
+import { Activity, Users, Wallet, Shield, MoreVertical, Search, Filter, Mail, Lock } from 'lucide-react';
 
 export const AdminDashboardPage = () => {
   return (

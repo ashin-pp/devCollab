@@ -1,9 +1,29 @@
 import { 
-  Bell, Settings, LogOut, Search, Building2, Rocket, 
+  Bell, Settings, Search, Building2, Rocket, 
   Users, ArrowRight, KeyRound, PlusCircle, TerminalSquare
 } from 'lucide-react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { AuthService } from '../../api/auth/auth.service';
+import { logout } from '../../store/slices/authSlice';
+import type { RootState } from '../../store'; // Assuming this exists
 
 export const DashboardPage = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const user = useSelector((state: RootState) => state.auth.user);
+
+  const handleLogout = async () => {
+    try {
+      await AuthService.logout();
+    } catch (err) {
+      console.error("Logout error", err);
+    } finally {
+      dispatch(logout());
+      navigate('/login');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#f8fafc] font-sans pb-20">
       {/* Top Navbar */}
@@ -12,7 +32,10 @@ export const DashboardPage = () => {
           <span className="font-bold text-xl tracking-tight text-blue-600">DevCollab</span>
         </div>
         <div className="flex items-center gap-4">
-          <button className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-1.5 rounded-full text-sm font-medium transition-colors">
+          <button 
+            onClick={handleLogout}
+            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-1.5 rounded-full text-sm font-medium transition-colors"
+          >
             Logout
           </button>
           <button className="text-slate-400 hover:text-slate-600 transition-colors">
@@ -22,7 +45,7 @@ export const DashboardPage = () => {
             <Settings className="w-5 h-5" />
           </button>
           <div className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden border border-slate-300 ml-2">
-            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Alex" alt="User" className="w-full h-full object-cover" />
+            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'Alex'}`} alt="User" className="w-full h-full object-cover" />
           </div>
         </div>
       </nav>
@@ -32,7 +55,7 @@ export const DashboardPage = () => {
         {/* Header */}
         <div className="mb-10">
           <h1 className="text-3xl font-bold text-slate-900 mb-2" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-            Welcome back, Alex
+            Welcome back, {user?.name ? user.name.split(' ')[0] : 'Engineer'}
           </h1>
           <p className="text-slate-500 font-medium">
             Select a workspace to continue your development workflow.

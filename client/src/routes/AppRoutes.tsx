@@ -12,7 +12,7 @@ export const AppRoutes = () => {
         <Route path="/" element={<LandingPage />} />
         
         {/* Module Sub-Routes */}
-        <Route path="/auth/*" element={<AuthRoutes />} />
+        <Route path="/*" element={<AuthRoutes />} />
         <Route path="/admin/*" element={<AdminRoutes />} />
         <Route path="/user/*" element={<UserRoutes />} />
       </Routes>

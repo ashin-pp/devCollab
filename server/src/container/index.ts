@@ -13,6 +13,8 @@ import { LoginUserUseCase } from "../application/use-cases/auth/LoginUserUseCase
 import { GoogleAuthUseCase } from "../application/use-cases/auth/GoogleAuthUseCase";
 import { ForgotPasswordUseCase } from "../application/use-cases/auth/ForgotPasswordUseCase";
 import { ResetPasswordUseCase } from "../application/use-cases/auth/ResetPasswordUseCase";
+import { RefreshTokenUseCase } from "../application/use-cases/auth/RefreshTokenUseCase";
+import { VerifyResetOtpUseCase } from "../application/use-cases/auth/VerifyResetOtpUseCase";
 import { JwtService } from "../infra/services/JwtService";
 
 // Admin Imports
@@ -42,6 +44,8 @@ const loginUserUseCase = new LoginUserUseCase(userRepository, hashService, jwtSe
 const googleAuthUseCase = new GoogleAuthUseCase(userRepository, jwtService);
 const forgotPasswordUseCase = new ForgotPasswordUseCase(userRepository, sendOtpUseCase);
 const resetPasswordUseCase = new ResetPasswordUseCase(userRepository, otpRepository, hashService);
+const refreshTokenUseCase = new RefreshTokenUseCase(jwtService, userRepository);
+const verifyResetOtpUseCase = new VerifyResetOtpUseCase(otpRepository);
 
 const authController = new AuthController(
     registerUserUseCase,
@@ -50,7 +54,9 @@ const authController = new AuthController(
     loginUserUseCase,
     googleAuthUseCase,
     forgotPasswordUseCase,
-    resetPasswordUseCase
+    resetPasswordUseCase,
+    refreshTokenUseCase,
+    verifyResetOtpUseCase
 );
 
 // Admin Use Cases
