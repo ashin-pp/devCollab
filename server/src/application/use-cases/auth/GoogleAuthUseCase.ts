@@ -1,29 +1,29 @@
-import { OAuth2Client } from "google-auth-library";
 import { IUserRepository } from "../../repositories/IUserRepository";
 import { IJwtService } from "../../services/IJwtService";
 import { User } from "../../../domain/entities/User";
 import { GoogleAuthDto } from "../../dto/GoogleAuthDto";
 
 export class GoogleAuthUseCase {
-    private client: OAuth2Client
-
     constructor(
         private userRepository: IUserRepository,
         private jwtService: IJwtService
-    ) {
-        this.client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-    }
+    ) {}
 
     async execute(data: GoogleAuthDto): Promise<{ user: User, accessToken: string, refreshToken: string }> {
-        const ticket = await this.client.verifyIdToken({
-            idToken: data.token,
-            audience: process.env.GOOGLE_CLIENT_ID,
+        const response = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+            headers: {
+                Authorization: `Bearer ${data.token}`
+            }
         });
 
-        const payload = ticket.getPayload();
+        if (!response.ok) {
+            throw new Error("Invalid Google Token");
+        }
+
+        const payload = await response.json();
 
         if (!payload || !payload.email) {
-            throw new Error("Invalid Google Token");
+            throw new Error("Invalid Google Token payload");
         }
 
         const { email, name, sub: googleId, picture } = payload;

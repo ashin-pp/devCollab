@@ -3,6 +3,7 @@ import { useDispatch } from 'react-redux';
 import { AuthService } from './api/auth/auth.service';
 import { setCredentials } from './store/slices/authSlice';
 import { AppRoutes } from './routes/AppRoutes';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import './index.css';
 import { Toaster } from 'react-hot-toast';
 
@@ -39,10 +40,10 @@ function App() {
   }
 
   return (
-    <>
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || "dummy-client-id"}>
       <Toaster position="top-right" />
       <AppRoutes />
-    </>
+    </GoogleOAuthProvider>
   );
 }
 

@@ -9,7 +9,6 @@ import { logout } from '../../store/slices/authSlice';
 import type { RootState } from '../../store';
 import { useEffect } from 'react';
 import { api } from '../../api/axios';
-import toast from 'react-hot-toast';
 import { isAxiosError } from 'axios';
 import Swal from 'sweetalert2';
 
