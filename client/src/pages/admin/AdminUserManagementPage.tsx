@@ -31,10 +31,11 @@ export const AdminUserManagementPage = () => {
     try {
       const response = await AdminService.getUsers();
       // Map backend `status` to frontend `isBlocked` for UI state
-      const mappedUsers = (response.data || []).map((user: any) => ({
+      const mappedUsers = (response.data || []).map((user: User) => ({
         ...user,
         isBlocked: user.status === 'blocked'
-      }));
+      }))
+
       setUsers(mappedUsers);
     } catch (err: unknown) {
       let errMsg = 'Failed to fetch users';
