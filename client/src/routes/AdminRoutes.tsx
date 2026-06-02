@@ -6,18 +6,26 @@ import { AdminResetPasswordPage } from '../pages/admin/AdminResetPasswordPage';
 import { AdminDashboardPage } from '../pages/admin/AdminDashboardPage';
 import { AdminUserManagementPage } from '../pages/admin/AdminUserManagementPage';
 import { NotFoundPage } from '../pages/NotFoundPage';
+import { AdminPublicRoute } from './guards/AdminPublicRoute';
+import { AdminProtectedRoute } from './guards/AdminProtectedRoute';
 
 export const AdminRoutes = () => {
   return (
     <Routes>
-      <Route path="login" element={<AdminLoginPage />} />
-      <Route path="forgot-password" element={<AdminForgotPasswordPage />} />
-      <Route path="verify" element={<AdminVerifyOtpPage />} />
-      <Route path="reset-password" element={<AdminResetPasswordPage />} />
+      {/* Public Admin Routes */}
+      <Route element={<AdminPublicRoute />}>
+        <Route path="login" element={<AdminLoginPage />} />
+        <Route path="forgot-password" element={<AdminForgotPasswordPage />} />
+        <Route path="verify" element={<AdminVerifyOtpPage />} />
+        <Route path="reset-password" element={<AdminResetPasswordPage />} />
+      </Route>
       
       {/* Protected Admin Routes */}
-      <Route path="dashboard" element={<AdminDashboardPage />} />
-      <Route path="users" element={<AdminUserManagementPage />} />
+      <Route element={<AdminProtectedRoute />}>
+        <Route path="dashboard" element={<AdminDashboardPage />} />
+        <Route path="users" element={<AdminUserManagementPage />} />
+      </Route>
+
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );

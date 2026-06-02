@@ -10,6 +10,10 @@ export const AdminService = {
         const response = await api.post('/admin/logout');
         return response.data;
     },
+    refresh: async () => {
+        const response = await api.get('/admin/refresh');
+        return response.data;
+    },
     forgotPassword: async (email: string) => {
         const response = await api.post('/admin/forgot-password', { email });
         return response.data;

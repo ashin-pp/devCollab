@@ -27,12 +27,12 @@ export const DashboardPage = () => {
         if (isAxiosError(err)) {
           if (err.response?.data?.message === 'Blocked by Admin' || err.response?.data?.error?.message === 'Blocked by Admin') {
             dispatch(logout());
-            navigate('/login', { state: { error: "Your account has been blocked by an Administrator." } });
+            navigate('/login', { replace: true, state: { error: "Your account has been blocked by an Administrator." } });
             return;
           }
         }
         dispatch(logout());
-        navigate('/login');
+        navigate('/login', { replace: true });
       }
     };
     
@@ -63,7 +63,7 @@ export const DashboardPage = () => {
         console.error("Logout error", err);
       } finally {
         dispatch(logout());
-        navigate('/login');
+        navigate('/login', { replace: true });
       }
     }
   };

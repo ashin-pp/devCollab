@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { AuthService } from './api/auth/auth.service';
+import { AdminService } from './api/admin/admin.service';
 import { setCredentials } from './store/slices/authSlice';
 import { AppRoutes } from './routes/AppRoutes';
 import { GoogleOAuthProvider } from '@react-oauth/google';
@@ -14,10 +15,14 @@ function App() {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        const response = await AuthService.refresh();
+        const isAdminRoute = window.location.pathname.startsWith('/admin');
+        const response = isAdminRoute 
+          ? await AdminService.refresh()
+          : await AuthService.refresh();
+          
         if (response.success && response.data) {
           dispatch(setCredentials({
-            user: response.data.user,
+            user: response.data.user || response.data.admin,
             accessToken: response.data.accessToken
           }));
         }

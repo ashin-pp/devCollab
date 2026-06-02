@@ -19,6 +19,12 @@ export const RegisterPage = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<{
+    name?: string;
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+  }>({});
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -26,9 +32,42 @@ export const RegisterPage = () => {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setFieldErrors({});
 
-    if (password !== confirmPassword) {
-      setError("Passwords do not match!");
+    let isValid = true;
+    const errors: { name?: string; email?: string; password?: string; confirmPassword?: string } = {};
+
+    if (!name.trim()) {
+      errors.name = "Full Name is required";
+      isValid = false;
+    }
+    
+    if (!email.trim()) {
+      errors.email = "Email is required";
+      isValid = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.email = "Please enter a valid email address";
+      isValid = false;
+    }
+
+    if (!password) {
+      errors.password = "Password is required";
+      isValid = false;
+    } else if (password.length < 6) {
+      errors.password = "Password must be at least 6 characters";
+      isValid = false;
+    }
+
+    if (!confirmPassword) {
+      errors.confirmPassword = "Confirm Password is required";
+      isValid = false;
+    } else if (password !== confirmPassword) {
+      errors.confirmPassword = "Passwords do not match";
+      isValid = false;
+    }
+
+    if (!isValid) {
+      setFieldErrors(errors);
       return;
     }
 
@@ -193,7 +232,7 @@ export const RegisterPage = () => {
             <div className="flex-1 h-px bg-slate-200"></div>
           </div>
 
-          <form className="space-y-4" onSubmit={handleRegister}>
+          <form className="space-y-4" onSubmit={handleRegister} noValidate>
             <div>
               <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Full Name</label>
               <div className="relative">
@@ -203,12 +242,15 @@ export const RegisterPage = () => {
                 <input 
                   type="text" 
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  className="block w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-xl text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" 
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    if (fieldErrors.name) setFieldErrors(prev => ({ ...prev, name: undefined }));
+                  }}
+                  className={`block w-full pl-10 pr-3 py-2.5 border ${fieldErrors.name ? 'border-red-500' : 'border-slate-300'} rounded-xl text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors`} 
                   placeholder="e.g. Jane Doe"
                 />
               </div>
+              {fieldErrors.name && <p className="mt-1.5 text-xs text-red-500 font-medium">{fieldErrors.name}</p>}
             </div>
 
             <div>
@@ -220,12 +262,15 @@ export const RegisterPage = () => {
                 <input 
                   type="email" 
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="block w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-xl text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" 
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (fieldErrors.email) setFieldErrors(prev => ({ ...prev, email: undefined }));
+                  }}
+                  className={`block w-full pl-10 pr-3 py-2.5 border ${fieldErrors.email ? 'border-red-500' : 'border-slate-300'} rounded-xl text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors`} 
                   placeholder="name@company.com"
                 />
               </div>
+              {fieldErrors.email && <p className="mt-1.5 text-xs text-red-500 font-medium">{fieldErrors.email}</p>}
             </div>
 
             <div>
@@ -237,9 +282,11 @@ export const RegisterPage = () => {
                 <input 
                   type={showPassword ? "text" : "password"} 
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="block w-full pl-10 pr-10 py-2.5 border border-slate-300 rounded-xl text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" 
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (fieldErrors.password) setFieldErrors(prev => ({ ...prev, password: undefined }));
+                  }}
+                  className={`block w-full pl-10 pr-10 py-2.5 border ${fieldErrors.password ? 'border-red-500' : 'border-slate-300'} rounded-xl text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors`} 
                   placeholder="Create a strong password"
                 />
                 <button 
@@ -250,6 +297,7 @@ export const RegisterPage = () => {
                   {showPassword ? <EyeOff className="h-4 w-4 text-slate-400 hover:text-slate-600" /> : <Eye className="h-4 w-4 text-slate-400 hover:text-slate-600" />}
                 </button>
               </div>
+              {fieldErrors.password && <p className="mt-1.5 text-xs text-red-500 font-medium">{fieldErrors.password}</p>}
             </div>
 
             <div>
@@ -261,9 +309,11 @@ export const RegisterPage = () => {
                 <input 
                   type={showConfirmPassword ? "text" : "password"} 
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  className="block w-full pl-10 pr-10 py-2.5 border border-slate-300 rounded-xl text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" 
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    if (fieldErrors.confirmPassword) setFieldErrors(prev => ({ ...prev, confirmPassword: undefined }));
+                  }}
+                  className={`block w-full pl-10 pr-10 py-2.5 border ${fieldErrors.confirmPassword ? 'border-red-500' : 'border-slate-300'} rounded-xl text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors`} 
                   placeholder="Confirm your password"
                 />
                 <button 
@@ -274,6 +324,7 @@ export const RegisterPage = () => {
                   {showConfirmPassword ? <EyeOff className="h-4 w-4 text-slate-400 hover:text-slate-600" /> : <Eye className="h-4 w-4 text-slate-400 hover:text-slate-600" />}
                 </button>
               </div>
+              {fieldErrors.confirmPassword && <p className="mt-1.5 text-xs text-red-500 font-medium">{fieldErrors.confirmPassword}</p>}
             </div>
 
             <button 

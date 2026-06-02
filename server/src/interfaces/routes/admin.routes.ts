@@ -9,6 +9,7 @@ adminRouter.post("/forgot-password", adminController.forgotPassword);
 adminRouter.post("/verify-reset-otp", adminController.verifyResetOtp);
 adminRouter.post("/reset-password", adminController.resetPassword);
 adminRouter.post("/logout", adminController.logout);
+adminRouter.get("/refresh", adminController.refresh);
 
 adminRouter.get("/users", adminController.getUsers);
 adminRouter.patch("/users/:id/status", adminController.toggleUserStatus);

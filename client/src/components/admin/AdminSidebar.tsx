@@ -1,5 +1,5 @@
 import { LayoutDashboard, Server, Users, BarChart3, Wallet, LogOut, Settings } from 'lucide-react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
 import { AdminService } from '../../api/admin/admin.service';
@@ -30,7 +30,7 @@ export const AdminSidebar = () => {
         console.error("Admin logout error", err);
       } finally {
         dispatch(logout());
-        navigate('/admin/login');
+        navigate('/admin/login', { replace: true });
       }
     }
   };
@@ -74,9 +74,9 @@ export const AdminSidebar = () => {
         {navItems.map((item) => {
           const isActive = location.pathname.includes(item.path);
           return (
-            <a 
+            <Link 
               key={item.name}
-              href={item.path}
+              to={item.path}
               className={`flex items-center gap-3 px-4 py-3 rounded-md text-sm font-bold tracking-widest transition-all ${
                 isActive 
                   ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' 
@@ -85,17 +85,17 @@ export const AdminSidebar = () => {
             >
               <item.icon className={`w-4 h-4 ${isActive ? 'text-black' : 'text-slate-500'}`} />
               {item.name}
-            </a>
+            </Link>
           );
         })}
       </nav>
 
       {/* Bottom Actions */}
       <div className="p-4 border-t border-[#30363d] space-y-1">
-        <a href="/admin/settings" className="flex items-center gap-3 px-4 py-3 rounded-md text-sm font-bold tracking-widest text-slate-400 hover:text-white hover:bg-[#30363d]/50 transition-all">
+        <Link to="/admin/settings" className="flex items-center gap-3 px-4 py-3 rounded-md text-sm font-bold tracking-widest text-slate-400 hover:text-white hover:bg-[#30363d]/50 transition-all">
           <Settings className="w-4 h-4 text-slate-500" />
           SETTINGS
-        </a>
+        </Link>
         <button 
           onClick={handleAdminLogout}
           className="w-full flex items-center gap-3 px-4 py-3 rounded-md text-sm font-bold tracking-widest text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all"

@@ -31,14 +31,19 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
+        const isAdminRequest = originalRequest.url?.includes('/admin/');
+        const refreshUrl = isAdminRequest ? `${BASE_URL}/admin/refresh` : `${BASE_URL}/auth/refresh`;
+        
         const response = await axios.get(
-          `${BASE_URL}/auth/refresh`,
+          refreshUrl,
           { withCredentials: true }
         );
 
-        const { accessToken, user } = response.data.data;
+        const { accessToken, user, admin } = response.data.data;
+        
+        const entity = user || admin;
 
-        store.dispatch(setCredentials({ accessToken, user }));
+        store.dispatch(setCredentials({ accessToken, user: entity }));
 
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return api(originalRequest);

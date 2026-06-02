@@ -6,6 +6,7 @@ import { AdminResetPasswordUseCase } from "../../application/use-cases/admin/Adm
 import { GetAllUsersUseCase } from "../../application/use-cases/admin/GetAllUsersUseCase";
 import { ToggleUserStatusUseCase } from "../../application/use-cases/admin/ToggleUserStatusUseCase";
 import { VerifyResetOtpUseCase } from "../../application/use-cases/auth/VerifyResetOtpUseCase";
+import { AdminRefreshTokenUseCase } from "../../application/use-cases/admin/AdminRefreshTokenUseCase";
 import { ApiResponse } from "../http/helpers/implementation/apiResponse";
 import { HttpStatusCode } from "../../domain/enums/HttpStatusCode";
 import { SuccessMessage } from "../../domain/enums/SuccessMessage";
@@ -18,7 +19,8 @@ export class AdminController {
     private adminResetPasswordUseCase: AdminResetPasswordUseCase,
     private getAllUsersUseCase: GetAllUsersUseCase,
     private toggleUserStatusUseCase: ToggleUserStatusUseCase,
-    private verifyResetOtpUseCase: VerifyResetOtpUseCase
+    private verifyResetOtpUseCase: VerifyResetOtpUseCase,
+    private adminRefreshTokenUseCase: AdminRefreshTokenUseCase
   ) { }
 
   public createAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -95,6 +97,25 @@ export class AdminController {
       })
       
       const response = ApiResponse.success(SuccessMessage.LOGOUT_SUCCESS);
+      res.status(HttpStatusCode.OK).json(response);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  public refresh = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const refreshToken = req.cookies?.adminRefreshToken;
+      const { admin, accessToken } = await this.adminRefreshTokenUseCase.execute(refreshToken);
+      
+      const response = ApiResponse.success(SuccessMessage.LOGIN_SUCCESS, { 
+        admin: {
+          id: admin.id,
+          email: admin.email,
+          role: 'admin'
+        }, 
+        accessToken 
+      });
       res.status(HttpStatusCode.OK).json(response);
     } catch (err) {
       next(err);
