@@ -12,6 +12,10 @@ export class ResetPasswordUseCase {
     ) { }
 
     async execute(data: ResetPasswordDto): Promise<void> {
+        if (data.newPassword.trim().length < 6) {
+            throw new Error("Password must be at least 6 characters");
+        }
+
         if (data.newPassword !== data.confirmPassword) {
             throw new Error(ErrorMessage.PASSWORDS_DO_NOT_MATCH);
         }

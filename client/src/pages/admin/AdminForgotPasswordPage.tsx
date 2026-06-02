@@ -66,12 +66,12 @@ export const AdminForgotPasswordPage = () => {
             </div>
           </div>
 
-          {/* Warning Message */}
+          {/* Warning Message
           <div className="bg-amber-500/10 border border-amber-500/20 rounded p-3 mb-6">
             <p className="text-xs text-amber-500/90 leading-relaxed font-sans">
               Enter your registered admin identifier. A secure recovery code will be dispatched to your authorized communication channel.
             </p>
-          </div>
+          </div> */} 
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">

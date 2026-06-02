@@ -2,6 +2,7 @@ import { IUserRepository } from "../../repositories/IUserRepository";
 import { IJwtService } from "../../services/IJwtService";
 import { User } from "../../../domain/entities/User";
 import { GoogleAuthDto } from "../../dto/GoogleAuthDto";
+import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 
 export class GoogleAuthUseCase {
     constructor(
@@ -50,7 +51,7 @@ export class GoogleAuthUseCase {
         }
 
         if (user.status === "blocked") {
-            throw new Error("Your account has been blocked.");
+            throw new Error(ErrorMessage.USER_BLOCKED);
         }
 
         const role = 'user';

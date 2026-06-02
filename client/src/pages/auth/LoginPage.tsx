@@ -33,6 +33,14 @@ export const LoginPage = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!email.trim() || !password.trim()) {
+      const errMsg = 'Email and password cannot be empty or just spaces.';
+      setError(errMsg);
+      toast.error(errMsg);
+      return;
+    }
+
     setIsLoading(true);
     try {
       const response = await AuthService.login({ email, password });

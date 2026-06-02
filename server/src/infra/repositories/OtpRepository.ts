@@ -25,4 +25,8 @@ export class OtpRepository extends MongoBaseRepository<OtpVerification, IOtpMode
         const found = await this.model.findOne({ email }).sort({ createdAt: -1 });
         return found ? this.mapper.toDomain(found) : null;
     }
+
+    async deleteByEmail(email: string): Promise<void> {
+        await this.model.deleteMany({ email });
+    }
 }

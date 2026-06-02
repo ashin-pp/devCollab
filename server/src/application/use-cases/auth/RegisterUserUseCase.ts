@@ -16,8 +16,15 @@ export class RegisterUserUseCase {
             throw new Error(ErrorMessage.EMAIL_ALREADY_EXISTS);
         }
 
-        if (data.password !== data.confirmPassword) {
-            throw new Error(ErrorMessage.PASSWORDS_DO_NOT_MATCH);
+        if (data.password !== undefined) {
+            if (data.password.trim().length < 6) {
+                throw new Error("Password must be at least 6 characters");
+            }
+            if (data.password !== data.confirmPassword) {
+                throw new Error(ErrorMessage.PASSWORDS_DO_NOT_MATCH);
+            }
+        } else if (data.confirmPassword !== undefined) {
+             throw new Error(ErrorMessage.PASSWORDS_DO_NOT_MATCH);
         }
         let hashedPassword = data.password
         if (data.password) {

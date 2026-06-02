@@ -53,7 +53,7 @@ export const RegisterPage = () => {
     if (!password) {
       errors.password = "Password is required";
       isValid = false;
-    } else if (password.length < 6) {
+    } else if (password.trim().length < 6) {
       errors.password = "Password must be at least 6 characters";
       isValid = false;
     }
@@ -79,6 +79,10 @@ export const RegisterPage = () => {
       // Request an OTP immediately after registering
       await AuthService.sendOtp(email);
       toast.success('Registration successful! OTP sent to your email.', { duration: 4000 });
+      
+      // Initialize the timer for the OTP verification page
+      localStorage.setItem('otpResendTimer', '60');
+      localStorage.setItem('otpResendTimestamp', Date.now().toString());
       
       navigate('/verify', { state: { email, password } });
     } catch (err: unknown) {

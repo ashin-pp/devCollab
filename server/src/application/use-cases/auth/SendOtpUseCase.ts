@@ -20,6 +20,7 @@ export class SendOtpUseCase {
             expiresAt
         );
 
+        await this.otpRepository.deleteByEmail(email);
         await this.otpRepository.create(newOtp);
         await this.emailService.sendOtpEmail(email, otpCode);
     }

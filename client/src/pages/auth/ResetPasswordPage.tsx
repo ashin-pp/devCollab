@@ -23,6 +23,12 @@ export const ResetPasswordPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!newPassword.trim() || newPassword.trim().length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+
     if (newPassword !== confirmPassword) {
       toast.error('Passwords do not match');
       return;
