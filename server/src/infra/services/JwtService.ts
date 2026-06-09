@@ -25,4 +25,12 @@ export class JwtService implements IJwtService {
             throw new Error("Invalid or expired refresh token");
         }
     }
+
+    verifyAccessToken(token: string): { id: string; role: string } {
+        try {
+            return jwt.verify(token, this.accessSecret as string) as { id: string; role: string };
+        } catch (error) {
+            throw new Error("Invalid or expired access token");
+        }
+    }
 }

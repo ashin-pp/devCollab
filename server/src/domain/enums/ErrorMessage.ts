@@ -7,5 +7,9 @@ export const ErrorMessage = {
     EMAIL_NOT_VERIFIED: "Please verify your email before logging in.",
     INTERNAL_SERVER_ERROR: "An unexpected server error occurred",
     PASSWORDS_DO_NOT_MATCH: "Passwords do not match!",
-    USER_BLOCKED: "Blocked by Admin"
+    USER_BLOCKED: "Blocked by Admin",
+    UNAUTHORIZED: "Unauthorized or invalid token",
+    NO_TOKEN_PROVIDED: "No token provided",
+    FAILED_TO_UPDATE_PROFILE: "Failed to update profile",
+    INCORRECT_CURRENT_PASSWORD: "Incorrect current password"
 } as const;

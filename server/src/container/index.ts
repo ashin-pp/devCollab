@@ -29,6 +29,12 @@ import { ToggleUserStatusUseCase } from "../application/use-cases/admin/ToggleUs
 import { AdminRefreshTokenUseCase } from "../application/use-cases/admin/AdminRefreshTokenUseCase";
 import { AdminController } from "../interfaces/controllers/AdminController";
 
+// User Imports
+import { GetUserProfileUseCase } from "../application/use-cases/user/GetUserProfileUseCase";
+import { UpdateUserProfileUseCase } from "../application/use-cases/user/UpdateUserProfileUseCase";
+import { ChangePasswordUseCase } from "../application/use-cases/user/ChangePasswordUseCase";
+import { UserController } from "../interfaces/controllers/UserController";
+
 const logger = new WinstonLogger();
 const hashService = new BcryptHashService();
 const emailService = new NodemailerEmailService();
@@ -80,4 +86,15 @@ const adminController = new AdminController(
     adminRefreshTokenUseCase
 );
 
-export { logger, authController, adminController };
+// User Use Cases
+const getUserProfileUseCase = new GetUserProfileUseCase(userRepository);
+const updateUserProfileUseCase = new UpdateUserProfileUseCase(userRepository);
+const changePasswordUseCase = new ChangePasswordUseCase(userRepository, hashService);
+
+const userController = new UserController(
+    getUserProfileUseCase,
+    updateUserProfileUseCase,
+    changePasswordUseCase
+);
+
+export { logger, authController, adminController, userController, jwtService };

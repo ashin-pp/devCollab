@@ -6,5 +6,8 @@ export const SuccessMessage = {
     LOGOUT_SUCCESS:"Logged out successfully",
     API_RUNNING: "DevCollab API is running!",
     OTP_SENT_FOR_RESET: "Password reset OTP sent to email",
-    PASSWORD_RESET_SUCCESS: "Password has been reset successfully"
+    PASSWORD_RESET_SUCCESS: "Password has been reset successfully",
+    PROFILE_RETRIEVED: "Profile retrieved successfully",
+    PROFILE_UPDATED: "Profile updated successfully",
+    PASSWORD_CHANGED: "Password changed successfully"
 } as const;
