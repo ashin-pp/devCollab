@@ -1,5 +1,5 @@
 import { Model, ClientSession } from "mongoose";
-import { IBaseRepository } from "../../application/repositories/IBaseRepository";
+import { IBaseRepository } from "../../domain/repositories/IBaseRepository";
 import { IMapper } from "../mappers/IMapper";
 
 export abstract class MongoBaseRepository<TDomain, TModel> implements IBaseRepository<TDomain, ClientSession> {

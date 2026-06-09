@@ -1,6 +1,6 @@
-import { IUserRepository } from "../../repositories/IUserRepository";
-import { IOtpRepository } from "../../repositories/IOtpRepository";
-import { IHashService } from "../../services/IHashService";
+import { IUserRepository } from "../../../domain/repositories/IUserRepository";
+import { IOtpRepository } from "../../../domain/repositories/IOtpRepository";
+import { IHashService } from "../../../domain/services/IHashService";
 import { ResetPasswordDto } from "../../dto/ResetPasswordDto";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 

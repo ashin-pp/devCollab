@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import { IJwtService } from "../../application/services/IJwtService";
+import { IJwtService } from "../../domain/services/IJwtService";
 import { JwtExpiry } from "../../domain/enums/JwtExpiry";
 
 export class JwtService implements IJwtService {

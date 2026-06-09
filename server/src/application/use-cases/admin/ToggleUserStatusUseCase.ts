@@ -1,4 +1,4 @@
-import { IUserRepository } from "../../repositories/IUserRepository";
+import { IUserRepository } from "../../../domain/repositories/IUserRepository";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 
 export class ToggleUserStatusUseCase {

@@ -4,6 +4,7 @@ import { authRouter } from "./interfaces/routes/auth.routes";
 import { adminRouter } from "./interfaces/routes/admin.routes";
 import { errorHandler } from "./interfaces/middlewares/errorHandler";
 import { SuccessMessage } from "./domain/enums/SuccessMessage";
+import { envConfig } from "./infra/config/envConfig";
 
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -13,7 +14,7 @@ const app = express();
 app.use(cookieParser());
 
 app.use(cors({
-    origin: [process.env.CLIENT_URL || "http://localhost:5173"],
+    origin: [envConfig.clientUrl],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
 }));

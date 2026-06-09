@@ -1,5 +1,5 @@
-import { IUserRepository } from "../../repositories/IUserRepository";
-import { IJwtService } from "../../services/IJwtService";
+import { IUserRepository } from "../../../domain/repositories/IUserRepository";
+import { IJwtService } from "../../../domain/services/IJwtService";
 import { User } from "../../../domain/entities/User";
 import { GoogleAuthDto } from "../../dto/GoogleAuthDto";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";

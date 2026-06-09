@@ -1,5 +1,5 @@
-import { IAdminRepository } from "../../repositories/IAdminRepository";
-import { IOtpRepository } from "../../repositories/IOtpRepository";
+import { IAdminRepository } from "../../../domain/repositories/IAdminRepository";
+import { IOtpRepository } from "../../../domain/repositories/IOtpRepository";
 import { SendOtpUseCase } from "../auth/SendOtpUseCase";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 

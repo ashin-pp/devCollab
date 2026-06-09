@@ -1,6 +1,8 @@
-import { IJwtService } from "../../services/IJwtService";
-import { IUserRepository } from "../../repositories/IUserRepository";
+import { IJwtService } from "../../../domain/services/IJwtService";
+import { IUserRepository } from "../../../domain/repositories/IUserRepository";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
+import { AppError } from "../../../domain/errors/AppError";
+import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 
 export class RefreshTokenUseCase {
     constructor(
@@ -10,7 +12,7 @@ export class RefreshTokenUseCase {
 
     async execute(refreshToken: string) {
         if (!refreshToken) {
-            throw new Error("No refresh token provided");
+            throw new AppError("No refresh token provided", HttpStatusCode.UNAUTHORIZED);
         }
 
         const decoded = this.jwtService.verifyRefreshToken(refreshToken);

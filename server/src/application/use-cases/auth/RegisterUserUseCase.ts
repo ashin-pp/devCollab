@@ -1,5 +1,5 @@
-import { IUserRepository } from "../../repositories/IUserRepository";
-import { IHashService } from "../../services/IHashService";
+import { IUserRepository } from "../../../domain/repositories/IUserRepository";
+import { IHashService } from "../../../domain/services/IHashService";
 import { RegisterUserDto } from "../../dto/RegisterUserDto";
 import { User } from "../../../domain/entities/User";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";

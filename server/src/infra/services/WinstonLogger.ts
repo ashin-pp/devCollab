@@ -1,5 +1,5 @@
 import winston from "winston";
-import { ILogger } from "../../application/services/ILogger";
+import { ILogger } from "../../domain/services/ILogger";
 
 export class WinstonLogger implements ILogger {
 

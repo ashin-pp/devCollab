@@ -1,5 +1,5 @@
-import { IAdminRepository } from "../../repositories/IAdminRepository";
-import { IHashService } from "../../services/IHashService";
+import { IAdminRepository } from "../../../domain/repositories/IAdminRepository";
+import { IHashService } from "../../../domain/services/IHashService";
 import { Admin } from "../../../domain/entities/Admin";
 import { RegisterUserDto } from "../../dto/RegisterUserDto";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";

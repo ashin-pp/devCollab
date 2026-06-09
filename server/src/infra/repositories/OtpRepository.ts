@@ -1,5 +1,5 @@
 import { Model } from "mongoose";
-import { IOtpRepository } from "../../application/repositories/IOtpRepository";
+import { IOtpRepository } from "../../domain/repositories/IOtpRepository";
 import { OtpVerification } from "../../domain/entities/OtpVerification";
 import { MongoBaseRepository } from "./BaseRepository";
 import { IOtpModel } from "../database/models/OtpModel";

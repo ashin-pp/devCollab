@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import { IEmailService } from "../../application/services/IEmailService";
+import { IEmailService } from "../../domain/services/IEmailService";
 import { logger } from "../../container";
 
 export class NodemailerEmailService implements IEmailService {

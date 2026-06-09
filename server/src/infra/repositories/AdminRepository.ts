@@ -1,5 +1,5 @@
 import { Model } from "mongoose";
-import { IAdminRepository } from "../../application/repositories/IAdminRepository";
+import { IAdminRepository } from "../../domain/repositories/IAdminRepository";
 import { Admin } from "../../domain/entities/Admin";
 import { MongoBaseRepository } from "./BaseRepository";
 import { IAdminModel } from "../database/models/AdminModel";

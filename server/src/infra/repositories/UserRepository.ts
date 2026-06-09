@@ -1,5 +1,5 @@
 import { Model } from "mongoose";
-import { IUserRepository } from "../../application/repositories/IUserRepository";
+import { IUserRepository } from "../../domain/repositories/IUserRepository";
 import { User } from "../../domain/entities/User";
 import { MongoBaseRepository } from "./BaseRepository";
 import { IUserModel } from "../database/models/UserModel";
