@@ -16,6 +16,8 @@ export class UserMapper implements IMapper<User, IUserModel> {
             persistence.github,
             persistence.linkedin,
             persistence.twitter,
+            persistence.location,
+            persistence.title,
             persistence.google_id,
             persistence.is_verified,
             persistence.status,
@@ -26,8 +28,8 @@ export class UserMapper implements IMapper<User, IUserModel> {
         );
     }
 
-    toPersistence(domain: Partial<User>): any {
-        return {
+    toPersistence(domain: Partial<User>): Partial<IUserModel> {
+        const persistence: Partial<IUserModel> = {
             name: domain.name,
             email: domain.email,
             password: domain.password,
@@ -38,10 +40,16 @@ export class UserMapper implements IMapper<User, IUserModel> {
             github: domain.github,
             linkedin: domain.linkedin,
             twitter: domain.twitter,
+            location: domain.location,
+            title: domain.title,
             google_id: domain.googleId,
             is_verified: domain.isVerified,
             status: domain.status,
             last_seen: domain.lastSeen
         };
+
+        return Object.fromEntries(
+            Object.entries(persistence).filter(([_, value]) => value !== undefined)
+        ) as Partial<IUserModel>;
     }
 }

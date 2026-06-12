@@ -6,4 +6,7 @@ export interface UpdateUserProfileDTO {
     linkedin?: string;
     twitter?: string;
     profileImage?: string;
+    location?: string;
+    email?: string;
+    title?: string;
 }

@@ -33,12 +33,18 @@ import { AdminController } from "../interfaces/controllers/AdminController";
 import { GetUserProfileUseCase } from "../application/use-cases/user/GetUserProfileUseCase";
 import { UpdateUserProfileUseCase } from "../application/use-cases/user/UpdateUserProfileUseCase";
 import { ChangePasswordUseCase } from "../application/use-cases/user/ChangePasswordUseCase";
+import { RequestEmailChangeUseCase } from "../application/use-cases/user/RequestEmailChangeUseCase";
+import { VerifyEmailChangeUseCase } from "../application/use-cases/user/VerifyEmailChangeUseCase";
+import { UploadProfileImageUseCase } from "../application/use-cases/user/UploadProfileImageUseCase";
+import { DeleteProfileImageUseCase } from "../application/use-cases/user/DeleteProfileImageUseCase";
 import { UserController } from "../interfaces/controllers/UserController";
+import { CloudinaryStorageService } from "../infra/services/CloudinaryStorageService";
 
 const logger = new WinstonLogger();
 const hashService = new BcryptHashService();
 const emailService = new NodemailerEmailService();
 const jwtService = new JwtService();
+const cloudinaryStorageService = new CloudinaryStorageService();
 
 const userRepository = new UserRepository(UserModel);
 const otpRepository = new OtpRepository(OtpModel);
@@ -90,11 +96,19 @@ const adminController = new AdminController(
 const getUserProfileUseCase = new GetUserProfileUseCase(userRepository);
 const updateUserProfileUseCase = new UpdateUserProfileUseCase(userRepository);
 const changePasswordUseCase = new ChangePasswordUseCase(userRepository, hashService);
+const requestEmailChangeUseCase = new RequestEmailChangeUseCase(userRepository, otpRepository, emailService);
+const verifyEmailChangeUseCase = new VerifyEmailChangeUseCase(userRepository, otpRepository);
+const uploadProfileImageUseCase = new UploadProfileImageUseCase(userRepository, cloudinaryStorageService);
+const deleteProfileImageUseCase = new DeleteProfileImageUseCase(userRepository, cloudinaryStorageService);
 
 const userController = new UserController(
     getUserProfileUseCase,
     updateUserProfileUseCase,
-    changePasswordUseCase
+    changePasswordUseCase,
+    requestEmailChangeUseCase,
+    verifyEmailChangeUseCase,
+    uploadProfileImageUseCase,
+    deleteProfileImageUseCase
 );
 
 export { logger, authController, adminController, userController, jwtService };

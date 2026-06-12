@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Box, Hash, Sparkles, RefreshCw, ArrowLeft, Mail, Loader2 } from 'lucide-react';
+import { Box, Hash, Sparkles, RefreshCw, ArrowLeft, Mail, Loader2, User } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { AuthService } from '../../api/auth/auth.service';
@@ -119,8 +119,8 @@ export const OtpVerificationPage = () => {
           user: response.data.user,
           accessToken: response.data.accessToken
         }));
-        toast.success('Successfully verified and logged in!');
-        navigate('/user/dashboard');
+        toast.success("Account verified successfully!");
+        navigate('/dashboard');
       } else {
         // If no password (e.g. from forgot password flow), just go to login
         toast.success('Email successfully verified!');
@@ -203,8 +203,8 @@ export const OtpVerificationPage = () => {
             "The most powerful developer ecosystem I've used in a decade."
           </p>
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-slate-700 overflow-hidden">
-              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah" alt="User" className="w-full h-full object-cover" />
+            <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-slate-300">
+              <User className="w-4 h-4" />
             </div>
             <div>
               <div className="text-xs font-bold text-white">Sarah Jenkins</div>

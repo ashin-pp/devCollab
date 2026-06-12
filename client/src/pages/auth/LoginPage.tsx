@@ -51,7 +51,7 @@ export const LoginPage = () => {
         accessToken: response.data.accessToken
       }));
       toast.success('Successfully logged in!');
-      navigate('/user/dashboard');
+      navigate('/dashboard');
 
     } catch (err: unknown) {
       let errMsg = 'Login failed. Please try again.';
@@ -76,7 +76,7 @@ export const LoginPage = () => {
         accessToken: response.data.accessToken
       }));
       toast.success('Successfully logged in with Google!');
-      navigate('/user/dashboard');
+      navigate('/dashboard');
     } catch (err: unknown) {
       if (isAxiosError(err)) {
         toast.error(err.response?.data?.error?.message || err.response?.data?.message || "Google authentication failed");

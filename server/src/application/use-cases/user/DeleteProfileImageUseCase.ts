@@ -1,24 +1,33 @@
 import { IUserRepository } from "../../../domain/repositories/IUserRepository";
+import { IStorageService } from "../../../domain/services/IStorageService";
 import { AppError } from "../../../domain/errors/AppError";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
-import { UpdateUserProfileDTO } from "../../dtos/user/UpdateUserProfileDTO";
 import { UserProfileDTO } from "../../dtos/user/UserProfileDTO";
 
-export class UpdateUserProfileUseCase {
-    constructor(private userRepository: IUserRepository) {}
+export class DeleteProfileImageUseCase {
+    constructor(
+        private userRepository: IUserRepository,
+        private storageService: IStorageService
+    ) {}
 
-    async execute(userId: string, data: UpdateUserProfileDTO): Promise<UserProfileDTO> {
+    async execute(userId: string): Promise<UserProfileDTO> {
         const user = await this.userRepository.findById(userId);
         if (!user) {
             throw new AppError(ErrorMessage.USER_NOT_FOUND, HttpStatusCode.NOT_FOUND);
         }
 
-        const updatedUser = await this.userRepository.update(userId, data);
-        if (!updatedUser || !updatedUser.id) {
-             throw new AppError(ErrorMessage.FAILED_TO_UPDATE_PROFILE, HttpStatusCode.INTERNAL_SERVER);
+        if (user.profileImage) {
+            await this.storageService.deleteFile(user.profileImage);
+            
+            await this.userRepository.update(userId, { profileImage: "" });
         }
         
+        const updatedUser = await this.userRepository.findById(userId);
+        if (!updatedUser || !updatedUser.id) {
+            throw new AppError(ErrorMessage.USER_NOT_FOUND, HttpStatusCode.NOT_FOUND);
+        }
+
         return {
             id: updatedUser.id,
             name: updatedUser.name,

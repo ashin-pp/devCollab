@@ -68,6 +68,7 @@ export class AuthController {
           id: user.id,
           name: user.name,
           email: user.email,
+          profileImage: user.profileImage,
           role: 'user'
         },
         accessToken
@@ -159,6 +160,7 @@ export class AuthController {
           id: user.id,
           name: user.name,
           email: user.email,
+          profileImage: user.profileImage,
           role: 'user'
         },
         accessToken

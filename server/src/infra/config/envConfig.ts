@@ -6,4 +6,8 @@ export const envConfig = {
     jwtSecret: process.env.JWT_SECRET || "default_secret",
     clientUrl: process.env.CLIENT_URL || "http://localhost:5173",
     nodeEnv: process.env.NODE_ENV || "development",
+    
+    cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME || "",
+    cloudinaryApiKey: process.env.CLOUDINARY_API_KEY || "",
+    cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET || "",
 };

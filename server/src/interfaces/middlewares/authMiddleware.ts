@@ -16,6 +16,9 @@ export const authMiddleware = (req: AuthenticatedRequest, res: Response, next: N
         }
 
         const token = authHeader.split(" ")[1];
+        if (!token) {
+            throw new AppError(ErrorMessage.NO_TOKEN_PROVIDED, HttpStatusCode.UNAUTHORIZED);
+        }
         const decoded = jwtService.verifyAccessToken(token);
 
         req.user = decoded;

@@ -21,12 +21,12 @@ export class ChangePasswordUseCase {
             throw new AppError(ErrorMessage.USER_NOT_FOUND, HttpStatusCode.NOT_FOUND);
         }
 
-        const isValid = await this.hashService.comparePassword(dto.currentPassword, user.password);
+        const isValid = await this.hashService.compare(dto.currentPassword, user.password);
         if (!isValid) {
             throw new AppError(ErrorMessage.INCORRECT_CURRENT_PASSWORD, HttpStatusCode.BAD_REQUEST);
         }
 
-        const hashedPassword = await this.hashService.hashPassword(dto.newPassword);
+        const hashedPassword = await this.hashService.hash(dto.newPassword);
         await this.userRepository.update(userId, { password: hashedPassword });
     }
 }

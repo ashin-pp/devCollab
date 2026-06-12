@@ -13,6 +13,8 @@ export class User {
         public github?: string,
         public linkedin?: string,
         public twitter?: string,
+        public location?: string,
+        public title?: string,
         public googleId?: string,
         public isVerified: boolean = false,
         public status: string = "active",

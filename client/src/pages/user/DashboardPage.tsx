@@ -1,100 +1,24 @@
 import { 
   Bell, Settings, Search, Building2, Rocket, 
-  Users, ArrowRight, KeyRound, PlusCircle, TerminalSquare
+  Users, ArrowRight, KeyRound, PlusCircle, TerminalSquare, User as UserIcon
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { AuthService } from '../../api/auth/auth.service';
 import { logout } from '../../store/slices/authSlice';
 import type { RootState } from '../../store';
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { api } from '../../api/axios';
 import { isAxiosError } from 'axios';
 import Swal from 'sweetalert2';
 
+import { UserLayout } from '../../layouts/UserLayout';
 
 export const DashboardPage = () => {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
   const user = useSelector((state: RootState) => state.auth.user);
 
-  useEffect(() => {
-    // Check if the user is still active or has been blocked by admin
-    const checkStatus = async () => {
-      try {
-        await api.get('/auth/refresh');
-      } catch (err: unknown) {
-        if (isAxiosError(err)) {
-          if (err.response?.data?.message === 'Blocked by Admin' || err.response?.data?.error?.message === 'Blocked by Admin') {
-            dispatch(logout());
-            navigate('/login', { replace: true, state: { error: "Your account has been blocked by an Administrator." } });
-            return;
-          }
-        }
-        dispatch(logout());
-        navigate('/login', { replace: true });
-      }
-    };
-    
-    // Check immediately on mount
-    checkStatus();
-
-    // Poll every 15 seconds to simulate real-time block checks
-    const interval = setInterval(checkStatus, 15000);
-
-    return () => clearInterval(interval);
-  }, [dispatch, navigate]);
-
-  const handleLogout = async () => {
-    const result = await Swal.fire({
-      title: 'Are you sure?',
-      text: "You will be securely logged out of your account.",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#3b82f6', // blue-500
-      cancelButtonColor: '#ef4444', // red-500
-      confirmButtonText: 'Yes, logout'
-    });
-
-    if (result.isConfirmed) {
-      try {
-        await AuthService.logout();
-      } catch (err) {
-        console.error("Logout error", err);
-      } finally {
-        dispatch(logout());
-        navigate('/login', { replace: true });
-      }
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-[#f8fafc] font-sans pb-20">
-      {/* Top Navbar */}
-      <nav className="w-full bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between sticky top-0 z-50">
-        <div className="flex items-center gap-2">
-          <span className="font-bold text-xl tracking-tight text-blue-600">DevCollab</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={handleLogout}
-            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-1.5 rounded-full text-sm font-medium transition-colors"
-          >
-            Logout
-          </button>
-          <button className="text-slate-400 hover:text-slate-600 transition-colors">
-            <Bell className="w-5 h-5" />
-          </button>
-          <button className="text-slate-400 hover:text-slate-600 transition-colors">
-            <Settings className="w-5 h-5" />
-          </button>
-          <div className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden border border-slate-300 ml-2">
-            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'Alex'}`} alt="User" className="w-full h-full object-cover" />
-          </div>
-        </div>
-      </nav>
-
-      {/* Main Container */}
+    <UserLayout>
       <main className="max-w-7xl mx-auto px-6 pt-10">
         {/* Header */}
         <div className="mb-10">
@@ -252,6 +176,6 @@ export const DashboardPage = () => {
           </div>
         </div>
       </main>
-    </div>
+    </UserLayout>
   );
 };

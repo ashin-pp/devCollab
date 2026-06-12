@@ -107,8 +107,8 @@ export const RegisterPage = () => {
         user: response.data.user,
         accessToken: response.data.accessToken
       }));
-      toast.success('Successfully logged in with Google!');
-      navigate('/user/dashboard');
+      toast.success("Login successful!");
+      navigate('/dashboard');
     } catch (err: unknown) {
       if (isAxiosError(err)) {
         toast.error(err.response?.data?.error?.message || err.response?.data?.message || "Google authentication failed");

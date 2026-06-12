@@ -1,8 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { LandingPage } from '../pages/LandingPage';
-import { AuthRoutes } from './AuthRoutes';
 import { AdminRoutes } from './AdminRoutes';
-import { UserRoutes } from './UserRoutes';
+import { ClientRoutes } from './ClientRoutes';
 
 export const AppRoutes = () => {
   return (
@@ -11,10 +10,11 @@ export const AppRoutes = () => {
         {/* Landing Page Route */}
         <Route path="/" element={<LandingPage />} />
         
-        {/* Module Sub-Routes */}
-        <Route path="/*" element={<AuthRoutes />} />
+        {/* Admin Sub-Routes */}
         <Route path="/admin/*" element={<AdminRoutes />} />
-        <Route path="/user/*" element={<UserRoutes />} />
+        
+        {/* Client Sub-Routes (Auth & User) */}
+        <Route path="/*" element={<ClientRoutes />} />
       </Routes>
     </BrowserRouter>
   );

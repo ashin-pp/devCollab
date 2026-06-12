@@ -22,7 +22,9 @@ export class GetUserProfileUseCase {
             skills: user.skills || [],
             github: user.github,
             linkedin: user.linkedin,
-            twitter: user.twitter
+            twitter: user.twitter,
+            location: user.location,
+            title: user.title
         };
     }
 }

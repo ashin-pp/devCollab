@@ -8,4 +8,6 @@ export interface UserProfileDTO {
     github?: string;
     linkedin?: string;
     twitter?: string;
+    location?: string;
+    title?: string;
 }

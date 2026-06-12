@@ -25,7 +25,7 @@ export abstract class MongoBaseRepository<TDomain, TModel> implements IBaseRepos
 
     async update(id: string, data: Partial<TDomain>): Promise<TDomain | null> {
         const persistence = this.mapper.toPersistence(data);
-        const updated = await this.model.findByIdAndUpdate(id, persistence, { new: true });
+        const updated = await this.model.findByIdAndUpdate(id, persistence, { returnDocument: "after" });
         return updated ? this.mapper.toDomain(updated as unknown as TModel) : null;
     }
 

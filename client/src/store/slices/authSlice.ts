@@ -5,6 +5,7 @@ export interface User {
   name: string;
   email: string;
   role: string;
+  profileImage?: string;
 }
 
 interface AuthState {
@@ -36,8 +37,13 @@ const authSlice = createSlice({
       state.accessToken = null;
       state.isAuthenticated = false;
     },
+    updateUser: (state, action: PayloadAction<Partial<User>>) => {
+      if (state.user) {
+        state.user = { ...state.user, ...action.payload };
+      }
+    },
   },
 });
 
-export const { setCredentials, logout } = authSlice.actions;
+export const { setCredentials, logout, updateUser } = authSlice.actions;
 export default authSlice.reducer;

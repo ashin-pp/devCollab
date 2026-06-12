@@ -7,7 +7,7 @@ export const UserPublicRoute = () => {
 
   if (isAuthenticated) {
     if (user?.role === 'user') {
-      return <Navigate to="/user/dashboard" replace />;
+      return <Navigate to="/dashboard" replace />;
     }
     if (user?.role === 'admin') {
       return <Navigate to="/admin/dashboard" replace />;
