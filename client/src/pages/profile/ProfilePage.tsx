@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { UserLayout } from "../../layouts/UserLayout";
-import { Link, useNavigate } from 'react-router-dom';
-import { Edit2, Globe, User as UserIcon, MapPin } from "lucide-react";
+import { Link, useLocation } from 'react-router-dom';
+import { Edit2, Globe, User as UserIcon, MapPin, ArrowLeft } from "lucide-react";
 import { UserService } from '../../api/user/user.service';
 import toast from 'react-hot-toast';
 
@@ -52,9 +52,11 @@ const LinkedinIcon = ({ className }: { className?: string }) => (
 );
 
 export const ProfilePage = () => {
+  const location = useLocation();
+  const fromWorkspace = location.state?.fromWorkspace;
+
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -85,26 +87,32 @@ export const ProfilePage = () => {
   return (
     <UserLayout>
       <div className="p-8 max-w-5xl mx-auto space-y-6">
-        {/* Active Plan Banner */}
+        {fromWorkspace && (
+          <Link 
+            to={`/workspace/${fromWorkspace}/channels`}
+            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-blue-600 transition-colors mb-2"
+          >
+            <ArrowLeft className="w-4 h-4" /> Back to Workspace
+          </Link>
+        )}
         <div className="text-xs font-bold text-blue-600 bg-blue-50 inline-block px-3 py-1 rounded border border-blue-100 uppercase tracking-wider mb-2">
           Your Active Plan &rarr; Professional
         </div>
 
-        {/* Top Profile Card */}
         <div className="bg-white border border-slate-200 rounded-xl p-8 flex items-start justify-between shadow-sm">
           <div className="flex gap-8">
             <div className="w-32 h-32 rounded-2xl bg-blue-50 border border-slate-100 flex items-center justify-center relative overflow-hidden shrink-0">
-               {profile?.profileImage ? (
-                  <img src={profile.profileImage} alt={profile.name} className="w-full h-full object-cover" />
-               ) : (
-                 <UserIcon className="w-16 h-16 text-blue-300" />
-               )}
-               <div className="absolute bottom-2 right-2 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
+              {profile?.profileImage ? (
+                <img src={profile.profileImage} alt={profile.name} className="w-full h-full object-cover" />
+              ) : (
+                <UserIcon className="w-16 h-16 text-blue-300" />
+              )}
+              <div className="absolute bottom-2 right-2 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
             </div>
-            
+
             <div className="pt-2">
               <h1 className="text-3xl font-bold text-slate-900 mb-3">{profile?.name || 'User'}</h1>
-              
+
               <div className="flex flex-wrap gap-2 mb-4">
                 {profile?.title ? (
                   profile.title.split(',').map((t, index) => {
@@ -119,12 +127,12 @@ export const ProfilePage = () => {
                   <span className="px-3 py-1 bg-slate-50 text-slate-500 text-xs font-medium rounded-md border border-slate-200">Professional Title Not Set</span>
                 )}
               </div>
-              
+
               <div className="flex flex-wrap gap-2">
                 {profile?.skills && profile.skills.length > 0 ? (
-                   profile.skills.map(skill => (
+                  profile.skills.map(skill => (
                     <span key={skill} className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded-full">{skill}</span>
-                   ))
+                  ))
                 ) : (
                   <>
                     <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded-full">Add Skills</span>
@@ -133,9 +141,10 @@ export const ProfilePage = () => {
               </div>
             </div>
           </div>
-          
-          <Link 
+
+          <Link
             to="/profile/edit"
+            state={{ fromWorkspace }}
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors shadow-sm"
           >
             <Edit2 className="w-4 h-4" />
@@ -144,13 +153,12 @@ export const ProfilePage = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* General Information */}
           <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
             <div className="border-b border-slate-100 bg-[#f8fafc] px-6 py-4 flex items-center gap-2">
               <UserIcon className="w-5 h-5 text-blue-600" />
               <h2 className="text-lg font-bold text-slate-900">General Information</h2>
             </div>
-            
+
             <div className="p-6 space-y-6">
               <div className="grid grid-cols-2 gap-6">
                 <div>
@@ -184,17 +192,16 @@ export const ProfilePage = () => {
             </div>
           </div>
 
-          {/* Professional Links */}
           <div className="bg-[#f8fafc] border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col">
             <div className="border-b border-slate-100 px-6 py-4 flex items-center gap-2 bg-white">
               <Globe className="w-5 h-5 text-blue-600" />
               <h2 className="text-lg font-bold text-slate-900">Professional Links</h2>
             </div>
-            
+
             <div className="p-6 space-y-4 flex-1">
-              <a 
-                href={profile?.github || '#'} 
-                target="_blank" 
+              <a
+                href={profile?.github || '#'}
+                target="_blank"
                 rel="noreferrer"
                 className="block bg-white border border-slate-200 p-4 rounded-xl hover:border-slate-300 hover:shadow-sm transition-all group"
               >
@@ -212,9 +219,9 @@ export const ProfilePage = () => {
                 </div>
               </a>
 
-              <a 
-                href={profile?.twitter || '#'} 
-                target="_blank" 
+              <a
+                href={profile?.twitter || '#'}
+                target="_blank"
                 rel="noreferrer"
                 className="block bg-white border border-slate-200 p-4 rounded-xl hover:border-slate-300 hover:shadow-sm transition-all group"
               >
@@ -227,14 +234,14 @@ export const ProfilePage = () => {
                     <p className="text-xs text-slate-500 truncate">{profile?.twitter ? profile.twitter.replace('https://', '') : 'Not connected'}</p>
                   </div>
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                     <Edit2 className="w-4 h-4 text-slate-400" />
+                    <Edit2 className="w-4 h-4 text-slate-400" />
                   </div>
                 </div>
               </a>
 
-              <a 
-                href={profile?.linkedin || '#'} 
-                target="_blank" 
+              <a
+                href={profile?.linkedin || '#'}
+                target="_blank"
                 rel="noreferrer"
                 className="block bg-white border border-slate-200 p-4 rounded-xl hover:border-slate-300 hover:shadow-sm transition-all group"
               >
@@ -254,7 +261,7 @@ export const ProfilePage = () => {
             </div>
           </div>
         </div>
-        
+
 
       </div>
     </UserLayout>

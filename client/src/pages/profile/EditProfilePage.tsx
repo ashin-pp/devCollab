@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { UserLayout } from "../../layouts/UserLayout";
-import { useNavigate } from 'react-router-dom';
-import { User, Link as LinkIcon, X, Shield } from "lucide-react";
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { User, Link as LinkIcon, X, Shield, ArrowLeft } from "lucide-react";
 import { UserService } from '../../api/user/user.service';
 import { useDispatch } from 'react-redux';
 import { updateUser } from '../../store/slices/authSlice';
@@ -9,6 +9,9 @@ import toast from 'react-hot-toast';
 
 export const EditProfilePage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromWorkspace = location.state?.fromWorkspace;
+
   const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -39,7 +42,6 @@ export const EditProfilePage = () => {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
-  // Email Change Modal State
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [emailModalStep, setEmailModalStep] = useState<'email' | 'otp'>('email');
   const [newEmailToChange, setNewEmailToChange] = useState('');
@@ -48,7 +50,7 @@ export const EditProfilePage = () => {
   const [resendTimer, setResendTimer] = useState(0);
 
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    let timer: ReturnType<typeof setInterval>;
     if (resendTimer > 0) {
       timer = setInterval(() => {
         setResendTimer(prev => prev - 1);
@@ -144,7 +146,7 @@ export const EditProfilePage = () => {
 
   const handleRemoveImage = async () => {
     if (!formData.profileImage) return;
-    
+
     setIsUploadingImage(true);
     try {
       const response = await UserService.deleteProfileImage();
@@ -247,7 +249,7 @@ export const EditProfilePage = () => {
       if (response.success) {
         dispatch(updateUser({ name: formData.name }));
         toast.success("Profile updated successfully");
-        navigate('/profile');
+        navigate('/profile', { state: { fromWorkspace } });
       }
     } catch (error) {
       toast.error("Failed to update profile");
@@ -270,21 +272,19 @@ export const EditProfilePage = () => {
     <UserLayout>
       <div className="p-8 max-w-5xl mx-auto space-y-6">
 
-        {/* Header */}
         <div className="flex items-center justify-between mb-8 border-b border-slate-200 pb-6">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 mb-1">Edit Profile</h1>
             <p className="text-slate-500 text-sm">Manage your public presence and professional details.</p>
           </div>
           <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={() => navigate('/profile')}
+            <Link
+              to="/profile"
+              state={{ fromWorkspace }}
               className="px-6 py-2 border border-slate-200 text-slate-700 font-semibold rounded-lg hover:bg-slate-50 transition-colors"
-              disabled={isSaving}
             >
               Cancel
-            </button>
+            </Link>
             <button
               onClick={handleSave}
               className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm disabled:opacity-70 flex items-center gap-2"
@@ -298,10 +298,8 @@ export const EditProfilePage = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-          {/* Left Column */}
           <div className="space-y-8 lg:col-span-1">
 
-            {/* Profile Image */}
             <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
               <h3 className="font-bold text-slate-900 mb-4">Profile Image</h3>
               <div className="border-2 border-dashed border-slate-200 rounded-xl p-4 flex flex-col items-center justify-center mb-4 bg-slate-50">
@@ -325,14 +323,14 @@ export const EditProfilePage = () => {
                     accept="image/*"
                     onChange={handleImageChange}
                   />
-                  <button 
+                  <button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isUploadingImage}
                     className="flex-1 bg-white border border-slate-300 hover:border-blue-500 text-blue-600 font-medium py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
                   >
                     Change Photo
                   </button>
-                  <button 
+                  <button
                     onClick={handleRemoveImage}
                     disabled={isUploadingImage || !formData.profileImage}
                     className="flex-1 bg-white border border-slate-300 hover:border-red-500 text-red-600 font-medium py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
@@ -344,7 +342,6 @@ export const EditProfilePage = () => {
               <p className="text-xs text-slate-500 text-center">JPG, GIF or PNG. Max size of 5MB</p>
             </div>
 
-            {/* Tech Stack */}
             <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-slate-900">Skills</h3>
@@ -378,10 +375,8 @@ export const EditProfilePage = () => {
             </div>
           </div>
 
-          {/* Right Column */}
           <div className="space-y-8 lg:col-span-2">
 
-            {/* Top Banner (Like the image's blue block) */}
             <div className="bg-blue-600 rounded-xl p-6 text-white flex items-center gap-4 shadow-md">
               <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center shrink-0">
                 <User className="w-6 h-6" />
@@ -405,7 +400,6 @@ export const EditProfilePage = () => {
               </div>
             </div>
 
-            {/* General Information */}
             <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
               <div className="border-b border-slate-100 bg-[#f8fafc] px-6 py-4 flex items-center gap-2">
                 <User className="w-5 h-5 text-blue-600" />
@@ -481,7 +475,6 @@ export const EditProfilePage = () => {
               </div>
             </div>
 
-            {/* Professional Links */}
             <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
               <div className="border-b border-slate-100 bg-[#f8fafc] px-6 py-4 flex items-center gap-2">
                 <LinkIcon className="w-5 h-5 text-blue-600" />
@@ -525,7 +518,6 @@ export const EditProfilePage = () => {
               </div>
             </div>
 
-            {/* Security Section */}
             <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
               <div className="border-b border-slate-100 bg-[#f8fafc] px-6 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -553,7 +545,6 @@ export const EditProfilePage = () => {
         </div>
       </div>
 
-      {/* Email Change Modal */}
       {isEmailModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
@@ -563,21 +554,21 @@ export const EditProfilePage = () => {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="p-6 space-y-4">
               {emailModalStep === 'email' ? (
                 <>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">New Email Address</label>
-                    <input 
-                      type="email" 
+                    <input
+                      type="email"
                       value={newEmailToChange}
                       onChange={(e) => setNewEmailToChange(e.target.value)}
                       placeholder="e.g. new-email@example.com"
                       className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                     />
                   </div>
-                  <button 
+                  <button
                     onClick={handleRequestEmailChange}
                     disabled={emailChangeLoading}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
@@ -590,8 +581,8 @@ export const EditProfilePage = () => {
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Enter OTP</label>
                     <p className="text-xs text-slate-500 mb-3">An OTP was sent to your current email address.</p>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={emailOtp}
                       onChange={(e) => setEmailOtp(e.target.value)}
                       placeholder="Enter 4-digit code"
@@ -599,17 +590,17 @@ export const EditProfilePage = () => {
                       maxLength={4}
                     />
                   </div>
-                  
+
                   <div className="flex flex-col gap-2">
-                    <button 
+                    <button
                       onClick={handleVerifyEmailChange}
                       disabled={emailChangeLoading}
                       className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
                     >
                       {emailChangeLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : 'Verify & Change Email'}
                     </button>
-                    
-                    <button 
+
+                    <button
                       onClick={handleRequestEmailChange}
                       disabled={resendTimer > 0 || emailChangeLoading}
                       className="w-full bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold py-2 rounded-lg transition-colors disabled:opacity-50"
@@ -623,23 +614,22 @@ export const EditProfilePage = () => {
           </div>
         </div>
       )}
-      {/* Password Change Modal */}
       {isPasswordModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
             <div className="flex items-center justify-between p-4 border-b border-slate-100">
               <h3 className="font-bold text-slate-900">Change Password</h3>
-              <button 
+              <button
                 onClick={() => {
                   setIsPasswordModalOpen(false);
                   setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-                }} 
+                }}
                 className="text-slate-400 hover:text-slate-600 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <form onSubmit={handlePasswordSubmit} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Current Password</label>

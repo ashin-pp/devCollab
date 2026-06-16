@@ -14,4 +14,9 @@ adminRouter.get("/refresh", adminController.refresh);
 adminRouter.get("/users", adminController.getUsers);
 adminRouter.patch("/users/:id/status", adminController.toggleUserStatus);
 
+adminRouter.get("/workspaces", adminController.getWorkspaces);
+adminRouter.patch("/workspaces/:id/status", adminController.toggleWorkspaceStatus);
+adminRouter.get("/workspaces/:id/members", adminController.getWorkspaceMembers);
+adminRouter.patch("/workspaces/:workspaceId/members/:userId/status", adminController.updateWorkspaceMemberStatus);
+
 export { adminRouter };

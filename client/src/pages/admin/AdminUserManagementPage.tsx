@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { AdminService } from '../../api/admin/admin.service';
 import toast from 'react-hot-toast';
 import { isAxiosError } from 'axios';
+import Swal from 'sweetalert2';
 
 interface User {
   id: string;
@@ -20,7 +21,6 @@ export const AdminUserManagementPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Pagination & Filtering State
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('ALL'); // ALL, ACTIVE, BLOCKED
   const [currentPage, setCurrentPage] = useState(1);
@@ -30,7 +30,6 @@ export const AdminUserManagementPage = () => {
     setIsLoading(true);
     try {
       const response = await AdminService.getUsers();
-      // Map backend `status` to frontend `isBlocked` for UI state
       const mappedUsers = (response.data || []).map((user: User) => ({
         ...user,
         isBlocked: user.status === 'blocked'
@@ -57,10 +56,24 @@ export const AdminUserManagementPage = () => {
 
   const handleToggleStatus = async (userId: string, currentStatus: boolean) => {
     try {
-      await AdminService.toggleUserStatus(userId, !currentStatus);
-      toast.success(`User ${!currentStatus ? 'blocked' : 'unblocked'} successfully.`);
-      // Update local state instead of refetching for speed
-      setUsers(users.map(u => u.id === userId ? { ...u, isBlocked: !currentStatus, status: !currentStatus ? 'blocked' : 'active' } : u));
+      const action = currentStatus ? 'unblock' : 'block';
+      const result = await Swal.fire({
+        title: `Are you sure?`,
+        text: `Do you really want to ${action} this user?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: currentStatus ? '#10b981' : '#ef4444',
+        cancelButtonColor: '#30363d',
+        confirmButtonText: `Yes, ${action} them!`,
+        background: '#161b22',
+        color: '#fff'
+      });
+
+      if (result.isConfirmed) {
+        await AdminService.toggleUserStatus(userId, !currentStatus);
+        toast.success(`User ${!currentStatus ? 'blocked' : 'unblocked'} successfully.`);
+        setUsers(users.map(u => u.id === userId ? { ...u, isBlocked: !currentStatus, status: !currentStatus ? 'blocked' : 'active' } : u));
+      }
     } catch (err: unknown) {
       let errMsg = 'Failed to toggle status';
       if (isAxiosError(err)) {
@@ -73,7 +86,6 @@ export const AdminUserManagementPage = () => {
   const totalUsers = users.length;
   const blockedUsers = users.filter(u => u.isBlocked).length;
 
-  // Filter Logic
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -86,11 +98,9 @@ export const AdminUserManagementPage = () => {
     return matchesSearch && matchesFilter;
   });
 
-  // Pagination Logic
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
   const paginatedUsers = filteredUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  // Reset to page 1 if filter or search changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, filterStatus]);
@@ -98,7 +108,6 @@ export const AdminUserManagementPage = () => {
   return (
     <AdminLayout>
 
-      {/* Header Section */}
       <div className="mb-8 border-b border-[#30363d] pb-6">
         <h1 className="text-[10px] font-bold text-amber-500 tracking-widest mb-2 uppercase">
           [ DIRECTORY_SYSTEM_v2.0 ]
@@ -108,7 +117,6 @@ export const AdminUserManagementPage = () => {
         </div>
       </div>
 
-      {/* Toolbar */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         <div className="flex-1 relative">
           <Search className="w-4 h-4 text-slate-500 absolute left-4 top-1/2 -translate-y-1/2" />
@@ -139,7 +147,6 @@ export const AdminUserManagementPage = () => {
         </div>
       </div>
 
-      {/* Main Table */}
       <div className="bg-[#161b22] border border-[#30363d] rounded-lg overflow-hidden mb-8">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
@@ -223,7 +230,6 @@ export const AdminUserManagementPage = () => {
           </table>
         </div>
 
-        {/* Pagination Footer */}
         <div className="bg-[#0d1117] border-t border-[#30363d] p-4 flex items-center justify-between">
           <div className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
             DISPLAYING: [ {Math.min((currentPage - 1) * itemsPerPage + 1, filteredUsers.length)} - {Math.min(currentPage * itemsPerPage, filteredUsers.length)} ] OF {filteredUsers.length} ENTRIES
@@ -261,7 +267,6 @@ export const AdminUserManagementPage = () => {
         </div>
       </div>
 
-      {/* Bottom Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-[#161b22] border border-[#30363d] p-6 rounded-lg relative overflow-hidden group">
           <div className="absolute top-4 right-4 text-[#30363d] group-hover:text-slate-700 transition-colors">

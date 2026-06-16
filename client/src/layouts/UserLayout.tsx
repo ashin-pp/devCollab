@@ -1,12 +1,12 @@
-import { ReactNode, useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { Bell, Settings, User as UserIcon } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthService } from '../api/auth/auth.service';
 import { logout } from '../store/slices/authSlice';
 import type { RootState } from '../store';
-import { api } from '../api/axios';
-import { isAxiosError } from 'axios';
+
 import Swal from 'sweetalert2';
 
 interface UserLayoutProps {

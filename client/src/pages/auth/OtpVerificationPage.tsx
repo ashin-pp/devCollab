@@ -29,13 +29,11 @@ export const OtpVerificationPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  // Extract email and password passed from RegisterPage
   const email = location.state?.email;
   const password = location.state?.password;
 
   useEffect(() => {
     if (!email) {
-      // If no email in state, user didn't come from register page. Redirect to login.
       navigate('/login');
     }
   }, [email, navigate]);
@@ -78,7 +76,6 @@ export const OtpVerificationPage = () => {
     if (resendTimer > 0) return;
     setError('');
     
-    // Optimistically set timer to prevent spam
     setResendTimer(60);
     try {
       await AuthService.sendOtp(email);
@@ -109,10 +106,8 @@ export const OtpVerificationPage = () => {
     setIsLoading(true);
 
     try {
-      // 1. Verify OTP
       await AuthService.verifyOtp(email, otpString);
       
-      // 2. If password was passed, auto-login and redirect to dashboard
       if (password) {
         const response = await AuthService.login({ email, password });
         dispatch(setCredentials({
@@ -122,7 +117,6 @@ export const OtpVerificationPage = () => {
         toast.success("Account verified successfully!");
         navigate('/dashboard');
       } else {
-        // If no password (e.g. from forgot password flow), just go to login
         toast.success('Email successfully verified!');
         navigate('/login');
       }
@@ -136,7 +130,6 @@ export const OtpVerificationPage = () => {
       }
       setError(errMsg);
       toast.error(errMsg);
-      // Clear OTP inputs on error
       setOtp(['', '', '', '']);
       inputRefs.current[0]?.focus();
     } finally {
@@ -146,13 +139,10 @@ export const OtpVerificationPage = () => {
 
   return (
     <div className="min-h-screen w-full flex bg-white font-sans">
-      {/* Left Panel - Dark Theme */}
       <div className="hidden lg:flex w-[45%] bg-[#0a0f1c] relative flex-col justify-between p-12 overflow-hidden text-white">
-        {/* Subtle Background Glows */}
         <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-slate-800/40 via-[#0a0f1c] to-[#0a0f1c] pointer-events-none"></div>
 
         <div className="relative z-10">
-          {/* Logo */}
           <a href="/" className="flex items-center gap-2 mb-12 hover:opacity-80 transition-opacity">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-md">
               <Box className="w-5 h-5 text-white" />
@@ -165,7 +155,6 @@ export const OtpVerificationPage = () => {
             Build the future<br />together
           </h1>
 
-          {/* Features */}
           <div className="space-y-8">
             <div className="flex gap-4">
               <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 shrink-0 mt-1">
@@ -197,7 +186,6 @@ export const OtpVerificationPage = () => {
           </div>
         </div>
 
-        {/* Testimonial */}
         <div className="relative z-10 mt-16 bg-slate-800/50 border border-slate-700/50 p-6 rounded-2xl backdrop-blur-sm max-w-sm">
           <p className="text-sm text-slate-300 leading-relaxed mb-4">
             "The most powerful developer ecosystem I've used in a decade."
@@ -214,13 +202,10 @@ export const OtpVerificationPage = () => {
         </div>
       </div>
 
-      {/* Right Panel - OTP Form */}
       <div className="w-full lg:w-[55%] flex flex-col items-center justify-center p-8 sm:p-12 relative bg-white">
         
-        {/* Form Container */}
         <div className="w-full max-w-[420px] text-center">
           
-          {/* Icon */}
           <div className="w-12 h-12 bg-blue-50 border border-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm">
             <Mail className="w-6 h-6" />
           </div>
@@ -281,7 +266,6 @@ export const OtpVerificationPage = () => {
           </a>
         </div>
 
-        {/* Footer */}
         <div className="absolute bottom-8 left-0 right-0 text-center">
           <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">
             &copy; 2024 DevCollab. Precision for developers.

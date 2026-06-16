@@ -11,5 +11,18 @@ export const ErrorMessage = {
     UNAUTHORIZED: "Unauthorized or invalid token",
     NO_TOKEN_PROVIDED: "No token provided",
     FAILED_TO_UPDATE_PROFILE: "Failed to update profile",
-    INCORRECT_CURRENT_PASSWORD: "Incorrect current password"
+    INCORRECT_CURRENT_PASSWORD: "Incorrect current password",
+    WORKSPACE_NAME_REQUIRED: "Workspace name and creator ID are required",
+    FAILED_TO_CREATE_WORKSPACE: "Failed to create workspace",
+    INVITE_CODE_REQUIRED: "Invite code and User ID are required",
+    INVALID_INVITE_CODE: "Invalid invite code",
+    WORKSPACE_INACTIVE: "This workspace deactivated by admin",
+    WORKSPACE_FULL: "Workspace has reached its maximum member limit",
+    ALREADY_WORKSPACE_MEMBER: "You are already a member of this workspace",
+    WORKSPACE_NOT_FOUND: "Workspace not found",
+    UNAUTHORIZED_ROLE: "You do not have the required permissions for this action",
+    MEMBER_NOT_FOUND_IN_WORKSPACE: "Member not found in this workspace",
+    CANNOT_BLOCK_OWNER: "Cannot block the owner of a workspace",
+    FAILED_TO_UPDATE_MEMBER_STATUS: "Failed to update member status",
+    MEMBER_BLOCKED: "Blocked by admin"
 } as const;

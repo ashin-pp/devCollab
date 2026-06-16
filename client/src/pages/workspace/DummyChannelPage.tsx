@@ -5,14 +5,12 @@ export const DummyChannelPage = () => {
   return (
     <WorkspaceLayout>
       <div className="flex flex-col h-full bg-white m-6 border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-        {/* Channel Header */}
         <div className="h-16 border-b border-slate-200 flex items-center px-6">
           <Hash className="w-5 h-5 text-slate-400 mr-2" />
           <h2 className="font-bold text-slate-900">development</h2>
           <span className="ml-4 text-sm text-slate-500">Core engineering discussions and updates.</span>
         </div>
 
-        {/* Chat Area (Dummy) */}
         <div className="flex-1 p-6 overflow-y-auto space-y-6">
           <div className="flex gap-4">
             <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 shrink-0">
@@ -45,7 +43,6 @@ export const DummyChannelPage = () => {
           </div>
         </div>
 
-        {/* Message Input */}
         <div className="p-4 bg-slate-50 border-t border-slate-200">
           <div className="bg-white border border-slate-300 rounded-lg p-3 flex items-center shadow-sm">
             <input 

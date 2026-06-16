@@ -1,0 +1,9 @@
+import { Message } from "../entities/Message";
+
+export interface IMessageRepository {
+    create(message: Message): Promise<Message>;
+    findById(id: string): Promise<Message | null>;
+    findByChannelId(channelId: string, limit: number, skip: number): Promise<Message[]>;
+    update(id: string, message: Partial<Message>): Promise<Message | null>;
+    delete(id: string): Promise<boolean>;
+}

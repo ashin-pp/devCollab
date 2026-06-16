@@ -27,6 +27,10 @@ import { AdminResetPasswordUseCase } from "../application/use-cases/admin/AdminR
 import { GetAllUsersUseCase } from "../application/use-cases/admin/GetAllUsersUseCase";
 import { ToggleUserStatusUseCase } from "../application/use-cases/admin/ToggleUserStatusUseCase";
 import { AdminRefreshTokenUseCase } from "../application/use-cases/admin/AdminRefreshTokenUseCase";
+import { GetAllWorkspacesUseCase } from "../application/use-cases/workspace/GetAllWorkspacesUseCase";
+import { AdminToggleWorkspaceStatusUseCase } from "../application/use-cases/workspace/AdminToggleWorkspaceStatusUseCase";
+import { AdminGetWorkspaceMembersUseCase } from "../application/use-cases/workspace/AdminGetWorkspaceMembersUseCase";
+import { AdminUpdateWorkspaceMemberStatusUseCase } from "../application/use-cases/workspace/AdminUpdateWorkspaceMemberStatusUseCase";
 import { AdminController } from "../interfaces/controllers/AdminController";
 
 // User Imports
@@ -40,6 +44,26 @@ import { DeleteProfileImageUseCase } from "../application/use-cases/user/DeleteP
 import { UserController } from "../interfaces/controllers/UserController";
 import { CloudinaryStorageService } from "../infra/services/CloudinaryStorageService";
 
+// Workspace Imports
+import { WorkspaceModel } from "../infra/database/models/WorkspaceModel";
+import { WorkspaceMemberModel } from "../infra/database/models/WorkspaceMemberModel";
+import { WorkspaceRepository } from "../infra/database/repositories/WorkspaceRepository";
+import { WorkspaceMemberRepository } from "../infra/database/repositories/WorkspaceMemberRepository";
+import { CreateWorkspaceUseCase } from "../application/use-cases/workspace/CreateWorkspaceUseCase";
+import { JoinWorkspaceUseCase } from "../application/use-cases/workspace/JoinWorkspaceUseCase";
+import { GetUserWorkspacesUseCase } from "../application/use-cases/workspace/GetUserWorkspacesUseCase";
+import { GetPublicWorkspacesUseCase } from "../application/use-cases/workspace/GetPublicWorkspacesUseCase";
+import { VerifyInviteCodeUseCase } from "../application/use-cases/workspace/VerifyInviteCodeUseCase";
+import { GetWorkspaceMembersUseCase } from "../application/use-cases/workspace/GetWorkspaceMembersUseCase";
+import { HandleJoinRequestUseCase } from "../application/use-cases/workspace/HandleJoinRequestUseCase";
+import { RemoveWorkspaceMemberUseCase } from "../application/use-cases/workspace/RemoveWorkspaceMemberUseCase";
+import { BlockWorkspaceMemberUseCase } from "../application/use-cases/workspace/BlockWorkspaceMemberUseCase";
+import { UnblockWorkspaceMemberUseCase } from "../application/use-cases/workspace/UnblockWorkspaceMemberUseCase";
+import { UpdateWorkspaceUseCase } from "../application/use-cases/workspace/UpdateWorkspaceUseCase";
+import { RegenerateInviteCodeUseCase } from "../application/use-cases/workspace/RegenerateInviteCodeUseCase";
+import { DeleteWorkspaceUseCase } from "../application/use-cases/workspace/DeleteWorkspaceUseCase";
+import { WorkspaceController } from "../interfaces/controllers/WorkspaceController";
+
 const logger = new WinstonLogger();
 const hashService = new BcryptHashService();
 const emailService = new NodemailerEmailService();
@@ -49,6 +73,8 @@ const cloudinaryStorageService = new CloudinaryStorageService();
 const userRepository = new UserRepository(UserModel);
 const otpRepository = new OtpRepository(OtpModel);
 const adminRepository = new AdminRepository(AdminModel);
+const workspaceRepository = new WorkspaceRepository();
+const workspaceMemberRepository = new WorkspaceMemberRepository();
 
 const registerUserUseCase = new RegisterUserUseCase(userRepository, hashService);
 const sendOtpUseCase = new SendOtpUseCase(otpRepository, emailService);
@@ -81,6 +107,12 @@ const getAllUsersUseCase = new GetAllUsersUseCase(userRepository);
 const toggleUserStatusUseCase = new ToggleUserStatusUseCase(userRepository);
 const adminRefreshTokenUseCase = new AdminRefreshTokenUseCase(jwtService, adminRepository);
 
+// Workspace Use Cases (Admin)
+const getAllWorkspacesUseCase = new GetAllWorkspacesUseCase(workspaceRepository, workspaceMemberRepository, userRepository);
+const adminToggleWorkspaceStatusUseCase = new AdminToggleWorkspaceStatusUseCase(workspaceRepository);
+const adminGetWorkspaceMembersUseCase = new AdminGetWorkspaceMembersUseCase(workspaceMemberRepository, userRepository);
+const adminUpdateWorkspaceMemberStatusUseCase = new AdminUpdateWorkspaceMemberStatusUseCase(workspaceMemberRepository);
+
 const adminController = new AdminController(
     createAdminUseCase,
     adminLoginUseCase,
@@ -89,7 +121,11 @@ const adminController = new AdminController(
     getAllUsersUseCase,
     toggleUserStatusUseCase,
     verifyResetOtpUseCase,
-    adminRefreshTokenUseCase
+    adminRefreshTokenUseCase,
+    getAllWorkspacesUseCase,
+    adminToggleWorkspaceStatusUseCase,
+    adminGetWorkspaceMembersUseCase,
+    adminUpdateWorkspaceMemberStatusUseCase
 );
 
 // User Use Cases
@@ -111,4 +147,60 @@ const userController = new UserController(
     deleteProfileImageUseCase
 );
 
-export { logger, authController, adminController, userController, jwtService };
+// Workspace Use Cases
+const createWorkspaceUseCase = new CreateWorkspaceUseCase(workspaceRepository, workspaceMemberRepository);
+const joinWorkspaceUseCase = new JoinWorkspaceUseCase(workspaceRepository, workspaceMemberRepository);
+const getUserWorkspacesUseCase = new GetUserWorkspacesUseCase(workspaceRepository, workspaceMemberRepository);
+const getPublicWorkspacesUseCase = new GetPublicWorkspacesUseCase(workspaceRepository);
+const verifyInviteCodeUseCase = new VerifyInviteCodeUseCase(workspaceRepository);
+const getWorkspaceMembersUseCase = new GetWorkspaceMembersUseCase(workspaceRepository, workspaceMemberRepository, userRepository);
+const handleJoinRequestUseCase = new HandleJoinRequestUseCase(workspaceRepository, workspaceMemberRepository);
+const removeWorkspaceMemberUseCase = new RemoveWorkspaceMemberUseCase(workspaceRepository, workspaceMemberRepository);
+const blockWorkspaceMemberUseCase = new BlockWorkspaceMemberUseCase(workspaceRepository, workspaceMemberRepository);
+const unblockWorkspaceMemberUseCase = new UnblockWorkspaceMemberUseCase(workspaceRepository, workspaceMemberRepository);
+const updateWorkspaceUseCase = new UpdateWorkspaceUseCase(workspaceRepository, workspaceMemberRepository);
+const regenerateInviteCodeUseCase = new RegenerateInviteCodeUseCase(workspaceRepository, workspaceMemberRepository);
+const deleteWorkspaceUseCase = new DeleteWorkspaceUseCase(workspaceRepository, workspaceMemberRepository);
+
+const workspaceController = new WorkspaceController(
+    createWorkspaceUseCase,
+    joinWorkspaceUseCase,
+    getUserWorkspacesUseCase,
+    getPublicWorkspacesUseCase,
+    verifyInviteCodeUseCase,
+    getWorkspaceMembersUseCase,
+    handleJoinRequestUseCase,
+    removeWorkspaceMemberUseCase,
+    blockWorkspaceMemberUseCase,
+    unblockWorkspaceMemberUseCase,
+    updateWorkspaceUseCase,
+    regenerateInviteCodeUseCase,
+    deleteWorkspaceUseCase
+);
+
+// Channel & Message Imports
+import { ChannelRepository } from "../infra/database/repositories/ChannelRepository";
+import { ChannelMemberRepository } from "../infra/database/repositories/ChannelMemberRepository";
+import { MessageRepository } from "../infra/database/repositories/MessageRepository";
+
+import { CreateChannelUseCase } from "../application/use-cases/channel/CreateChannelUseCase";
+import { GetWorkspaceChannelsUseCase } from "../application/use-cases/channel/GetWorkspaceChannelsUseCase";
+import { SendMessageUseCase } from "../application/use-cases/channel/SendMessageUseCase";
+import { GetChannelMessagesUseCase } from "../application/use-cases/channel/GetChannelMessagesUseCase";
+
+import { ChannelController } from "../interfaces/controllers/ChannelController";
+import { MessageController } from "../interfaces/controllers/MessageController";
+
+const channelRepository = new ChannelRepository();
+const channelMemberRepository = new ChannelMemberRepository();
+const messageRepository = new MessageRepository();
+
+const createChannelUseCase = new CreateChannelUseCase(channelRepository, channelMemberRepository);
+const getWorkspaceChannelsUseCase = new GetWorkspaceChannelsUseCase(channelRepository, channelMemberRepository);
+const sendMessageUseCase = new SendMessageUseCase(messageRepository);
+const getChannelMessagesUseCase = new GetChannelMessagesUseCase(messageRepository);
+
+const channelController = new ChannelController(createChannelUseCase, getWorkspaceChannelsUseCase);
+const messageController = new MessageController(sendMessageUseCase, getChannelMessagesUseCase);
+
+export { logger, authController, adminController, userController, workspaceController, channelController, messageController, jwtService };

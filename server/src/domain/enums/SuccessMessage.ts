@@ -9,5 +9,8 @@ export const SuccessMessage = {
     PASSWORD_RESET_SUCCESS: "Password has been reset successfully",
     PROFILE_RETRIEVED: "Profile retrieved successfully",
     PROFILE_UPDATED: "Profile updated successfully",
-    PASSWORD_CHANGED: "Password changed successfully"
+    PASSWORD_CHANGED: "Password changed successfully",
+    WORKSPACE_CREATED: "Workspace created successfully",
+    WORKSPACE_JOINED: "Joined workspace successfully",
+    WORKSPACE_JOIN_REQUESTED: "Join request sent successfully. Waiting for owner approval."
 } as const;

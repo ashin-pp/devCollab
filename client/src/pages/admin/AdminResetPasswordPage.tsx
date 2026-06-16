@@ -46,7 +46,6 @@ export const AdminResetPasswordPage = () => {
     }
   };
 
-  // Password strength logic
   const hasMinLength = newPassword.length >= 12;
   const hasAlphaNumeric = /[a-zA-Z]/.test(newPassword) && /\d/.test(newPassword);
   const hasUppercase = /[A-Z]/.test(newPassword);
@@ -57,16 +56,13 @@ export const AdminResetPasswordPage = () => {
 
   return (
     <div className="min-h-screen w-full bg-[#0d1117] flex items-center justify-center font-mono relative overflow-hidden">
-      {/* Background Grid Pattern */}
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+CjxwYXRoIGQ9Ik0wIDBoNDB2NDBIMHoiIGZpbGw9Im5vbmUiLz4KPHBhdGggZD0iTTAgNDBoNDBWMGgtMXYzOWgtMzl2MXoiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wMykiLz4KPC9zdmc+')] pointer-events-none"></div>
 
-      {/* Top Left Logo */}
       <div className="absolute top-6 left-6 flex items-center gap-2">
         <Terminal className="w-5 h-5 text-amber-500" />
         <span className="text-amber-500 font-bold tracking-widest text-sm">DEVCOLLAB // ADMIN</span>
       </div>
 
-      {/* Top Right */}
       <div className="absolute top-6 right-6">
         <div className="px-3 py-1 bg-red-500/10 border border-red-500/20 text-red-500 rounded text-xs font-bold tracking-widest flex items-center gap-2">
           <AlertTriangle className="w-3 h-3" />
@@ -74,13 +70,10 @@ export const AdminResetPasswordPage = () => {
         </div>
       </div>
 
-      {/* Main Card */}
       <div className="w-full max-w-[420px] bg-[#161b22] border border-[#30363d] rounded-lg shadow-2xl shadow-black/50 relative z-10 overflow-hidden">
-        {/* Top Accent Line */}
         <div className="h-1 w-full bg-amber-500"></div>
 
         <div className="p-8">
-          {/* Header */}
           <div className="flex justify-between items-start mb-8">
             <div>
               <h2 className="text-xl font-bold text-white tracking-wider mb-1 uppercase">UPDATE_CREDENTIALS</h2>
@@ -91,7 +84,6 @@ export const AdminResetPasswordPage = () => {
             </div>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex justify-between">
@@ -120,7 +112,6 @@ export const AdminResetPasswordPage = () => {
               </div>
             </div>
 
-            {/* Password Strength Indicator */}
             <div className="bg-[#010409] border border-[#30363d] p-3 rounded-lg">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Complexity</span>
@@ -187,7 +178,6 @@ export const AdminResetPasswordPage = () => {
 
         </div>
 
-        {/* Status Bar */}
         <div className="bg-[#010409] border-t border-[#30363d] p-3 px-8 flex items-center justify-center text-[10px] font-bold tracking-widest text-slate-600 uppercase">
           SECURE CONNECTION ESTABLISHED
         </div>

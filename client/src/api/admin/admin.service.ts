@@ -33,5 +33,21 @@ export const AdminService = {
     toggleUserStatus: async (id: string, isBlocked: boolean) => {
         const response = await api.patch(`/admin/users/${id}/status`, { isBlocked });
         return response.data;
+    },
+    getWorkspaces: async () => {
+        const response = await api.get('/admin/workspaces');
+        return response.data;
+    },
+    toggleWorkspaceStatus: async (id: string, isActive: boolean) => {
+        const response = await api.patch(`/admin/workspaces/${id}/status`, { isActive });
+        return response.data;
+    },
+    getWorkspaceMembers: async (id: string) => {
+        const response = await api.get(`/admin/workspaces/${id}/members`);
+        return response.data;
+    },
+    updateWorkspaceMemberStatus: async (workspaceId: string, userId: string, status: string) => {
+        const response = await api.patch(`/admin/workspaces/${workspaceId}/members/${userId}/status`, { status });
+        return response.data;
     }
 };

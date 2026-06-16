@@ -40,6 +40,7 @@ export class CloudinaryStorageService implements IStorageService {
         try {
             const urlParts = fileUrl.split('/');
             const filenameWithExt = urlParts[urlParts.length - 1];
+            if (!filenameWithExt) return;
             const filename = filenameWithExt.split('.')[0];
             const publicId = `devcollab/profiles/${filename}`;
 

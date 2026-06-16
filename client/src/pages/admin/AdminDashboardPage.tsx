@@ -5,7 +5,6 @@ export const AdminDashboardPage = () => {
   return (
     <AdminLayout>
       
-      {/* Top Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4 border-b border-[#30363d] pb-6">
         <div>
           <h1 className="text-sm font-bold text-slate-400 tracking-widest mb-1">SYSTEM_OVERVIEW</h1>
@@ -25,9 +24,7 @@ export const AdminDashboardPage = () => {
         </div>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {/* Stat 1 */}
         <div className="bg-[#161b22] border border-[#30363d] p-6 rounded-lg relative overflow-hidden">
           <div className="absolute top-4 right-4 text-[#30363d]">
             <Network className="w-8 h-8" />
@@ -39,7 +36,6 @@ export const AdminDashboardPage = () => {
           </div>
         </div>
 
-        {/* Stat 2 */}
         <div className="bg-[#161b22] border border-[#30363d] p-6 rounded-lg relative overflow-hidden">
           <div className="absolute top-4 right-4 text-[#30363d]">
             <Users className="w-8 h-8" />
@@ -51,7 +47,6 @@ export const AdminDashboardPage = () => {
           </div>
         </div>
 
-        {/* Stat 3 */}
         <div className="bg-[#161b22] border border-[#30363d] p-6 rounded-lg relative overflow-hidden">
           <div className="absolute top-4 right-4 text-[#30363d]">
             <Activity className="w-8 h-8" />
@@ -63,7 +58,6 @@ export const AdminDashboardPage = () => {
           </div>
         </div>
 
-        {/* Stat 4 */}
         <div className="bg-[#161b22] border border-[#30363d] p-6 rounded-lg relative overflow-hidden">
           <div className="absolute top-4 right-4 text-[#30363d]">
             <Wallet className="w-8 h-8" />
@@ -76,10 +70,8 @@ export const AdminDashboardPage = () => {
         </div>
       </div>
 
-      {/* Middle Section (Chart + Logs) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         
-        {/* Chart Area */}
         <div className="lg:col-span-2 bg-[#161b22] border border-[#30363d] rounded-lg p-6">
           <div className="flex justify-between items-center mb-8 border-b border-[#30363d] pb-4">
             <h2 className="text-sm font-bold text-slate-300 tracking-widest uppercase">PLATFORM_GROWTH_INDEX [DATA_VIZ]</h2>
@@ -90,7 +82,6 @@ export const AdminDashboardPage = () => {
             </div>
           </div>
           
-          {/* Fake Bar Chart */}
           <div className="h-64 flex items-end justify-between gap-2 md:gap-6 pt-4 border-l border-b border-[#30363d] px-4">
             {[40, 55, 45, 80, 60, 75, 65].map((h, i) => (
               <div key={i} className="w-full relative group">
@@ -104,7 +95,6 @@ export const AdminDashboardPage = () => {
           </div>
         </div>
 
-        {/* Audit Logs */}
         <div className="bg-[#161b22] border border-[#30363d] rounded-lg p-6 flex flex-col">
           <h2 className="text-sm font-bold text-slate-300 tracking-widest uppercase mb-6 border-b border-[#30363d] pb-4">SYS_LOG_AUDIT</h2>
           <div className="flex-1 overflow-y-auto space-y-4 pr-2">
@@ -156,7 +146,6 @@ export const AdminDashboardPage = () => {
   );
 };
 
-// Helper icon
 const RefreshCwIcon = ({ className }: { className?: string }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
