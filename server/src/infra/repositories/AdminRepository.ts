@@ -12,6 +12,6 @@ export class AdminRepository extends MongoBaseRepository<Admin, IAdminModel> imp
 
     async findByEmail(email: string): Promise<Admin | null> {
         const found = await this.model.findOne({ email });
-        return found ? this.mapper.toDomain(found) : null;
+        return found ? this._mapper.toDomain(found) : null;
     }
 }

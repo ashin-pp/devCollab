@@ -13,11 +13,11 @@ export class UserRepository extends MongoBaseRepository<User, IUserModel> implem
 
     async findByEmail(email: string): Promise<User | null> {
         const found = await this.model.findOne({ email });
-        return found ? this.mapper.toDomain(found) : null;
+        return found ? this._mapper.toDomain(found) : null;
     }
 
     async findByGoogleId(googleId: string): Promise<User | null> {
         const found = await this.model.findOne({ google_id: googleId });
-        return found ? this.mapper.toDomain(found) : null;
+        return found ? this._mapper.toDomain(found) : null;
     }
 }

@@ -5,27 +5,27 @@ import { JwtService } from '../services/JwtService';
 import { logger } from '../../container';
 
 export class SocketService {
-    private static instance: SocketService;
-    private io: SocketIOServer;
-    private jwtService = new JwtService();
+    private static _instance: SocketService;
+    private _io: SocketIOServer;
+    private _jwtService = new JwtService();
 
     constructor(httpServer: HttpServer) {
-        this.io = new SocketIOServer(httpServer, {
+        this._io = new SocketIOServer(httpServer, {
             cors: {
                 origin: envConfig.clientUrl,
                 credentials: true,
                 methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
             }
         });
-        SocketService.instance = this;
+        SocketService._instance = this;
     }
 
     public static getInstance(): SocketService | null {
-        return SocketService.instance || null;
+        return SocketService._instance || null;
     }
 
     public initialize(): void {
-        this.io.use((socket, next) => {
+        this._io.use((socket, next) => {
             try {
                 const cookieStr = socket.handshake.headers.cookie || '';
                 const cookies = Object.fromEntries(
@@ -37,7 +37,7 @@ export class SocketService {
                     return next(new Error('Authentication error'));
                 }
 
-                const decoded = this.jwtService.verifyAccessToken(token);
+                const decoded = this._jwtService.verifyAccessToken(token);
                 if (decoded && decoded.id) {
                     (socket as any).user = decoded;
                     next();
@@ -49,7 +49,7 @@ export class SocketService {
             }
         });
 
-        this.io.on('connection', (socket: Socket) => {
+        this._io.on('connection', (socket: Socket) => {
             const user = (socket as any).user;
             logger.info(`User connected to socket: ${user.id}`);
 
@@ -86,7 +86,7 @@ export class SocketService {
 
             socket.on('new_message', (message: any) => {
                 logger.info(`Received new_message for channel ${message.channelId} from user ${user.id}`);
-                this.io.to(`channel:${message.channelId}`).emit('message_received', message);
+                this._io.to(`channel:${message.channelId}`).emit('message_received', message);
             });
 
             socket.on('disconnect', () => {
@@ -96,6 +96,6 @@ export class SocketService {
     }
 
     public getIO(): SocketIOServer {
-        return this.io;
+        return this._io;
     }
 }

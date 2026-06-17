@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, Settings, Trash2, Lock, Globe } from 'lucide-react';
 import { ChannelService } from '../../api/workspace/channel.service';
 import toast from 'react-hot-toast';
+import Swal from 'sweetalert2';
 import type { ChannelSettingsModalProps } from '../../types/component.types';
 
 export const ChannelSettingsModal = ({ 
@@ -50,7 +51,23 @@ export const ChannelSettingsModal = ({
   };
 
   const handleDelete = async () => {
-    if (!window.confirm(`Are you absolutely sure you want to delete #${name}? This action cannot be undone.`)) {
+    const result = await Swal.fire({
+      title: 'Delete Channel?',
+      html: `Are you absolutely sure you want to delete <strong>#${name}</strong>?<br>This action cannot be undone.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Yes, delete it',
+      cancelButtonText: 'Cancel',
+      customClass: {
+        popup: 'rounded-2xl',
+        confirmButton: 'px-4 py-2 rounded-xl font-semibold',
+        cancelButton: 'px-4 py-2 rounded-xl font-semibold'
+      }
+    });
+
+    if (!result.isConfirmed) {
       return;
     }
 

@@ -4,7 +4,7 @@ import { WorkspaceModel } from "../models/WorkspaceModel";
 import { WorkspaceMapper } from "../../mappers/WorkspaceMapper";
 
 export class WorkspaceRepository implements IWorkspaceRepository {
-    private mapper = new WorkspaceMapper();
+    private _mapper = new WorkspaceMapper();
     async create(workspace: Workspace): Promise<Workspace> {
         const createdWorkspace = await WorkspaceModel.create({
             name: workspace.name,
@@ -17,15 +17,17 @@ export class WorkspaceRepository implements IWorkspaceRepository {
             is_active: workspace.isActive,
         });
 
-        return this.mapper.toDomain(createdWorkspace);
+        return this._mapper.toDomain(createdWorkspace);
     }
+
+  
 
     async findById(id: string): Promise<Workspace | null> {
         const workspace = await WorkspaceModel.findById(id);
         if (!workspace) {
             return null;
         }
-        return this.mapper.toDomain(workspace);
+        return this._mapper.toDomain(workspace);
     }
 
     async findByInviteCode(inviteCode: string): Promise<Workspace | null> {
@@ -33,12 +35,12 @@ export class WorkspaceRepository implements IWorkspaceRepository {
         if (!workspace) {
             return null;
         }
-        return this.mapper.toDomain(workspace);
+        return this._mapper.toDomain(workspace);
     }
 
     async findAllByUserId(userId: string): Promise<Workspace[]> {
         const workspaces = await WorkspaceModel.find({ created_by: userId });
-        return workspaces.map(w => this.mapper.toDomain(w));
+        return workspaces.map(w => this._mapper.toDomain(w));
     }
 
     async update(id: string, workspaceData: Partial<Workspace>): Promise<Workspace | null> {
@@ -75,7 +77,7 @@ export class WorkspaceRepository implements IWorkspaceRepository {
         if (!updatedWorkspace) {
             return null;
         }
-        return this.mapper.toDomain(updatedWorkspace);
+        return this._mapper.toDomain(updatedWorkspace);
     }
 
     async delete(id: string): Promise<boolean> {
@@ -85,17 +87,17 @@ export class WorkspaceRepository implements IWorkspaceRepository {
 
     async findAll(): Promise<Workspace[]> {
         const workspaces = await WorkspaceModel.find().sort({ createdAt: -1 });
-        return workspaces.map(w => this.mapper.toDomain(w));
+        return workspaces.map(w => this._mapper.toDomain(w));
     }
 
     async findPublicWorkspaces(): Promise<Workspace[]> {
         const workspaces = await WorkspaceModel.find({ privacy: 'public', is_active: true });
-        return workspaces.map(w => this.mapper.toDomain(w));
+        return workspaces.map(w => this._mapper.toDomain(w));
     }
 
     async findByIds(ids: string[]): Promise<Workspace[]> {
         const workspaces = await WorkspaceModel.find({ _id: { $in: ids } });
-        return workspaces.map(w => this.mapper.toDomain(w));
+        return workspaces.map(w => this._mapper.toDomain(w));
     }
 
 }

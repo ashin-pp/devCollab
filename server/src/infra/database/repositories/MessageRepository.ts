@@ -4,7 +4,7 @@ import { MessageModel } from "../models/MessageModel";
 import { MessageMapper } from "../../mappers/MessageMapper";
 
 export class MessageRepository implements IMessageRepository {
-    private mapper = new MessageMapper();
+    private _mapper = new MessageMapper();
 
     async create(message: Message): Promise<Message> {
         const created = await MessageModel.create({
@@ -18,12 +18,12 @@ export class MessageRepository implements IMessageRepository {
             thread_root_id: message.threadRootId
         });
         const populated = await created.populate('sender_id', 'name');
-        return this.mapper.toDomain(populated);
+        return this._mapper.toDomain(populated);
     }
 
     async findById(id: string): Promise<Message | null> {
         const message = await MessageModel.findById(id).populate('sender_id', 'name');
-        return message ? this.mapper.toDomain(message) : null;
+        return message ? this._mapper.toDomain(message) : null;
     }
 
     async findByChannelId(channelId: string, limit: number, skip: number): Promise<Message[]> {
@@ -32,7 +32,7 @@ export class MessageRepository implements IMessageRepository {
             .skip(skip)
             .limit(limit)
             .populate('sender_id', 'name');
-        return messages.map(m => this.mapper.toDomain(m));
+        return messages.map(m => this._mapper.toDomain(m));
     }
 
     async update(id: string, messageData: Partial<Message>): Promise<Message | null> {
@@ -42,7 +42,7 @@ export class MessageRepository implements IMessageRepository {
         if (messageData.isPinned !== undefined) updateData.is_pinned = messageData.isPinned;
         
         const updated = await MessageModel.findByIdAndUpdate(id, updateData, { new: true });
-        return updated ? this.mapper.toDomain(updated) : null;
+        return updated ? this._mapper.toDomain(updated) : null;
     }
 
     async delete(id: string): Promise<boolean> {

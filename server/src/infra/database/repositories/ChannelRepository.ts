@@ -4,7 +4,7 @@ import { ChannelModel } from "../models/ChannelModel";
 import { ChannelMapper } from "../../mappers/ChannelMapper";
 
 export class ChannelRepository implements IChannelRepository {
-    private mapper = new ChannelMapper();
+    private _mapper = new ChannelMapper();
 
     async create(channel: Channel): Promise<Channel> {
         const created = await ChannelModel.create({
@@ -15,17 +15,17 @@ export class ChannelRepository implements IChannelRepository {
             is_active: channel.isActive,
             privacy: channel.privacy
         });
-        return this.mapper.toDomain(created);
+        return this._mapper.toDomain(created);
     }
 
     async findById(id: string): Promise<Channel | null> {
         const channel = await ChannelModel.findById(id);
-        return channel ? this.mapper.toDomain(channel) : null;
+        return channel ? this._mapper.toDomain(channel) : null;
     }
 
     async findByWorkspaceId(workspaceId: string): Promise<Channel[]> {
         const channels = await ChannelModel.find({ workspace_id: workspaceId });
-        return channels.map(c => this.mapper.toDomain(c));
+        return channels.map(c => this._mapper.toDomain(c));
     }
 
     async update(id: string, channelData: Partial<Channel>): Promise<Channel | null> {
@@ -36,7 +36,7 @@ export class ChannelRepository implements IChannelRepository {
         if (channelData.privacy) updateData.privacy = channelData.privacy;
 
         const updated = await ChannelModel.findByIdAndUpdate(id, updateData, { new: true });
-        return updated ? this.mapper.toDomain(updated) : null;
+        return updated ? this._mapper.toDomain(updated) : null;
     }
 
     async delete(id: string): Promise<boolean> {

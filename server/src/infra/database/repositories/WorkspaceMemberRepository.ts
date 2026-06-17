@@ -4,7 +4,7 @@ import { WorkspaceMemberModel } from "../models/WorkspaceMemberModel";
 import { WorkspaceMemberMapper } from "../../mappers/WorkspaceMemberMapper";
 
 export class WorkspaceMemberRepository implements IWorkspaceMemberRepository {
-    private mapper = new WorkspaceMemberMapper();
+    private _mapper = new WorkspaceMemberMapper();
     async create(member: WorkspaceMember): Promise<WorkspaceMember> {
         const createdMember = await WorkspaceMemberModel.create({
             workspace_id: member.workspaceId,
@@ -13,7 +13,7 @@ export class WorkspaceMemberRepository implements IWorkspaceMemberRepository {
             status: member.status
         });
 
-        return this.mapper.toDomain(createdMember);
+        return this._mapper.toDomain(createdMember);
     }
 
     async findByWorkspaceAndUser(workspaceId: string, userId: string): Promise<WorkspaceMember | null> {
@@ -25,12 +25,12 @@ export class WorkspaceMemberRepository implements IWorkspaceMemberRepository {
         if (!member) {
             return null;
         }
-        return this.mapper.toDomain(member);
+        return this._mapper.toDomain(member);
     }
 
     async findAllByWorkspaceId(workspaceId: string): Promise<WorkspaceMember[]> {
         const members = await WorkspaceMemberModel.find({ workspace_id: workspaceId });
-        return members.map(m => this.mapper.toDomain(m));
+        return members.map(m => this._mapper.toDomain(m));
     }
 
     async findAllByUserId(userId: string): Promise<WorkspaceMember[]> {
@@ -38,7 +38,7 @@ export class WorkspaceMemberRepository implements IWorkspaceMemberRepository {
             user_id: userId, 
             $or: [{ status: 'approved' }, { status: 'blocked' }, { status: { $exists: false } }] 
         });
-        return memberships.map(m => this.mapper.toDomain(m));
+        return memberships.map(m => this._mapper.toDomain(m));
     }
 
     async remove(workspaceId: string, userId: string): Promise<boolean> {
@@ -67,6 +67,6 @@ export class WorkspaceMemberRepository implements IWorkspaceMemberRepository {
         if (!updatedMember) {
             return null;
         }
-        return this.mapper.toDomain(updatedMember);
+        return this._mapper.toDomain(updatedMember);
     }
 }

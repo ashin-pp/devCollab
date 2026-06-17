@@ -18,7 +18,6 @@ export class CreateWorkspaceUseCase {
         if (!data.name || !data.createdBy) {
             throw new AppError(ErrorMessage.WORKSPACE_NAME_REQUIRED, HttpStatusCode.BAD_REQUEST);
         }
-
         const inviteCode = crypto.randomBytes(4).toString('hex').toUpperCase();
 
         const newWorkspace = new Workspace(

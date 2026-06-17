@@ -3,10 +3,10 @@ import { IEmailService } from "../../domain/services/IEmailService";
 import { logger } from "../../container";
 
 export class NodemailerEmailService implements IEmailService {
-    private transporter;
+    private _transporter;
 
     constructor() {
-        this.transporter = nodemailer.createTransport({
+        this._transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
                 user: process.env.EMAIL_USER,
@@ -32,7 +32,7 @@ export class NodemailerEmailService implements IEmailService {
         };
 
         try {
-            await this.transporter.sendMail(mailOptions);
+            await this._transporter.sendMail(mailOptions);
             logger.info(`OTP Email successfully sent to ${email}`);
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);

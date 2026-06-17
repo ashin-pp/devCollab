@@ -18,12 +18,12 @@ export class OtpRepository extends MongoBaseRepository<OtpVerification, IOtpMode
             is_used: false 
         });
         
-        return found ? this.mapper.toDomain(found) : null;
+        return found ? this._mapper.toDomain(found) : null;
     }
 
     async findLatestOtpByEmail(email: string): Promise<OtpVerification | null> {
         const found = await this.model.findOne({ email }).sort({ createdAt: -1 });
-        return found ? this.mapper.toDomain(found) : null;
+        return found ? this._mapper.toDomain(found) : null;
     }
 
     async deleteByEmail(email: string): Promise<void> {
