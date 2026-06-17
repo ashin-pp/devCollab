@@ -19,6 +19,10 @@ router.post('/:workspaceId/channels/:channelId/join', authMiddleware, channelCon
 router.get('/:workspaceId/channels/:channelId/requests', authMiddleware, channelController.getChannelRequests);
 router.patch('/:workspaceId/channels/:channelId/requests/:userId', authMiddleware, channelController.updateChannelRequest);
 
+// Unread Messages
+router.post('/:workspaceId/channels/:channelId/read', authMiddleware, channelController.markChannelAsRead);
+router.get('/:workspaceId/channels/unread-counts', authMiddleware, channelController.getUnreadCounts);
+
 // Message Routes
 router.post('/:workspaceId/channels/:channelId/messages', authMiddleware, messageController.sendMessage);
 router.get('/:workspaceId/channels/:channelId/messages', authMiddleware, messageController.getChannelMessages);

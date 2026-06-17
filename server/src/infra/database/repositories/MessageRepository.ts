@@ -49,4 +49,12 @@ export class MessageRepository implements IMessageRepository {
         const result = await MessageModel.findByIdAndDelete(id);
         return result !== null;
     }
+
+    async countUnreadMessages(channelId: string, lastReadAt: Date): Promise<number> {
+        const count = await MessageModel.countDocuments({
+            channel_id: channelId,
+            created_at: { $gt: lastReadAt }
+        });
+        return count;
+    }
 }

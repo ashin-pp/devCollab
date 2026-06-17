@@ -67,6 +67,7 @@ export class SocketService {
             });
 
             socket.on('typing', (data: { channelId: string, userName: string }) => {
+                logger.info(`User ${user.id} (${data.userName}) typing in channel ${data.channelId}`);
                 socket.to(`channel:${data.channelId}`).emit('user_typing', {
                     channelId: data.channelId,
                     userId: user.id,
@@ -74,10 +75,12 @@ export class SocketService {
                 });
             });
 
-            socket.on('stop_typing', (data: { channelId: string }) => {
+            socket.on('stop_typing', (data: { channelId: string, userName: string }) => {
+                logger.info(`User ${user.id} (${data.userName}) stopped typing in channel ${data.channelId}`);
                 socket.to(`channel:${data.channelId}`).emit('user_stopped_typing', {
                     channelId: data.channelId,
-                    userId: user.id
+                    userId: user.id,
+                    userName: data.userName
                 });
             });
 

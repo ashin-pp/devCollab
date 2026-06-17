@@ -142,7 +142,6 @@ export const DashboardPage = () => {
   };
 
   const handleWorkspaceCreated = (workspace: Record<string, unknown>) => {
-    console.log("Workspace created:", workspace);
     setMyWorkspaces(prev => [...prev, workspace as unknown as Workspace]);
   };
 

@@ -15,7 +15,6 @@ export class RequestEmailChangeUseCase {
 
     async execute(userId: string, newEmail: string): Promise<void> {
         const user = await this.userRepository.findById(userId);
-        console.log("RequestEmailChangeUseCase user:", JSON.stringify(user));
         if (!user) throw new AppError(ErrorMessage.USER_NOT_FOUND, HttpStatusCode.NOT_FOUND);
 
         const existingUser = await this.userRepository.findByEmail(newEmail);

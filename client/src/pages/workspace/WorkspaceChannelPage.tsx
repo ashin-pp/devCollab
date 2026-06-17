@@ -26,6 +26,12 @@ export const WorkspaceChannelPage = () => {
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [isChannelDropdownOpen, setIsChannelDropdownOpen] = useState(false);
   
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [totalMessages, setTotalMessages] = useState(0);
+  
   const [currentChannel, setCurrentChannel] = useState<ChannelData | null>(null);
   const [channelMembers, setChannelMembers] = useState<Array<{ id: string; userId: string; user?: { name: string; profileImage?: string } }>>([]);
   const [memberImagesMap, setMemberImagesMap] = useState<Record<string, string>>({});
@@ -47,9 +53,7 @@ export const WorkspaceChannelPage = () => {
         })
         .catch(err => console.error('Failed to fetch channels', err));
 
-      MessageService.getChannelMessages(workspaceId, channelId)
-        .then(res => setMessages(res.data?.data?.reverse() || []))
-        .catch(err => console.error('Failed to fetch messages', err));
+      fetchMessages(1, true); // Fetch first page and reset
 
       // Fetch channel members and create image mapping
       ChannelService.getMembers(workspaceId, channelId)
@@ -86,6 +90,55 @@ export const WorkspaceChannelPage = () => {
     }
   };
 
+  const fetchMessages = async (page: number = 1, reset: boolean = false) => {
+    if (!workspaceId || !channelId) return;
+    
+    setIsLoadingMessages(true);
+    try {
+      const res = await MessageService.getChannelMessages(workspaceId, channelId, page, 20);
+      
+      // Handle different response structures
+      let newMessages: MessageData[] = [];
+      let pagination = { total: 0, page: 1, totalPages: 1 };
+      
+      if (res.data?.data?.messages) {
+        // Paginated response
+        newMessages = res.data.data.messages.reverse();
+        pagination = res.data.data.pagination;
+      } else if (res.data?.data && Array.isArray(res.data.data)) {
+        // Simple array response
+        newMessages = res.data.data.reverse();
+        pagination = { total: res.data.data.length, page: 1, totalPages: 1 };
+      } else if (Array.isArray(res.data)) {
+        // Direct array response
+        newMessages = res.data.reverse();
+        pagination = { total: res.data.length, page: 1, totalPages: 1 };
+      }
+      
+      if (reset) {
+        setMessages(newMessages);
+        setCurrentPage(1);
+      } else {
+        // Prepend older messages to the beginning
+        setMessages(prev => [...newMessages, ...prev]);
+      }
+      
+      setTotalMessages(pagination.total || newMessages.length);
+      setHasMoreMessages(page < (pagination.totalPages || 1));
+      setCurrentPage(page);
+    } catch (err) {
+      console.error('Failed to fetch messages', err);
+    } finally {
+      setIsLoadingMessages(false);
+    }
+  };
+
+  const loadMoreMessages = () => {
+    if (hasMoreMessages && !isLoadingMessages) {
+      fetchMessages(currentPage + 1, false);
+    }
+  };
+
   const handleJoinChannel = async () => {
     if (!workspaceId || !channelId) return;
     try {
@@ -108,6 +161,16 @@ export const WorkspaceChannelPage = () => {
 
   useEffect(() => {
     fetchChannelData();
+    
+    // Mark channel as read when user enters
+    if (workspaceId && channelId) {
+      ChannelService.markAsRead(workspaceId, channelId)
+        .then(() => {
+          // Emit event to parent to clear unread count
+          window.dispatchEvent(new CustomEvent('channel-read', { detail: { channelId } }));
+        })
+        .catch(err => console.error('Failed to mark channel as read', err));
+    }
   }, [workspaceId, channelId]);
 
   useEffect(() => {
@@ -124,7 +187,6 @@ export const WorkspaceChannelPage = () => {
     socket.on('connect', joinChannel);
 
     const handleNewMessage = (newMsg: MessageData) => {
-      console.log('Received new_message over socket:', newMsg);
       setMessages(prev => {
         const incomingId = newMsg.id || newMsg._id;
         if (prev.some(m => (m.id || m._id) === incomingId)) return prev;
@@ -134,6 +196,9 @@ export const WorkspaceChannelPage = () => {
     };
 
     const handleTyping = (data: { userId: string, userName: string }) => {
+      // Don't show current user's typing indicator
+      if (data.userId === user?.id) return;
+      
       setTypingUsers(prev => {
         if (!prev.includes(data.userName)) return [...prev, data.userName];
         return prev;
@@ -225,12 +290,12 @@ export const WorkspaceChannelPage = () => {
     setMessage(e.target.value);
     
     if (socket && channelId && user) {
-      socket.emit('typing', { channelId, userName: user.name });
+      socket.emit('typing', { channelId, userId: user.id, userName: user.name });
       
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       
       typingTimeoutRef.current = setTimeout(() => {
-        socket.emit('stop_typing', { channelId });
+        socket.emit('stop_typing', { channelId, userId: user.id, userName: user.name });
       }, 2000);
     }
   };
@@ -256,10 +321,16 @@ export const WorkspaceChannelPage = () => {
       // Emit socket event
       if (socket) {
         socket.emit('new_message', newMsgObj);
+        socket.emit('stop_typing', { channelId, userId: user.id, userName: user.name });
       }
       
       setMessage('');
-      if (socket) socket.emit('stop_typing', { channelId });
+      
+      // Clear typing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
+      }
     } catch (error) {
       console.error('Failed to send message', error);
     }
@@ -504,9 +575,40 @@ export const WorkspaceChannelPage = () => {
             <>
               <div className="px-6 py-2 border-b border-slate-100 bg-slate-50/50">
                 <p className="text-xs text-slate-500">{currentChannel?.description || "Central engineering and platform architecture discussions."}</p>
+                {/* Typing Indicator */}
+                {typingUsers.length > 0 && (
+                  <div className="flex items-center gap-2 mt-1 text-xs text-slate-600 italic">
+                    <div className="flex gap-1">
+                      <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce"></span>
+                      <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></span>
+                      <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></span>
+                    </div>
+                    <span>{typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...</span>
+                  </div>
+                )}
               </div>
 
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
+
+            {/* Load More Messages Button */}
+            {hasMoreMessages && (
+              <div className="flex justify-center pb-4">
+                <button
+                  onClick={loadMoreMessages}
+                  disabled={isLoadingMessages}
+                  className="px-4 py-2 bg-blue-50 text-blue-600 text-sm font-semibold rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {isLoadingMessages ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                      Loading...
+                    </>
+                  ) : (
+                    `Load older messages (${totalMessages - messages.length} more)`
+                  )}
+                </button>
+              </div>
+            )}
 
             {messages.map((msg) => {
               const isMe = msg.senderId === user?.id;
@@ -594,12 +696,6 @@ export const WorkspaceChannelPage = () => {
                 className="w-full resize-none p-4 min-h-[80px] text-[15px] focus:outline-none text-slate-700 placeholder:text-slate-400"
                 rows={2}
               ></textarea>
-              
-              {typingUsers.length > 0 && (
-                <div className="px-4 py-1 text-xs text-slate-500 italic">
-                  {typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...
-                </div>
-              )}
 
               <div className="px-3 py-2 flex items-center justify-between">
                 <div className="flex items-center gap-1">

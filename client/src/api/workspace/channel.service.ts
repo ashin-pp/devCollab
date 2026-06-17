@@ -33,5 +33,11 @@ export const ChannelService = {
     },
     updateRequest: (workspaceId: string, channelId: string, userId: string, action: 'approve' | 'reject') => {
         return api.patch(`/workspaces/${workspaceId}/channels/${channelId}/requests/${userId}`, { action });
+    },
+    markAsRead: (workspaceId: string, channelId: string) => {
+        return api.post(`/workspaces/${workspaceId}/channels/${channelId}/read`);
+    },
+    getUnreadCounts: (workspaceId: string) => {
+        return api.get(`/workspaces/${workspaceId}/channels/unread-counts`);
     }
 };

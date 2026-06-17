@@ -11,6 +11,8 @@ import { DeleteChannelUseCase } from '../../application/use-cases/channel/Delete
 import { JoinChannelUseCase } from '../../application/use-cases/channel/JoinChannelUseCase';
 import { GetChannelRequestsUseCase } from '../../application/use-cases/channel/GetChannelRequestsUseCase';
 import { UpdateChannelRequestUseCase } from '../../application/use-cases/channel/UpdateChannelRequestUseCase';
+import { MarkChannelAsReadUseCase } from '../../application/use-cases/channel/MarkChannelAsReadUseCase';
+import { GetUnreadCountsUseCase } from '../../application/use-cases/channel/GetUnreadCountsUseCase';
 import { HttpStatusCode } from '../../domain/enums/HttpStatusCode';
 import { AppError } from '../../domain/errors/AppError';
 import { ErrorMessage } from '../../domain/enums/ErrorMessage';
@@ -27,7 +29,9 @@ export class ChannelController {
         private deleteChannelUseCase: DeleteChannelUseCase,
         private joinChannelUseCase: JoinChannelUseCase,
         private getChannelRequestsUseCase: GetChannelRequestsUseCase,
-        private updateChannelRequestUseCase: UpdateChannelRequestUseCase
+        private updateChannelRequestUseCase: UpdateChannelRequestUseCase,
+        private markChannelAsReadUseCase: MarkChannelAsReadUseCase,
+        private getUnreadCountsUseCase: GetUnreadCountsUseCase
     ) {}
 
     createChannel = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
@@ -246,6 +250,46 @@ export class ChannelController {
             const result = await this.updateChannelRequestUseCase.execute(workspaceId as string, channelId as string, targetUserId as string, action, adminId);
             
             res.status(HttpStatusCode.OK).json(result);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    markChannelAsRead = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const { channelId } = req.params;
+            const userId = req.user?.id;
+
+            if (!userId) {
+                throw new AppError(ErrorMessage.UNAUTHORIZED, HttpStatusCode.UNAUTHORIZED);
+            }
+
+            const result = await this.markChannelAsReadUseCase.execute(channelId as string, userId);
+            
+            res.status(result.statusCode).json({
+                success: result.success,
+                message: result.message
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    getUnreadCounts = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const { workspaceId } = req.params;
+            const userId = req.user?.id;
+
+            if (!userId) {
+                throw new AppError(ErrorMessage.UNAUTHORIZED, HttpStatusCode.UNAUTHORIZED);
+            }
+
+            const result = await this.getUnreadCountsUseCase.execute(workspaceId as string, userId);
+            
+            res.status(result.statusCode).json({
+                success: result.success,
+                data: result.data
+            });
         } catch (error) {
             next(error);
         }

@@ -9,6 +9,7 @@ import { useSelector } from 'react-redux';
 import type { RootState } from '../store';
 import { WorkspaceService } from '../api/workspace/workspace.service';
 import { ChannelService } from '../api/workspace/channel.service';
+import { useSocket } from '../hooks/useSocket';
 import type { ChannelData } from '../types/channel.types';
 import type { MemberData } from '../types/workspace.types';
 import toast from 'react-hot-toast';
@@ -22,6 +23,7 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
   const location = useLocation();
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const user = useSelector((state: RootState) => state.auth.user);
+  const socket = useSocket(workspaceId);
 
   const [isOwner, setIsOwner] = useState(false);
   const [channels, setChannels] = useState<Record<string, unknown>[]>([]);
@@ -30,6 +32,7 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
   const [workspaceLogo, setWorkspaceLogo] = useState<string | undefined>(undefined);
   const [inviteCode, setInviteCode] = useState<string>('');
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   
   const [isMyChannelsOpen, setIsMyChannelsOpen] = useState(true);
   const [isAllChannelsOpen, setIsAllChannelsOpen] = useState(true);
@@ -39,7 +42,24 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
       ChannelService.getWorkspaceChannels(workspaceId)
         .then(res => setChannels(res.data?.data || []))
         .catch(err => console.error('Failed to fetch channels', err));
+      
+      // Fetch unread counts
+      ChannelService.getUnreadCounts(workspaceId)
+        .then(res => {
+          if (res.data?.success) {
+            setUnreadCounts(res.data.data || {});
+          }
+        })
+        .catch(err => console.error('Failed to fetch unread counts', err));
     }
+  };
+
+  const updateUnreadCount = (channelId: string) => {
+    // Increment unread count for the channel
+    setUnreadCounts(prev => ({
+      ...prev,
+      [channelId]: (prev[channelId] || 0) + 1
+    }));
   };
 
   useEffect(() => {
@@ -82,6 +102,46 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
       });
     }
   }, [workspaceId, user, navigate]);
+
+  // Listen for new messages via socket and update unread counts
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNewMessage = (message: { channelId: string; senderId: string }) => {
+      // Don't increment count for messages sent by current user
+      if (message.senderId !== user?.id) {
+        // Only increment if user is not currently viewing this channel
+        const currentChannelId = location.pathname.split('/channels/')[1];
+        if (currentChannelId !== message.channelId) {
+          updateUnreadCount(message.channelId);
+        }
+      }
+    };
+
+    socket.on('message_received', handleNewMessage);
+
+    return () => {
+      socket.off('message_received', handleNewMessage);
+    };
+  }, [socket, user, location]);
+
+  // Listen for channel-read events to clear unread count
+  useEffect(() => {
+    const handleChannelRead = (event: Event) => {
+      const customEvent = event as CustomEvent<{ channelId: string }>;
+      const { channelId } = customEvent.detail;
+      setUnreadCounts(prev => ({
+        ...prev,
+        [channelId]: 0
+      }));
+    };
+
+    window.addEventListener('channel-read', handleChannelRead);
+
+    return () => {
+      window.removeEventListener('channel-read', handleChannelRead);
+    };
+  }, []);
 
   const isActive = (path: string) => location.pathname.includes(path);
 
@@ -222,6 +282,7 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
                     {channels.filter((c) => c.createdBy === user?.id).map((channel: Record<string, unknown>) => {
                       const isPrivate = channel.privacy === 'private';
                       const channelId = channel.id as string;
+                      const unreadCount = unreadCounts[channelId] || 0;
                       
                       return (
                   <div
@@ -247,6 +308,11 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
                       )}
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
+                      {unreadCount > 0 && (
+                        <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                          {unreadCount > 99 ? '99+' : unreadCount}
+                        </span>
+                      )}
                       {isActive(`channels/${channelId}`) && <div className={`w-2 h-2 rounded-full shadow-sm ${isPrivate ? 'bg-orange-600' : 'bg-blue-600'}`}></div>}
                     </div>
                   </div>
@@ -273,13 +339,16 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
                   <div className="space-y-1">
                     {channels.filter((c) => c.createdBy !== user?.id).map((channel: Record<string, unknown>) => {
                       const isPrivate = channel.privacy === 'private';
+                      const channelId = channel.id as string;
+                      const unreadCount = unreadCounts[channelId] || 0;
+                      
                       return (
                   <div
                     key={channel.id as string}
                     onClick={() => navigate(`/workspace/${workspaceId}/channels/${channel.id}`)}
                     className={`group flex items-center justify-between text-sm py-2 px-3 pl-6 rounded-xl cursor-pointer font-medium transition-all ${isActive(`channels/${channel.id}`) ? 'bg-blue-50/80 text-blue-700 font-bold shadow-sm' : 'text-slate-600 hover:bg-white hover:shadow-sm hover:text-slate-900'}`}
                   >
-                    <div className="flex items-center truncate gap-2">
+                    <div className="flex items-center truncate gap-2 flex-1 min-w-0">
                       {isPrivate ? (
                         <Lock className={`w-4 h-4 transition-colors flex-shrink-0 ${isActive(`channels/${channel.id}`) ? 'text-orange-600' : 'text-orange-500 group-hover:text-orange-600'}`} />
                       ) : (
@@ -296,7 +365,14 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
                         </span>
                       )}
                     </div>
-                    {isActive(`channels/${channel.id}`) && <div className={`w-2 h-2 rounded-full shadow-sm ${isPrivate ? 'bg-orange-600' : 'bg-blue-600'}`}></div>}
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {unreadCount > 0 && (
+                        <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                          {unreadCount > 99 ? '99+' : unreadCount}
+                        </span>
+                      )}
+                      {isActive(`channels/${channel.id}`) && <div className={`w-2 h-2 rounded-full shadow-sm ${isPrivate ? 'bg-orange-600' : 'bg-blue-600'}`}></div>}
+                    </div>
                   </div>
                       );
                     })}

@@ -12,6 +12,7 @@ export class ChannelMemberMapper {
             raw.status,
             raw.joined_at,
             raw.removed_at,
+            raw.last_read_at,
             raw._id.toString()
         );
     }

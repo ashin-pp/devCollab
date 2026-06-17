@@ -194,6 +194,8 @@ import { DeleteChannelUseCase } from "../application/use-cases/channel/DeleteCha
 import { JoinChannelUseCase } from "../application/use-cases/channel/JoinChannelUseCase";
 import { GetChannelRequestsUseCase } from "../application/use-cases/channel/GetChannelRequestsUseCase";
 import { UpdateChannelRequestUseCase } from "../application/use-cases/channel/UpdateChannelRequestUseCase";
+import { MarkChannelAsReadUseCase } from "../application/use-cases/channel/MarkChannelAsReadUseCase";
+import { GetUnreadCountsUseCase } from "../application/use-cases/channel/GetUnreadCountsUseCase";
 import { SendMessageUseCase } from "../application/use-cases/channel/SendMessageUseCase";
 import { GetChannelMessagesUseCase } from "../application/use-cases/channel/GetChannelMessagesUseCase";
 
@@ -215,6 +217,8 @@ const deleteChannelUseCase = new DeleteChannelUseCase(channelRepository);
 const joinChannelUseCase = new JoinChannelUseCase(channelRepository, channelMemberRepository);
 const getChannelRequestsUseCase = new GetChannelRequestsUseCase(channelMemberRepository, userRepository);
 const updateChannelRequestUseCase = new UpdateChannelRequestUseCase(channelMemberRepository, channelRepository);
+const markChannelAsReadUseCase = new MarkChannelAsReadUseCase(channelMemberRepository);
+const getUnreadCountsUseCase = new GetUnreadCountsUseCase(channelRepository, channelMemberRepository, messageRepository);
 
 const sendMessageUseCase = new SendMessageUseCase(messageRepository);
 const getChannelMessagesUseCase = new GetChannelMessagesUseCase(messageRepository);
@@ -230,7 +234,9 @@ const channelController = new ChannelController(
     deleteChannelUseCase,
     joinChannelUseCase,
     getChannelRequestsUseCase,
-    updateChannelRequestUseCase
+    updateChannelRequestUseCase,
+    markChannelAsReadUseCase,
+    getUnreadCountsUseCase
 );
 const messageController = new MessageController(sendMessageUseCase, getChannelMessagesUseCase);
 

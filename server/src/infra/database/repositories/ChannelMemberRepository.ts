@@ -39,6 +39,11 @@ export class ChannelMemberRepository implements IChannelMemberRepository {
         return member ? this.mapper.toDomain(member) : null;
     }
 
+    async findByChannelIdAndUserId(channelId: string, userId: string): Promise<ChannelMember | null> {
+        const member = await ChannelMemberModel.findOne({ channel_id: channelId, user_id: userId, is_active: true });
+        return member ? this.mapper.toDomain(member) : null;
+    }
+
     async remove(channelId: string, userId: string): Promise<boolean> {
         const result = await ChannelMemberModel.findOneAndUpdate(
             { channel_id: channelId, user_id: userId, is_active: true },
@@ -51,6 +56,14 @@ export class ChannelMemberRepository implements IChannelMemberRepository {
         const result = await ChannelMemberModel.findOneAndUpdate(
             { channel_id: channelId, user_id: userId, is_active: true },
             { status }
+        );
+        return result !== null;
+    }
+
+    async updateLastReadAt(channelId: string, userId: string, timestamp: Date): Promise<boolean> {
+        const result = await ChannelMemberModel.findOneAndUpdate(
+            { channel_id: channelId, user_id: userId, is_active: true },
+            { last_read_at: timestamp }
         );
         return result !== null;
     }

@@ -8,6 +8,7 @@ export class ChannelMember {
         public status: 'pending' | 'approved' | 'rejected' = 'approved',
         public joinedAt?: Date,
         public removedAt?: Date,
+        public lastReadAt?: Date,
         public id?: string
     ) {}
 }

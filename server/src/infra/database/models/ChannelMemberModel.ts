@@ -9,6 +9,7 @@ export interface IChannelMemberDocument extends Document {
     status: 'pending' | 'approved' | 'rejected';
     joined_at: Date;
     removed_at?: Date;
+    last_read_at?: Date;
 }
 
 const channelMemberSchema = new Schema({
@@ -19,7 +20,8 @@ const channelMemberSchema = new Schema({
     is_active: { type: Boolean, default: true },
     status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'approved' },
     joined_at: { type: Date, default: Date.now },
-    removed_at: { type: Date }
+    removed_at: { type: Date },
+    last_read_at: { type: Date }
 });
 
 export const ChannelMemberModel = mongoose.model<IChannelMemberDocument>('ChannelMember', channelMemberSchema);
