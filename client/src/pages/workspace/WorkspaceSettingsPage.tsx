@@ -5,6 +5,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../store';
 import { WorkspaceService } from '../../api/workspace/workspace.service';
+import { ChannelService } from '../../api/workspace/channel.service';
 import Swal from 'sweetalert2';
 import toast from 'react-hot-toast';
 
@@ -17,6 +18,7 @@ export const WorkspaceSettingsPage = () => {
   
   const [workspace, setWorkspace] = useState<WorkspaceData | null>(null);
   const [members, setMembers] = useState<MemberData[]>([]);
+  const [channelCount, setChannelCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   const [name, setName] = useState('');
@@ -45,6 +47,10 @@ export const WorkspaceSettingsPage = () => {
 
       const membersData = await WorkspaceService.getWorkspaceMembers(workspaceId, false);
       setMembers(membersData.data);
+
+      // Fetch channels count for this workspace
+      const channelsData = await ChannelService.getWorkspaceChannels(workspaceId);
+      setChannelCount(channelsData.data?.data?.length || 0);
     } catch {
       toast.error('Failed to load workspace data');
     } finally {
@@ -161,38 +167,20 @@ export const WorkspaceSettingsPage = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
                 <Users className="w-16 h-16 text-blue-600" />
               </div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Total Members</p>
-              <h3 className="text-3xl font-black text-slate-900 mb-1">{members.length}</h3>
-              <p className="text-xs text-emerald-600 font-semibold">+12% <span className="text-slate-400 font-normal">vs last month</span></p>
-            </div>
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group">
-              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-                <Users className="w-16 h-16 text-emerald-600" />
-              </div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Active Members</p>
-              <h3 className="text-3xl font-black text-slate-900 mb-1">{Math.max(1, Math.floor(members.length * 0.8))}</h3>
-              <p className="text-xs text-orange-600 font-semibold">73.4% <span className="text-slate-400 font-normal">engagement rate</span></p>
+              <h3 className="text-3xl font-black text-slate-900">{members.length}</h3>
             </div>
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
                 <Hash className="w-16 h-16 text-purple-600" />
               </div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Total Channels</p>
-              <h3 className="text-3xl font-black text-slate-900 mb-1">12</h3>
-              <p className="text-xs text-slate-500">2 <span className="text-slate-400">created this week</span></p>
-            </div>
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group">
-              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-                <BarChart3 className="w-16 h-16 text-indigo-600" />
-              </div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Message Volume</p>
-              <h3 className="text-3xl font-black text-slate-900 mb-1">4.2k</h3>
-              <p className="text-xs text-emerald-600 font-semibold">+5.2% <span className="text-slate-400 font-normal">from yesterday</span></p>
+              <h3 className="text-3xl font-black text-slate-900">{channelCount}</h3>
             </div>
           </div>
 
