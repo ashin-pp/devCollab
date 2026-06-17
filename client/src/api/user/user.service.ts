@@ -1,37 +1,37 @@
 import { api } from '../axios';
-
+import { API_ENDPOINTS } from '../../config/api.constants';
 import type { UpdateProfileData, ChangePasswordData } from '../../types/user.types';
 
 export const UserService = {
     getProfile: async () => {
-        const response = await api.get('/users/profile');
+        const response = await api.get(API_ENDPOINTS.USER.PROFILE);
         return response.data;
     },
     
     updateProfile: async (data: UpdateProfileData) => {
-        const response = await api.put('/users/profile', data);
+        const response = await api.put(API_ENDPOINTS.USER.PROFILE, data);
         return response.data;
     },
     
     changePassword: async (data: ChangePasswordData) => {
-        const response = await api.post('/users/change-password', data);
+        const response = await api.post(API_ENDPOINTS.USER.CHANGE_PASSWORD, data);
         return response.data;
     },
     
     requestEmailChange: async (data: { newEmail: string }) => {
-        const response = await api.post('/users/change-email/request', data);
+        const response = await api.post(API_ENDPOINTS.USER.CHANGE_EMAIL_REQUEST, data);
         return response.data;
     },
     
     verifyEmailChange: async (data: { newEmail: string; otp: string }) => {
-        const response = await api.post('/users/change-email/verify', data);
+        const response = await api.post(API_ENDPOINTS.USER.CHANGE_EMAIL_VERIFY, data);
         return response.data;
     },
 
     uploadProfileImage: async (file: File) => {
         const formData = new FormData();
         formData.append('profileImage', file);
-        const response = await api.post('/users/profile/image', formData, {
+        const response = await api.post(API_ENDPOINTS.USER.PROFILE_IMAGE, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
@@ -40,7 +40,7 @@ export const UserService = {
     },
 
     deleteProfileImage: async () => {
-        const response = await api.delete('/users/profile/image');
+        const response = await api.delete(API_ENDPOINTS.USER.PROFILE_IMAGE);
         return response.data;
     }
 };
