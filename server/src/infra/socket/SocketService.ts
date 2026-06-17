@@ -5,6 +5,7 @@ import { JwtService } from '../services/JwtService';
 import { logger } from '../../container';
 
 export class SocketService {
+    private static instance: SocketService;
     private io: SocketIOServer;
     private jwtService = new JwtService();
 
@@ -16,6 +17,11 @@ export class SocketService {
                 methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
             }
         });
+        SocketService.instance = this;
+    }
+
+    public static getInstance(): SocketService | null {
+        return SocketService.instance || null;
     }
 
     public initialize(): void {
@@ -52,6 +58,7 @@ export class SocketService {
             });
 
             socket.on('join_channel', (channelId: string) => {
+                logger.info(`User ${user.id} joining channel: ${channelId}`);
                 socket.join(`channel:${channelId}`);
             });
 
@@ -75,6 +82,7 @@ export class SocketService {
             });
 
             socket.on('new_message', (message: any) => {
+                logger.info(`Received new_message for channel ${message.channelId} from user ${user.id}`);
                 this.io.to(`channel:${message.channelId}`).emit('message_received', message);
             });
 

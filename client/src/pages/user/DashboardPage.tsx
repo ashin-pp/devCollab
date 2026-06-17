@@ -12,6 +12,7 @@ import toast from 'react-hot-toast';
 import { UserLayout } from '../../layouts/UserLayout';
 import { CreateWorkspaceModal } from '../../components/workspace/CreateWorkspaceModal';
 import { WorkspaceService } from '../../api/workspace/workspace.service';
+import type { Workspace } from '../../types/workspace.types';
 
 export const DashboardPage = () => {
   const user = useSelector((state: RootState) => state.auth.user);
@@ -19,12 +20,12 @@ export const DashboardPage = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [inviteCode, setInviteCode] = useState('');
   const [isJoining, setIsJoining] = useState(false);
-  const [verificationResult, setVerificationResult] = useState<any>(null);
+  const [verificationResult, setVerificationResult] = useState<Record<string, unknown> | null>(null);
   const [verifyError, setVerifyError] = useState('');
   const [joinMessage, setJoinMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
-  const [myWorkspaces, setMyWorkspaces] = useState<any[]>([]);
-  const [publicWorkspaces, setPublicWorkspaces] = useState<any[]>([]);
+  const [myWorkspaces, setMyWorkspaces] = useState<Workspace[]>([]);
+  const [publicWorkspaces, setPublicWorkspaces] = useState<Workspace[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [publicCurrentPage, setPublicCurrentPage] = useState(1);
@@ -39,7 +40,7 @@ export const DashboardPage = () => {
       publicWs.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const chunkArray = (arr: any[], size: number) => {
+  const chunkArray = <T,>(arr: T[], size: number): T[][] => {
     return Array.from({ length: Math.ceil(arr.length / size) }, (_, i) =>
       arr.slice(i * size, i * size + size)
     );
@@ -140,9 +141,9 @@ export const DashboardPage = () => {
     }
   };
 
-  const handleWorkspaceCreated = (workspace: Record<string, any>) => {
+  const handleWorkspaceCreated = (workspace: Record<string, unknown>) => {
     console.log("Workspace created:", workspace);
-    setMyWorkspaces(prev => [...prev, workspace as any]);
+    setMyWorkspaces(prev => [...prev, workspace as unknown as Workspace]);
   };
 
   return (

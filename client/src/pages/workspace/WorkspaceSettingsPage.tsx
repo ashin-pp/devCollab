@@ -8,24 +8,7 @@ import { WorkspaceService } from '../../api/workspace/workspace.service';
 import Swal from 'sweetalert2';
 import toast from 'react-hot-toast';
 
-interface WorkspaceData {
-  id: string;
-  name: string;
-  description: string;
-  privacy: 'public' | 'private';
-  maxMembers?: number;
-  createdBy: string;
-  inviteCode?: string;
-}
-
-interface MemberData {
-  id: string;
-  userId: string;
-  workspaceId: string;
-  role: string;
-  status: string;
-  joinedAt: string;
-}
+import type { WorkspaceData, MemberData } from '../../types/workspace.types';
 
 export const WorkspaceSettingsPage = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>();
@@ -60,7 +43,7 @@ export const WorkspaceSettingsPage = () => {
         if (ws.maxMembers) setMaxMembers(ws.maxMembers);
       }
 
-      const membersData = await WorkspaceService.getWorkspaceMembers(workspaceId);
+      const membersData = await WorkspaceService.getWorkspaceMembers(workspaceId, false);
       setMembers(membersData.data);
     } catch {
       toast.error('Failed to load workspace data');

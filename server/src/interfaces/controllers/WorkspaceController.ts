@@ -126,12 +126,13 @@ export class WorkspaceController {
         try {
             const userId = req.user?.id;
             const workspaceId = req.params.id as string;
+            const includeProfile = req.query.includeProfile === 'true';
             
             if (!userId) {
                 throw new AppError(ErrorMessage.UNAUTHORIZED, HttpStatusCode.UNAUTHORIZED);
             }
 
-            const members = await this.getWorkspaceMembersUseCase.execute(workspaceId, userId);
+            const members = await this.getWorkspaceMembersUseCase.execute(workspaceId, userId, includeProfile);
             const response = ApiResponse.success("Workspace members fetched successfully", members);
             
             res.status(HttpStatusCode.OK).json(response);

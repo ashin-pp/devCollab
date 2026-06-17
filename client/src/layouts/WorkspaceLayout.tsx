@@ -1,20 +1,21 @@
-import { ReactNode, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  Search, Bell, HelpCircle, Settings, User as UserIcon,
+  Bell, HelpCircle, Settings, User as UserIcon,
   Hash, MessageSquare, BarChart2, Users, UserCircle,
-  LogOut, Plus, ChevronDown, ArrowLeft, UserPlus
+  LogOut, Plus, ChevronDown, ChevronRight, ArrowLeft, Lock, Copy
 } from 'lucide-react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../store';
 import { WorkspaceService } from '../api/workspace/workspace.service';
 import { ChannelService } from '../api/workspace/channel.service';
+import type { ChannelData } from '../types/channel.types';
+import type { MemberData } from '../types/workspace.types';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
+import { CreateChannelModal } from '../components/workspace/CreateChannelModal';
 
-interface WorkspaceLayoutProps {
-  children: ReactNode;
-}
+import type { WorkspaceLayoutProps } from '../types/component.types';
 
 export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
   const navigate = useNavigate();
@@ -23,23 +24,55 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
   const user = useSelector((state: RootState) => state.auth.user);
 
   const [isOwner, setIsOwner] = useState(false);
-  const [channels, setChannels] = useState<any[]>([]);
+  const [channels, setChannels] = useState<Record<string, unknown>[]>([]);
+  const [isCreateChannelModalOpen, setIsCreateChannelModalOpen] = useState(false);
+  const [workspaceName, setWorkspaceName] = useState('Loading...');
+  const [workspaceLogo, setWorkspaceLogo] = useState<string | undefined>(undefined);
+  const [inviteCode, setInviteCode] = useState<string>('');
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  
+  const [isMyChannelsOpen, setIsMyChannelsOpen] = useState(true);
+  const [isAllChannelsOpen, setIsAllChannelsOpen] = useState(true);
 
-  useEffect(() => {
+  const fetchChannels = () => {
     if (workspaceId) {
       ChannelService.getWorkspaceChannels(workspaceId)
         .then(res => setChannels(res.data?.data || []))
         .catch(err => console.error('Failed to fetch channels', err));
     }
+  };
+
+  useEffect(() => {
+    fetchChannels();
   }, [workspaceId]);
 
   useEffect(() => {
     if (workspaceId && user) {
-      WorkspaceService.getWorkspaceMembers(workspaceId).then((response: any) => {
+      // Fetch workspace data
+      WorkspaceService.getUserWorkspaces()
+        .then((response: { data?: Array<{ id: string; name: string; logo?: string; inviteCode?: string }> }) => {
+          const workspace = response.data?.find((w) => w.id === workspaceId);
+          if (workspace) {
+            setWorkspaceName(workspace.name);
+            setWorkspaceLogo(workspace.logo);
+            setInviteCode(workspace.inviteCode || '');
+          }
+        })
+        .catch((err) => console.error('Failed to fetch workspace data', err));
+
+      // Fetch workspace members
+      WorkspaceService.getWorkspaceMembers(workspaceId, false).then((response: { data?: MemberData[] }) => {
         const members = response.data || [];
-        const currentMember = members.find((m: any) => m.userId === user.id);
+        const currentMember = members.find((m) => m.userId === user.id);
         setIsOwner(currentMember?.role === 'owner');
-      }).catch((err: any) => {
+        
+        // Count pending requests if user is owner
+        if (currentMember?.role === 'owner') {
+          const pendingCount = members.filter((m) => m.status === 'pending').length;
+          setPendingRequestsCount(pendingCount);
+        }
+      }).catch((error: unknown) => {
+        const err = error as { response?: { status?: number, data?: { message?: string, error?: { message?: string } } } };
         if (err.response?.status === 403 || err.response?.status === 404) {
           toast.error(err.response?.data?.error?.message || err.response?.data?.message || 'Access Denied');
           navigate('/dashboard');
@@ -48,7 +81,7 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
         }
       });
     }
-  }, [workspaceId, user]);
+  }, [workspaceId, user, navigate]);
 
   const isActive = (path: string) => location.pathname.includes(path);
 
@@ -69,8 +102,9 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
         toast.success('You have left the workspace');
         navigate('/dashboard');
       }
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to leave workspace');
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || 'Failed to leave workspace');
     }
   };
 
@@ -95,16 +129,8 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
           </div>
         </div>
 
-        {/* Center: Search */}
+        {/* Center: Empty space (search removed) */}
         <div className="flex-1 max-w-2xl px-4">
-          <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Search development workspace..."
-              className="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg pl-10 pr-4 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400"
-            />
-          </div>
         </div>
 
         {/* Right: Actions */}
@@ -143,12 +169,22 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
           {/* Workspace Header */}
           <div className="p-4 border-b border-slate-200">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold shadow-sm">
-                DC
+              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold shadow-sm overflow-hidden">
+                {workspaceLogo ? (
+                  <img 
+                    src={workspaceLogo} 
+                    alt={workspaceName} 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span>{workspaceName.substring(0, 2).toUpperCase()}</span>
+                )}
               </div>
-              <div>
-                <h2 className="font-bold text-slate-900 leading-tight truncate text-lg">DevCollab</h2>
-                <p className="text-xs text-slate-500">Enterprise Pro</p>
+              <div className="flex-1 min-w-0">
+                <h2 className="font-bold text-slate-900 leading-tight truncate text-lg" title={workspaceName}>
+                  {workspaceName}
+                </h2>
+                <p className="text-xs text-slate-500">Workspace</p>
               </div>
             </div>
           </div>
@@ -158,38 +194,133 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
 
             {/* Channels Group */}
             <div>
-              <div className="flex items-center justify-between text-slate-500 font-bold text-xs uppercase tracking-wider mb-2 px-2 hover:bg-slate-100 py-1 rounded cursor-pointer group transition-colors">
-                <div className="flex items-center gap-1">
+              <div className="flex items-center justify-between mb-2 px-2">
+                <div className="flex items-center gap-1 text-slate-500 font-bold text-xs uppercase tracking-wider">
                   <ChevronDown className="w-3 h-3" /> Channels
                 </div>
-                <Plus className="w-4 h-4 opacity-0 group-hover:opacity-100" />
+                <button 
+                  onClick={() => setIsCreateChannelModalOpen(true)}
+                  className="p-1 rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors tooltip-trigger"
+                  title="Create Channel"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
               </div>
               <div className="space-y-1">
-                <div className="text-slate-500 text-xs py-1.5 px-3 font-bold uppercase tracking-wider cursor-pointer hover:text-slate-700 rounded-md truncate transition-colors flex items-center">
-                  <span className="mr-2">🔖</span> My Channels
+                <div 
+                  onClick={() => setIsMyChannelsOpen(!isMyChannelsOpen)}
+                  className="flex items-center justify-between text-slate-500 text-xs py-1.5 px-3 font-bold uppercase tracking-wider cursor-pointer hover:bg-slate-100 rounded-md transition-colors"
+                >
+                  <div className="flex items-center">
+                    <span className="mr-2">🔖</span> My Channels
+                  </div>
+                  {isMyChannelsOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                 </div>
-                {channels.map((channel: any) => (
+
+                {isMyChannelsOpen && (
+                  <div className="space-y-1">
+                    {channels.filter((c) => c.createdBy === user?.id).map((channel: Record<string, unknown>) => {
+                      const isPrivate = channel.privacy === 'private';
+                      const channelId = channel.id as string;
+                      
+                      return (
                   <div
-                    key={channel.id}
+                    key={channelId}
+                    onClick={() => navigate(`/workspace/${workspaceId}/channels/${channelId}`)}
+                    className={`group flex items-center justify-between text-sm py-2 px-3 pl-6 rounded-xl cursor-pointer font-medium transition-all ${isActive(`channels/${channelId}`) ? 'bg-blue-50/80 text-blue-700 font-bold shadow-sm' : 'text-slate-600 hover:bg-white hover:shadow-sm hover:text-slate-900'}`}
+                  >
+                    <div className="flex items-center truncate gap-2 flex-1 min-w-0">
+                      {isPrivate ? (
+                        <Lock className={`w-4 h-4 transition-colors flex-shrink-0 ${isActive(`channels/${channelId}`) ? 'text-orange-600' : 'text-orange-500 group-hover:text-orange-600'}`} />
+                      ) : (
+                        <Hash className={`w-4 h-4 transition-colors flex-shrink-0 ${isActive(`channels/${channelId}`) ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-500'}`} />
+                      )}
+                      <span className="group-hover:translate-x-0.5 transition-transform truncate">{channel.name as string}</span>
+                      {isPrivate ? (
+                        <span className="ml-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 flex-shrink-0">
+                          Private
+                        </span>
+                      ) : (
+                        <span className="ml-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 flex-shrink-0">
+                          Public
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {isActive(`channels/${channelId}`) && <div className={`w-2 h-2 rounded-full shadow-sm ${isPrivate ? 'bg-orange-600' : 'bg-blue-600'}`}></div>}
+                    </div>
+                  </div>
+                      );
+                    })}
+                
+                    {channels.filter(c => c.createdBy === user?.id).length === 0 && (
+                      <div className="text-slate-400 text-xs py-2 px-3 pl-6 italic">No channels created</div>
+                    )}
+                  </div>
+                )}
+
+                <div 
+                  onClick={() => setIsAllChannelsOpen(!isAllChannelsOpen)}
+                  className="flex items-center justify-between text-slate-500 text-xs py-1.5 px-3 font-bold uppercase tracking-wider cursor-pointer hover:bg-slate-100 rounded-md transition-colors mt-4"
+                >
+                  <div className="flex items-center">
+                    <span className="mr-2">🌍</span> All Channels
+                  </div>
+                  {isAllChannelsOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                </div>
+
+                {isAllChannelsOpen && (
+                  <div className="space-y-1">
+                    {channels.filter((c) => c.createdBy !== user?.id).map((channel: Record<string, unknown>) => {
+                      const isPrivate = channel.privacy === 'private';
+                      return (
+                  <div
+                    key={channel.id as string}
                     onClick={() => navigate(`/workspace/${workspaceId}/channels/${channel.id}`)}
                     className={`group flex items-center justify-between text-sm py-2 px-3 pl-6 rounded-xl cursor-pointer font-medium transition-all ${isActive(`channels/${channel.id}`) ? 'bg-blue-50/80 text-blue-700 font-bold shadow-sm' : 'text-slate-600 hover:bg-white hover:shadow-sm hover:text-slate-900'}`}
                   >
-                    <div className="flex items-center truncate">
-                      <Hash className={`w-4 h-4 mr-3 transition-colors ${isActive(`channels/${channel.id}`) ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-500'}`} />
-                      <span className="group-hover:translate-x-0.5 transition-transform">{channel.name}</span>
+                    <div className="flex items-center truncate gap-2">
+                      {isPrivate ? (
+                        <Lock className={`w-4 h-4 transition-colors flex-shrink-0 ${isActive(`channels/${channel.id}`) ? 'text-orange-600' : 'text-orange-500 group-hover:text-orange-600'}`} />
+                      ) : (
+                        <Hash className={`w-4 h-4 transition-colors flex-shrink-0 ${isActive(`channels/${channel.id}`) ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-500'}`} />
+                      )}
+                      <span className="group-hover:translate-x-0.5 transition-transform truncate">{channel.name as string}</span>
+                      {isPrivate ? (
+                        <span className="ml-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 flex-shrink-0">
+                          Private
+                        </span>
+                      ) : (
+                        <span className="ml-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 flex-shrink-0">
+                          Public
+                        </span>
+                      )}
                     </div>
-                    {isActive(`channels/${channel.id}`) && <div className="w-2 h-2 rounded-full bg-blue-600 shadow-sm"></div>}
+                    {isActive(`channels/${channel.id}`) && <div className={`w-2 h-2 rounded-full shadow-sm ${isPrivate ? 'bg-orange-600' : 'bg-blue-600'}`}></div>}
                   </div>
-                ))}
-                
-                {channels.length === 0 && (
-                  <div className="text-slate-400 text-xs py-2 px-3 pl-6 italic">No channels yet</div>
+                      );
+                    })}
+
+                    {channels.filter(c => c.createdBy !== user?.id).length === 0 && (
+                      <div className="text-slate-400 text-xs py-2 px-3 pl-6 italic">No other channels</div>
+                    )}
+                  </div>
                 )}
+                
+                <div className="pt-2 px-2">
+                  <button 
+                    onClick={() => setIsCreateChannelModalOpen(true)}
+                    className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-white border border-slate-200 text-slate-700 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50/50 rounded-xl text-sm font-semibold transition-all shadow-sm group"
+                  >
+                    <Plus className="w-4 h-4 text-slate-400 group-hover:text-blue-500" />
+                    <span>Create New Channel</span>
+                  </button>
+                </div>
               </div>
             </div>
 
             {/* Other Sections */}
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 mt-4">
               <div
                 onClick={() => navigate(`/workspace/${workspaceId}/dm`)}
                 className={`group flex items-center justify-between text-sm py-2 px-3 rounded-xl cursor-pointer font-medium transition-all ${isActive('/dm') ? 'bg-blue-50/80 text-blue-700 font-bold shadow-sm' : 'text-slate-600 hover:bg-white hover:shadow-sm hover:text-slate-900'}`}
@@ -218,6 +349,11 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
                   <Users className={`w-4 h-4 mr-3 transition-colors ${isActive('/members') ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-500'}`} />
                   <span className="group-hover:translate-x-0.5 transition-transform">Members</span>
                 </div>
+                {isOwner && pendingRequestsCount > 0 && (
+                  <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    {pendingRequestsCount}
+                  </span>
+                )}
               </div>
               
               <div className="pt-4 mt-2 border-t border-slate-200/60">
@@ -244,12 +380,31 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
               <ArrowLeft className="w-4 h-4 text-slate-400 group-hover:-translate-x-1 transition-transform" />
               Back to Dashboard
             </button>
-            <button
-              className="group w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
-            >
-              <UserPlus className="w-4 h-4 text-blue-200 group-hover:scale-110 transition-transform" />
-              Invite Members
-            </button>
+            
+            {/* Invite Code - Minimal Design */}
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">
+                Invite Code
+              </p>
+              <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2">
+                <span className="flex-1 font-mono text-sm font-bold text-slate-700">
+                  {inviteCode || '---'}
+                </span>
+                <button 
+                  onClick={() => {
+                    if (inviteCode) {
+                      navigator.clipboard.writeText(inviteCode);
+                      toast.success('Copied!');
+                    }
+                  }}
+                  className="p-1.5 hover:bg-blue-50 text-blue-600 rounded transition-colors"
+                  title="Copy"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
             {isOwner && (
               <button 
                 onClick={() => navigate(`/workspace/${workspaceId}/settings`)}
@@ -269,6 +424,17 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
         </main>
 
       </div>
+
+      <CreateChannelModal
+        isOpen={isCreateChannelModalOpen}
+        onClose={() => setIsCreateChannelModalOpen(false)}
+        workspaceId={workspaceId || ''}
+        onSuccess={(newChannel) => {
+          const channelWithMembership = { ...newChannel, isMember: true };
+          setChannels(prev => [...prev, channelWithMembership]);
+          navigate(`/workspace/${workspaceId}/channels/${newChannel.id}`);
+        }}
+      />
     </div>
   );
 };

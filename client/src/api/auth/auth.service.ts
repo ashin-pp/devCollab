@@ -1,21 +1,6 @@
 import { api } from "../axios"
 
-export interface RegisterData {
-    name: string
-    email: string
-    password?: string
-    confirmPassword?: string
-}
-export interface LoginData {
-    email: string
-    password: string
-}
-export interface ResetPasswordData {
-    email: string;
-    otp: string;
-    newPassword: string;
-    confirmPassword: string;
-}
+import type { RegisterData, LoginData, ResetPasswordData } from '../../types/auth.types';
 export const AuthService = {
     login: async (data: LoginData) => {
         const response = await api.post('/auth/login', data)

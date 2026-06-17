@@ -134,8 +134,9 @@ export const EditProfilePage = () => {
         dispatch(updateUser({ profileImage: response.data.profileImage }));
         toast.success("Profile image updated successfully");
       }
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to upload image");
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || "Failed to upload image");
     } finally {
       setIsUploadingImage(false);
       if (fileInputRef.current) {
@@ -155,8 +156,9 @@ export const EditProfilePage = () => {
         dispatch(updateUser({ profileImage: '' }));
         toast.success("Profile image removed");
       }
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to remove image");
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || "Failed to remove image");
     } finally {
       setIsUploadingImage(false);
     }
@@ -173,8 +175,9 @@ export const EditProfilePage = () => {
       toast.success("OTP sent to your old email address!");
       setEmailModalStep('otp');
       setResendTimer(60);
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to request email change");
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || "Failed to request email change");
     } finally {
       setEmailChangeLoading(false);
     }
@@ -191,8 +194,9 @@ export const EditProfilePage = () => {
       toast.success("Email changed successfully!");
       setFormData(prev => ({ ...prev, email: newEmailToChange }));
       closeEmailModal();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to verify OTP");
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || "Failed to verify OTP");
     } finally {
       setEmailChangeLoading(false);
     }
@@ -226,8 +230,9 @@ export const EditProfilePage = () => {
       toast.success("Password changed successfully!");
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
       setIsPasswordModalOpen(false);
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to change password");
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || "Failed to change password");
     } finally {
       setIsChangingPassword(false);
     }

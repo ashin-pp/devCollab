@@ -6,15 +6,7 @@ import toast from 'react-hot-toast';
 import { isAxiosError } from 'axios';
 import Swal from 'sweetalert2';
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  isVerified: boolean;
-  isBlocked: boolean;
-  status?: string;
-  createdAt: string;
-}
+import type { User } from '../../types/auth.types';
 
 export const AdminUserManagementPage = () => {
   const [users, setUsers] = useState<User[]>([]);

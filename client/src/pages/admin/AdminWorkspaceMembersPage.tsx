@@ -8,16 +8,7 @@ import { isAxiosError } from 'axios';
 
 import Swal from 'sweetalert2';
 
-interface WorkspaceMember {
-  id: string;
-  userId: string;
-  role: string;
-  status: 'pending' | 'approved' | 'blocked';
-  joinedAt: string;
-  userName: string;
-  userEmail: string;
-  userAvatar: string | null;
-}
+import type { WorkspaceMember } from '../../types/workspace.types';
 
 export const AdminWorkspaceMembersPage = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>();
@@ -75,7 +66,7 @@ export const AdminWorkspaceMembersPage = () => {
       if (result.isConfirmed) {
         await AdminService.updateWorkspaceMemberStatus(workspaceId, userId, newStatus);
         toast.success(`Member status updated to ${newStatus}`);
-        setMembers(members.map(m => m.userId === userId ? { ...m, status: newStatus as any } : m));
+        setMembers(members.map(m => m.userId === userId ? { ...m, status: newStatus } : m));
       }
     } catch (err: unknown) {
       let errMsg = 'Failed to update status';

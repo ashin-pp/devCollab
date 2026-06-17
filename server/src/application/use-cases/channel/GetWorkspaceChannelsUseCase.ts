@@ -12,10 +12,17 @@ export class GetWorkspaceChannelsUseCase {
         const allChannels = await this.channelRepository.findByWorkspaceId(workspaceId);
         const userMemberships = await this.channelMemberRepository.findByUserId(userId);
         
-        const userChannelIds = userMemberships.map(m => m.channelId);
+        const approvedChannelIds = userMemberships.filter(m => m.status === 'approved').map(m => m.channelId);
+        const pendingChannelIds = userMemberships.filter(m => m.status === 'pending').map(m => m.channelId);
 
-        return allChannels.filter(channel => 
-            channel.privacy === 'public' || userChannelIds.includes(channel.id as string)
-        );
+        // Visible channels: All channels are visible in this new design.
+        const visibleChannels = allChannels;
+
+        visibleChannels.forEach(channel => {
+            channel.isMember = approvedChannelIds.includes(channel.id as string);
+            channel.hasPendingRequest = pendingChannelIds.includes(channel.id as string);
+        });
+
+        return visibleChannels;
     }
 }

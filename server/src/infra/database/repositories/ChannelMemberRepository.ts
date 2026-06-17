@@ -12,13 +12,20 @@ export class ChannelMemberRepository implements IChannelMemberRepository {
             user_id: member.userId,
             added_by: member.addedBy,
             role: member.role,
-            is_active: member.isActive
+            is_active: member.isActive,
+            status: member.status
         });
         return this.mapper.toDomain(created);
     }
 
-    async findByChannelId(channelId: string): Promise<ChannelMember[]> {
-        const members = await ChannelMemberModel.find({ channel_id: channelId, is_active: true });
+    async findByChannelId(channelId: string, status?: string): Promise<ChannelMember[]> {
+        const query: any = { channel_id: channelId, is_active: true };
+        if (status) {
+            query.status = status;
+        } else {
+            query.$or = [{ status: 'approved' }, { status: { $exists: false } }];
+        }
+        const members = await ChannelMemberModel.find(query);
         return members.map(m => this.mapper.toDomain(m));
     }
 
@@ -36,6 +43,14 @@ export class ChannelMemberRepository implements IChannelMemberRepository {
         const result = await ChannelMemberModel.findOneAndUpdate(
             { channel_id: channelId, user_id: userId, is_active: true },
             { is_active: false, removed_at: new Date() }
+        );
+        return result !== null;
+    }
+
+    async updateStatus(channelId: string, userId: string, status: string): Promise<boolean> {
+        const result = await ChannelMemberModel.findOneAndUpdate(
+            { channel_id: channelId, user_id: userId, is_active: true },
+            { status }
         );
         return result !== null;
     }

@@ -1,52 +1,135 @@
 import { useState, useEffect, useRef } from 'react';
 import { WorkspaceLayout } from '../../layouts/WorkspaceLayout';
-import { Hash, Star, Bold, Italic, Code, Link as LinkIcon, List, Send, X, Smile, Plus, AtSign } from 'lucide-react';
+import { Hash, Star, Bold, Italic, Code, Link as LinkIcon, List, Send, X, Smile, Plus, AtSign, ChevronDown, Users, Settings, LogOut, Lock } from 'lucide-react';
 import { useSelector } from 'react-redux';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
 import type { RootState } from '../../store/index';
 import { useSocket } from '../../hooks/useSocket';
 import { MessageService } from '../../api/workspace/message.service';
 import { format } from 'date-fns';
 
-interface MessageData {
-  id: string;
-  channelId: string;
-  senderId: string;
-  senderName?: string;
-  content: string;
-  messageType: 'text' | 'image';
-  createdAt: string;
-  [key: string]: unknown;
-}
+import { ChannelService } from '../../api/workspace/channel.service';
+import { ChannelMembersModal } from '../../components/workspace/ChannelMembersModal';
+import { AddChannelMemberModal } from '../../components/workspace/AddChannelMemberModal';
+import { ChannelSettingsModal } from '../../components/workspace/ChannelSettingsModal';
+import type { MessageData, ChannelData } from '../../types/channel.types';
 
 export const WorkspaceChannelPage = () => {
   const { workspaceId, channelId } = useParams<{ workspaceId: string, channelId: string }>();
+  const navigate = useNavigate();
   const user = useSelector((state: RootState) => state.auth.user);
   
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<MessageData[]>([]);
   const [showThread, setShowThread] = useState(false);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  const [isChannelDropdownOpen, setIsChannelDropdownOpen] = useState(false);
+  
+  const [currentChannel, setCurrentChannel] = useState<ChannelData | null>(null);
+  const [channelMembers, setChannelMembers] = useState<Array<{ id: string; userId: string; user?: { name: string; profileImage?: string } }>>([]);
+  const [memberImagesMap, setMemberImagesMap] = useState<Record<string, string>>({});
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
+  const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   
   const socket = useSocket(workspaceId);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
+  const fetchChannelData = () => {
     if (workspaceId && channelId) {
+      ChannelService.getWorkspaceChannels(workspaceId)
+        .then(res => {
+          const channel = res.data?.data?.find((c: ChannelData) => c.id === channelId);
+          if (channel) setCurrentChannel(channel);
+        })
+        .catch(err => console.error('Failed to fetch channels', err));
+
       MessageService.getChannelMessages(workspaceId, channelId)
         .then(res => setMessages(res.data?.data?.reverse() || []))
         .catch(err => console.error('Failed to fetch messages', err));
+
+      // Fetch channel members and create image mapping
+      ChannelService.getMembers(workspaceId, channelId)
+        .then(res => {
+          const members = res.data?.data || [];
+          setChannelMembers(members);
+          
+          // Create a map of userId -> profileImage for quick lookup
+          const imageMap: Record<string, string> = {};
+          members.forEach((member: { userId: string; user?: { profileImage?: string } }) => {
+            if (member.user?.profileImage) {
+              imageMap[member.userId] = member.user.profileImage;
+            }
+          });
+          setMemberImagesMap(imageMap);
+        })
+        .catch(err => console.error('Failed to fetch channel members', err));
+
+      // Fetch pending requests count if user is the channel creator
+      ChannelService.getWorkspaceChannels(workspaceId)
+        .then(res => {
+          const channel = res.data?.data?.find((c: ChannelData) => c.id === channelId);
+          if (channel && channel.createdBy === user?.id && channel.privacy === 'private') {
+            ChannelService.getRequests(workspaceId, channelId)
+              .then(requestsRes => {
+                if (requestsRes.data?.success) {
+                  setPendingRequestsCount((requestsRes.data.data || []).length);
+                }
+              })
+              .catch(err => console.error('Failed to fetch pending requests', err));
+          }
+        })
+        .catch(err => console.error('Failed to check channel creator', err));
     }
+  };
+
+  const handleJoinChannel = async () => {
+    if (!workspaceId || !channelId) return;
+    try {
+      const res = await ChannelService.joinChannel(workspaceId, channelId);
+      if (res.data?.success) {
+        if (res.data.status === 'pending') {
+          import('react-hot-toast').then(m => m.default.success('Join request sent to the channel creator'));
+          setCurrentChannel(prev => prev ? { ...prev, hasPendingRequest: true } : null);
+        } else {
+          import('react-hot-toast').then(m => m.default.success('Successfully joined the channel'));
+          setCurrentChannel(prev => prev ? { ...prev, isMember: true } : null);
+          fetchChannelData(); 
+        }
+      }
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      import('react-hot-toast').then(m => m.default.error(err.response?.data?.message || 'Failed to join channel'));
+    }
+  };
+
+  useEffect(() => {
+    fetchChannelData();
   }, [workspaceId, channelId]);
 
   useEffect(() => {
     if (!socket || !channelId) return;
 
-    socket.emit('join_channel', channelId);
+    const joinChannel = () => {
+      socket.emit('join_channel', channelId);
+    };
+
+    if (socket.connected) {
+      joinChannel();
+    }
+    
+    socket.on('connect', joinChannel);
 
     const handleNewMessage = (newMsg: MessageData) => {
-      setMessages(prev => [...prev, newMsg]);
+      console.log('Received new_message over socket:', newMsg);
+      setMessages(prev => {
+        const incomingId = newMsg.id || newMsg._id;
+        if (prev.some(m => (m.id || m._id) === incomingId)) return prev;
+        return [...prev, newMsg];
+      });
       scrollToBottom();
     };
 
@@ -61,17 +144,72 @@ export const WorkspaceChannelPage = () => {
       setTypingUsers(prev => prev.filter(name => name !== data.userName));
     };
 
+    const handleMemberRemoved = (data: { userId: string, userName: string, removedBy: string }) => {
+      // If current user was removed
+      if (data.userId === user?.id) {
+        // Show immediate error notification
+        import('react-hot-toast').then(m => {
+          m.default.error(`You have been removed from this channel by ${data.removedBy}`, {
+            duration: 4000,
+            icon: '🚫'
+          });
+        });
+        
+        // Redirect after short delay
+        setTimeout(() => {
+          navigate(`/workspace/${workspaceId}/channels`);
+        }, 2000);
+      } else {
+        // Add system message for other members
+        const systemMessage: MessageData = {
+          id: `system-${Date.now()}`,
+          channelId: channelId,
+          senderId: 'system',
+          senderName: 'System',
+          content: `${data.userName} was removed from the channel by ${data.removedBy}`,
+          messageType: 'text',
+          createdAt: new Date().toISOString()
+        };
+        
+        setMessages(prev => [...prev, systemMessage]);
+        
+        // Update channel members list
+        if (workspaceId && channelId) {
+          ChannelService.getMembers(workspaceId, channelId)
+            .then(res => {
+              const updatedMembers = res.data?.data || [];
+              setChannelMembers(updatedMembers);
+              
+              // Update member images map
+              const imageMap: Record<string, string> = {};
+              updatedMembers.forEach((member: { userId: string; user?: { profileImage?: string } }) => {
+                if (member.user?.profileImage) {
+                  imageMap[member.userId] = member.user.profileImage;
+                }
+              });
+              setMemberImagesMap(imageMap);
+            })
+            .catch(err => console.error('Failed to refresh members', err));
+        }
+        
+        scrollToBottom();
+      }
+    };
+
     socket.on('message_received', handleNewMessage);
     socket.on('user_typing', handleTyping);
     socket.on('user_stopped_typing', handleStopTyping);
+    socket.on('member_removed', handleMemberRemoved);
 
     return () => {
+      socket.off('connect', joinChannel);
       socket.emit('leave_channel', channelId);
       socket.off('message_received', handleNewMessage);
       socket.off('user_typing', handleTyping);
       socket.off('user_stopped_typing', handleStopTyping);
+      socket.off('member_removed', handleMemberRemoved);
     };
-  }, [socket, channelId]);
+  }, [socket, channelId, user, navigate, workspaceId]);
 
   function scrollToBottom() {
     setTimeout(() => {
@@ -104,12 +242,20 @@ export const WorkspaceChannelPage = () => {
       const res = await MessageService.sendMessage(workspaceId, channelId, message);
       const newMsg = res.data?.data;
       
+      const newMsgObj = {
+        ...newMsg,
+        senderName: user.name,
+      };
+
+      setMessages(prev => {
+        const msgId = newMsgObj.id || newMsgObj._id;
+        if (prev.some(m => (m.id || m._id) === msgId)) return prev;
+        return [...prev, newMsgObj];
+      });
+
       // Emit socket event
       if (socket) {
-        socket.emit('new_message', {
-          ...newMsg,
-          senderName: user.name, // temporary for display
-        });
+        socket.emit('new_message', newMsgObj);
       }
       
       setMessage('');
@@ -134,10 +280,119 @@ export const WorkspaceChannelPage = () => {
 
           <header className="h-14 border-b border-slate-200 flex items-center justify-between px-6 shrink-0 bg-white">
             <div className="flex items-center gap-3">
-              <h2 className="font-bold text-slate-900 text-lg flex items-center">
-                <Hash className="w-5 h-5 text-slate-400 mr-1" />
-                channel
-              </h2>
+              <div className="relative">
+                <button 
+                  onClick={() => setIsChannelDropdownOpen(!isChannelDropdownOpen)}
+                  className="font-bold text-slate-900 text-lg flex items-center hover:bg-slate-100 px-2 py-1 rounded transition-colors"
+                >
+                  {currentChannel?.privacy === 'private' ? (
+                    <Lock className="w-5 h-5 text-orange-500 mr-1" />
+                  ) : (
+                    <Hash className="w-5 h-5 text-blue-600 mr-1" />
+                  )}
+                  {currentChannel?.name || 'channel'}
+                  {currentChannel?.privacy === 'private' ? (
+                    <span className="ml-2 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-orange-100 text-orange-700">
+                      Private
+                    </span>
+                  ) : (
+                    <span className="ml-2 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-100 text-blue-700">
+                      Public
+                    </span>
+                  )}
+                  {currentChannel?.createdBy === user?.id && currentChannel?.privacy === 'private' && pendingRequestsCount > 0 && (
+                    <span className="ml-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full" title={`${pendingRequestsCount} pending request${pendingRequestsCount > 1 ? 's' : ''}`}>
+                      {pendingRequestsCount}
+                    </span>
+                  )}
+                  <ChevronDown className="w-4 h-4 ml-1 text-slate-500" />
+                </button>
+                
+                {isChannelDropdownOpen && (
+                  <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-slate-200 shadow-lg rounded-xl z-50 overflow-hidden">
+                    <div className="p-3 border-b border-slate-100">
+                      <div className="flex items-center gap-2 mb-1">
+                        {currentChannel?.privacy === 'private' ? (
+                          <Lock className="w-4 h-4 text-orange-500" />
+                        ) : (
+                          <Hash className="w-4 h-4 text-blue-600" />
+                        )}
+                        <h3 className="font-bold text-slate-900">{currentChannel?.name || 'channel'}</h3>
+                        {currentChannel?.privacy === 'private' ? (
+                          <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-orange-100 text-orange-700">
+                            Private
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">
+                            Public
+                          </span>
+                        )}
+                        {/* {currentChannel?.createdBy === user?.id && currentChannel?.privacy === 'private' && pendingRequestsCount > 0 && (
+                          <span className="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+                            {pendingRequestsCount}
+                          </span>
+                        )} */}
+                      </div>
+                      {currentChannel?.description && (
+                        <p className="text-xs text-slate-500 mt-1">{currentChannel.description}</p>
+                      )}
+                    </div>
+                    <div className="py-1">
+                      <button 
+                        onClick={() => { setIsMembersModalOpen(true); setIsChannelDropdownOpen(false); }}
+                        className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-2 transition-colors"
+                      >
+                        <Users className="w-4 h-4" /> View Members
+                        {currentChannel?.createdBy === user?.id && currentChannel?.privacy === 'private' && pendingRequestsCount > 0 && (
+                          <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                            {pendingRequestsCount}
+                          </span>
+                        )}
+                      </button>
+                      
+                      {currentChannel?.createdBy === user?.id && (
+                        <button 
+                          onClick={() => { setIsSettingsModalOpen(true); setIsChannelDropdownOpen(false); }}
+                          className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-2 transition-colors"
+                        >
+                          <Settings className="w-4 h-4" /> Channel Settings
+                        </button>
+                      )}
+                    </div>
+                    {currentChannel?.createdBy !== user?.id && (
+                      <div className="py-1 border-t border-slate-100">
+                        <button 
+                          onClick={async () => {
+                            setIsChannelDropdownOpen(false);
+                            
+                            const result = await Swal.fire({
+                              title: 'Leave Channel?',
+                              text: "Are you sure you want to leave this channel?",
+                              icon: 'warning',
+                              showCancelButton: true,
+                              confirmButtonColor: '#ef4444',
+                              cancelButtonColor: '#64748b',
+                              confirmButtonText: 'Yes, leave channel'
+                            });
+                            
+                            if (!result.isConfirmed) return;
+                            
+                            try {
+                              await ChannelService.leaveChannel(workspaceId as string, channelId as string);
+                              navigate(`/workspace/${workspaceId}/channels`);
+                            } catch (e) {
+                              console.error(e);
+                            }
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                        >
+                          <LogOut className="w-4 h-4" /> Leave Channel
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
               <button className="text-slate-400 hover:text-yellow-500 transition-colors">
                 <Star className="w-4 h-4" />
               </button>
@@ -166,40 +421,145 @@ export const WorkspaceChannelPage = () => {
               </div>
 
               <div className="flex items-center">
-                <div className="flex -space-x-2">
-                  <div className="w-7 h-7 rounded-full bg-blue-100 border border-white flex items-center justify-center text-[10px] font-bold text-blue-700 z-30">AL</div>
-                  <div className="w-7 h-7 rounded-full bg-indigo-100 border border-white flex items-center justify-center text-[10px] font-bold text-indigo-700 z-20">JD</div>
-                  <div className="w-7 h-7 rounded-full bg-orange-100 border border-white flex items-center justify-center text-[10px] font-bold text-orange-700 z-10">SM</div>
-                  <div className="w-7 h-7 rounded-full bg-slate-100 border border-white flex items-center justify-center text-[10px] font-bold text-slate-600 z-0">+12</div>
-                </div>
+                <button 
+                  onClick={() => setIsMembersModalOpen(true)}
+                  className="flex -space-x-2 hover:opacity-80 transition-opacity cursor-pointer"
+                  title="View channel members"
+                >
+                  {channelMembers.slice(0, 3).map((member, index) => {
+                    const bgColors = ['bg-blue-100 text-blue-700', 'bg-indigo-100 text-indigo-700', 'bg-orange-100 text-orange-700'];
+                    const zIndexes = ['z-30', 'z-20', 'z-10'];
+                    return member.user?.profileImage ? (
+                      <img
+                        key={member.id}
+                        src={member.user.profileImage}
+                        alt={member.user.name}
+                        className={`w-7 h-7 rounded-full border-2 border-white object-cover ${zIndexes[index]}`}
+                      />
+                    ) : (
+                      <div key={member.id} className={`w-7 h-7 rounded-full ${bgColors[index % bgColors.length]} border-2 border-white flex items-center justify-center text-[10px] font-bold ${zIndexes[index]}`}>
+                        {member.user?.name?.[0]?.toUpperCase() || 'U'}
+                      </div>
+                    );
+                  })}
+                  {channelMembers.length > 3 && (
+                    <div className="w-7 h-7 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[10px] font-bold text-slate-600 z-0">
+                      +{channelMembers.length - 3}
+                    </div>
+                  )}
+                  {channelMembers.length === 0 && (
+                    <div className="w-7 h-7 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[10px] font-bold text-slate-600">
+                      0
+                    </div>
+                  )}
+                </button>
               </div>
             </div>
           </header>
 
-          <div className="px-6 py-2 border-b border-slate-100 bg-slate-50/50">
-            <p className="text-xs text-slate-500">Central engineering and platform architecture discussions.</p>
-          </div>
+          {currentChannel?.isMember === false ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-6 bg-slate-50">
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${currentChannel?.privacy === 'private' ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'}`}>
+                {currentChannel?.privacy === 'private' ? <Lock className="w-8 h-8" /> : <Hash className="w-8 h-8" />}
+              </div>
+              <div className="flex items-center gap-2 mb-2">
+                {currentChannel?.privacy === 'private' ? (
+                  <Lock className="w-5 h-5 text-orange-500" />
+                ) : (
+                  <Hash className="w-5 h-5 text-blue-600" />
+                )}
+                <h2 className="text-2xl font-bold text-slate-900">{currentChannel?.name}</h2>
+                {currentChannel?.privacy === 'private' ? (
+                  <span className="text-xs font-bold uppercase tracking-wider px-2 py-1 rounded bg-orange-100 text-orange-700">
+                    Private
+                  </span>
+                ) : (
+                  <span className="text-xs font-bold uppercase tracking-wider px-2 py-1 rounded bg-blue-100 text-blue-700">
+                    Public
+                  </span>
+                )}
+              </div>
+              <p className="text-slate-500 text-center max-w-md mb-8">
+                {currentChannel?.description || "You are not a member of this channel. Join to see messages and participate in the conversation."}
+              </p>
+              
+              {currentChannel?.hasPendingRequest ? (
+                <button 
+                  disabled
+                  className="px-6 py-2.5 bg-slate-200 text-slate-500 font-semibold rounded-xl flex items-center gap-2 cursor-not-allowed"
+                >
+                  <Lock className="w-5 h-5" /> Request Pending
+                </button>
+              ) : (
+                <button 
+                  onClick={handleJoinChannel}
+                  className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-sm flex items-center gap-2"
+                >
+                  <Plus className="w-5 h-5" /> 
+                  {currentChannel?.privacy === 'private' ? 'Request to Join' : 'Join Channel'}
+                </button>
+              )}
+            </div>
+          ) : (
+            <>
+              <div className="px-6 py-2 border-b border-slate-100 bg-slate-50/50">
+                <p className="text-xs text-slate-500">{currentChannel?.description || "Central engineering and platform architecture discussions."}</p>
+              </div>
 
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
 
-            {messages.map((msg) => (
-              <div key={msg.id || msg._id} className="flex gap-4 group">
-                <div className="w-10 h-10 rounded-md bg-blue-100 flex items-center justify-center text-blue-700 font-bold shrink-0">
-                  {msg.senderName?.[0]?.toUpperCase() || 'U'}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline gap-2 mb-1">
-                    <span className="font-bold text-slate-900">{msg.senderName || 'User'}</span>
-                    <span className="text-xs text-slate-500">
-                      {msg.createdAt ? format(new Date(msg.createdAt), 'h:mm a') : 'Now'}
-                    </span>
+            {messages.map((msg) => {
+              const isMe = msg.senderId === user?.id;
+              const senderInitial = msg.senderName?.[0]?.toUpperCase() || 'U';
+              const isSystemMessage = msg.senderId === 'system';
+              
+              // Get profile image from member map or use current user's image
+              const senderImage = isMe 
+                ? user?.profileImage 
+                : (memberImagesMap[msg.senderId] || msg.senderImage);
+              
+              // System message (member removed, etc.)
+              if (isSystemMessage) {
+                return (
+                  <div key={msg.id || msg._id as string} className="flex justify-center">
+                    <div className="bg-orange-50 border border-orange-200 text-orange-800 text-sm px-4 py-2 rounded-full max-w-[80%] text-center">
+                      {msg.content}
+                    </div>
                   </div>
-                  <div className="text-slate-700 text-[15px] leading-relaxed whitespace-pre-wrap">
-                    {msg.content}
+                );
+              }
+              
+              return (
+                <div key={msg.id || msg._id as string} className={`flex gap-4 group ${isMe ? 'flex-row-reverse' : ''}`}>
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold shrink-0 shadow-sm overflow-hidden ${isMe ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                    {senderImage ? (
+                      <img 
+                        src={senderImage} 
+                        alt={msg.senderName || 'User'} 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span>{senderInitial}</span>
+                    )}
+                  </div>
+                  <div className={`flex-1 min-w-0 flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                    <div className={`flex items-baseline gap-2 mb-1 ${isMe ? 'flex-row-reverse' : ''}`}>
+                      <span className="font-bold text-slate-900 text-sm">{isMe ? 'You' : (msg.senderName || 'User')}</span>
+                      <span className="text-xs text-slate-500">
+                        {msg.createdAt ? format(new Date(msg.createdAt), 'h:mm a') : 'Now'}
+                      </span>
+                    </div>
+                    <div className={`text-[15px] leading-relaxed whitespace-pre-wrap px-4 py-2.5 max-w-[85%] shadow-sm ${
+                      isMe 
+                        ? 'bg-blue-600 text-white rounded-2xl rounded-tr-sm' 
+                        : 'bg-white border border-slate-200 text-slate-700 rounded-2xl rounded-tl-sm'
+                    }`}>
+                      {msg.content}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             
             <div ref={messagesEndRef} />
           </div>
@@ -253,6 +613,8 @@ export const WorkspaceChannelPage = () => {
               </div>
             </div>
           </div>
+          </>
+          )}
         </div>
 
         {showThread && (
@@ -356,6 +718,64 @@ export const WorkspaceChannelPage = () => {
         )}
 
       </div>
+
+      {/* Modals */}
+      {workspaceId && channelId && (
+        <>
+          <ChannelMembersModal
+            isOpen={isMembersModalOpen}
+            onClose={() => {
+              setIsMembersModalOpen(false);
+            }}
+            workspaceId={workspaceId}
+            channelId={channelId}
+            channelCreatorId={currentChannel?.createdBy}
+            channelPrivacy={currentChannel?.privacy}
+            onOpenAddMember={() => setIsAddMemberModalOpen(true)}
+            onMemberRemoved={() => {
+              // Refresh channel members when someone is removed
+              if (workspaceId && channelId) {
+                ChannelService.getMembers(workspaceId, channelId)
+                  .then(res => {
+                    const members = res.data?.data || [];
+                    setChannelMembers(members);
+                    
+                    // Update member images map
+                    const imageMap: Record<string, string> = {};
+                    members.forEach((member: { userId: string; user?: { profileImage?: string } }) => {
+                      if (member.user?.profileImage) {
+                        imageMap[member.userId] = member.user.profileImage;
+                      }
+                    });
+                    setMemberImagesMap(imageMap);
+                  })
+                  .catch(err => console.error('Failed to refresh channel members', err));
+              }
+            }}
+          />
+          
+          <AddChannelMemberModal
+            isOpen={isAddMemberModalOpen}
+            onClose={() => setIsAddMemberModalOpen(false)}
+            workspaceId={workspaceId}
+            channelId={channelId}
+          />
+
+          <ChannelSettingsModal
+            isOpen={isSettingsModalOpen}
+            onClose={() => setIsSettingsModalOpen(false)}
+            workspaceId={workspaceId}
+            channelId={channelId}
+            initialName={currentChannel?.name || ''}
+            initialDescription={currentChannel?.description}
+            initialPrivacy={currentChannel?.privacy}
+            onChannelUpdated={fetchChannelData}
+            onChannelDeleted={() => {
+              window.location.href = `/workspace/${workspaceId}`;
+            }}
+          />
+        </>
+      )}
     </WorkspaceLayout>
   );
 };

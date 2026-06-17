@@ -1,16 +1,6 @@
 import { api } from '../axios';
 
-export interface CreateWorkspaceData {
-    name: string;
-    description?: string;
-    logo?: string;
-    privacy?: 'public' | 'private';
-    maxMembers?: number;
-}
-
-export interface JoinWorkspaceData {
-    inviteCode: string;
-}
+import type { CreateWorkspaceData, JoinWorkspaceData } from '../../types/workspace.types';
 
 export const WorkspaceService = {
     createWorkspace: async (data: CreateWorkspaceData) => {
@@ -38,8 +28,9 @@ export const WorkspaceService = {
         return response.data;
     },
 
-    getWorkspaceMembers: async (workspaceId: string) => {
-        const response = await api.get(`/workspaces/${workspaceId}/members`);
+    getWorkspaceMembers: async (workspaceId: string, includeFullProfile = false) => {
+        const params = includeFullProfile ? '?includeProfile=true' : '';
+        const response = await api.get(`/workspaces/${workspaceId}/members${params}`);
         return response.data;
     },
 

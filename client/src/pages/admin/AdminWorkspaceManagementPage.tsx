@@ -8,29 +8,8 @@ import { isAxiosError } from 'axios';
 
 import Swal from 'sweetalert2';
 
-interface Workspace {
-  id: string;
-  name: string;
-  description?: string;
-  privacy: 'public' | 'private';
-  isActive: boolean;
-  maxMembers: number;
-  createdAt: string;
-  memberCount: number;
-  ownerName: string;
-  ownerEmail: string;
-}
+import type { Workspace } from '../../types/workspace.types';
 
-interface WorkspaceMember {
-  id: string;
-  userId: string;
-  role: string;
-  status: string;
-  joinedAt: string;
-  userName: string;
-  userEmail: string;
-  userAvatar: string | null;
-}
 
 export const AdminWorkspaceManagementPage = () => {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);

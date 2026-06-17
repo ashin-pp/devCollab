@@ -1,22 +1,6 @@
 import { api } from '../axios';
 
-export interface UpdateProfileData {
-    name?: string;
-    bio?: string;
-    skills?: string[];
-    github?: string;
-    linkedin?: string;
-    twitter?: string;
-    profileImage?: string;
-    location?: string;
-    email?: string;
-    title?: string;
-}
-
-export interface ChangePasswordData {
-    currentPassword?: string;
-    newPassword?: string;
-}
+import type { UpdateProfileData, ChangePasswordData } from '../../types/user.types';
 
 export const UserService = {
     getProfile: async () => {

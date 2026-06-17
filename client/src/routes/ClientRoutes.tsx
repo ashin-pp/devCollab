@@ -13,6 +13,7 @@ import { DummyChannelPage } from '../pages/workspace/DummyChannelPage';
 import { WorkspaceMembersPage } from '../pages/workspace/WorkspaceMembersPage';
 import { WorkspaceSettingsPage } from '../pages/workspace/WorkspaceSettingsPage';
 import { WorkspaceChannelPage } from '../pages/workspace/WorkspaceChannelPage';
+import { MemberProfilePage } from '../pages/workspace/MemberProfilePage';
 import { ProfilePage } from '../pages/profile/ProfilePage';
 import { EditProfilePage } from '../pages/profile/EditProfilePage';
 
@@ -37,6 +38,7 @@ export const ClientRoutes = () => {
         <Route path="workspace/:workspaceId/dm" element={<DummyChannelPage />} />
         <Route path="workspace/:workspaceId/polls" element={<DummyChannelPage />} />
         <Route path="workspace/:workspaceId/members" element={<WorkspaceMembersPage />} />
+        <Route path="workspace/:workspaceId/members/:userId/profile" element={<MemberProfilePage />} />
         <Route path="workspace/:workspaceId/settings" element={<WorkspaceSettingsPage />} />
 
         {/* Profile Routes */}

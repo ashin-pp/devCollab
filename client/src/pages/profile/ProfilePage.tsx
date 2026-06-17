@@ -5,19 +5,7 @@ import { Edit2, Globe, User as UserIcon, MapPin, ArrowLeft } from "lucide-react"
 import { UserService } from '../../api/user/user.service';
 import toast from 'react-hot-toast';
 
-interface UserProfile {
-  id: string;
-  name: string;
-  email: string;
-  profileImage?: string;
-  bio?: string;
-  skills: string[];
-  github?: string;
-  linkedin?: string;
-  twitter?: string;
-  location?: string;
-  title?: string;
-}
+import type { UserProfile } from '../../types/user.types';
 
 const GithubIcon = ({ className }: { className?: string }) => (
   <svg

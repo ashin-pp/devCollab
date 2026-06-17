@@ -8,6 +8,8 @@ export class Channel {
         public isActive: boolean = true,
         public createdAt?: Date,
         public updatedAt?: Date,
-        public id?: string
+        public id?: string,
+        public isMember?: boolean,
+        public hasPendingRequest?: boolean
     ) {}
 }

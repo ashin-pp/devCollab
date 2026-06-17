@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from 'react';
-import type { ReactNode } from 'react';
 import { Bell, Settings, User as UserIcon } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
@@ -9,9 +8,7 @@ import type { RootState } from '../store';
 
 import Swal from 'sweetalert2';
 
-interface UserLayoutProps {
-  children: ReactNode;
-}
+import type { UserLayoutProps } from '../types/component.types';
 
 export const UserLayout = ({ children }: UserLayoutProps) => {
   const dispatch = useDispatch();

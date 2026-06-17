@@ -1,5 +1,5 @@
 import { api } from "../axios";
-import type { LoginData, ResetPasswordData } from "../auth/auth.service";
+import type { LoginData, ResetPasswordData } from "../../types/auth.types";
 
 export const AdminService = {
     login: async (data: LoginData) => {

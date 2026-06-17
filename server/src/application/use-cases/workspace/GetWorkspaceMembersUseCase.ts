@@ -12,7 +12,7 @@ export class GetWorkspaceMembersUseCase {
         private userRepository: IUserRepository
     ) {}
 
-    async execute(workspaceId: string, requestUserId: string) {
+    async execute(workspaceId: string, requestUserId: string, includeProfile: boolean = false) {
         if (!workspaceId) {
             throw new AppError("Workspace not found", HttpStatusCode.BAD_REQUEST);
         }
@@ -49,12 +49,24 @@ export class GetWorkspaceMembersUseCase {
                     role: member.role,
                     status: member.status,
                     joinedAt: member.joinedAt,
-                    user: user ? {
+                    user: user ? (includeProfile ? {
+                        id: user.id,
+                        name: user.name,
+                        email: user.email,
+                        profileImage: user.profileImage,
+                        bio: user.bio,
+                        skills: user.skills || [],
+                        github: user.github,
+                        linkedin: user.linkedin,
+                        twitter: user.twitter,
+                        location: user.location,
+                        title: user.title
+                    } : {
                         id: user.id,
                         name: user.name,
                         email: user.email,
                         profileImage: user.profileImage
-                    } : null
+                    }) : null
                 };
             })
         );

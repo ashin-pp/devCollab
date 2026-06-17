@@ -185,6 +185,15 @@ import { MessageRepository } from "../infra/database/repositories/MessageReposit
 
 import { CreateChannelUseCase } from "../application/use-cases/channel/CreateChannelUseCase";
 import { GetWorkspaceChannelsUseCase } from "../application/use-cases/channel/GetWorkspaceChannelsUseCase";
+import { GetChannelMembersUseCase } from "../application/use-cases/channel/GetChannelMembersUseCase";
+import { AddChannelMemberUseCase } from "../application/use-cases/channel/AddChannelMemberUseCase";
+import { RemoveChannelMemberUseCase } from "../application/use-cases/channel/RemoveChannelMemberUseCase";
+import { UpdateChannelUseCase } from "../application/use-cases/channel/UpdateChannelUseCase";
+import { LeaveChannelUseCase } from "../application/use-cases/channel/LeaveChannelUseCase";
+import { DeleteChannelUseCase } from "../application/use-cases/channel/DeleteChannelUseCase";
+import { JoinChannelUseCase } from "../application/use-cases/channel/JoinChannelUseCase";
+import { GetChannelRequestsUseCase } from "../application/use-cases/channel/GetChannelRequestsUseCase";
+import { UpdateChannelRequestUseCase } from "../application/use-cases/channel/UpdateChannelRequestUseCase";
 import { SendMessageUseCase } from "../application/use-cases/channel/SendMessageUseCase";
 import { GetChannelMessagesUseCase } from "../application/use-cases/channel/GetChannelMessagesUseCase";
 
@@ -197,10 +206,32 @@ const messageRepository = new MessageRepository();
 
 const createChannelUseCase = new CreateChannelUseCase(channelRepository, channelMemberRepository);
 const getWorkspaceChannelsUseCase = new GetWorkspaceChannelsUseCase(channelRepository, channelMemberRepository);
+const getChannelMembersUseCase = new GetChannelMembersUseCase(channelRepository, channelMemberRepository, userRepository);
+const addChannelMemberUseCase = new AddChannelMemberUseCase(channelRepository, channelMemberRepository, workspaceMemberRepository);
+const removeChannelMemberUseCase = new RemoveChannelMemberUseCase(channelRepository, channelMemberRepository);
+const updateChannelUseCase = new UpdateChannelUseCase(channelRepository);
+const leaveChannelUseCase = new LeaveChannelUseCase(channelRepository, channelMemberRepository);
+const deleteChannelUseCase = new DeleteChannelUseCase(channelRepository);
+const joinChannelUseCase = new JoinChannelUseCase(channelRepository, channelMemberRepository);
+const getChannelRequestsUseCase = new GetChannelRequestsUseCase(channelMemberRepository, userRepository);
+const updateChannelRequestUseCase = new UpdateChannelRequestUseCase(channelMemberRepository, channelRepository);
+
 const sendMessageUseCase = new SendMessageUseCase(messageRepository);
 const getChannelMessagesUseCase = new GetChannelMessagesUseCase(messageRepository);
 
-const channelController = new ChannelController(createChannelUseCase, getWorkspaceChannelsUseCase);
+const channelController = new ChannelController(
+    createChannelUseCase, 
+    getWorkspaceChannelsUseCase,
+    getChannelMembersUseCase,
+    addChannelMemberUseCase,
+    removeChannelMemberUseCase,
+    updateChannelUseCase,
+    leaveChannelUseCase,
+    deleteChannelUseCase,
+    joinChannelUseCase,
+    getChannelRequestsUseCase,
+    updateChannelRequestUseCase
+);
 const messageController = new MessageController(sendMessageUseCase, getChannelMessagesUseCase);
 
 export { logger, authController, adminController, userController, workspaceController, channelController, messageController, jwtService };

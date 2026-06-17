@@ -6,6 +6,7 @@ export interface IChannelMemberDocument extends Document {
     added_by: mongoose.Types.ObjectId;
     role: 'admin' | 'member';
     is_active: boolean;
+    status: 'pending' | 'approved' | 'rejected';
     joined_at: Date;
     removed_at?: Date;
 }
@@ -16,6 +17,7 @@ const channelMemberSchema = new Schema({
     added_by: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     role: { type: String, enum: ['admin', 'member'], default: 'member' },
     is_active: { type: Boolean, default: true },
+    status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'approved' },
     joined_at: { type: Date, default: Date.now },
     removed_at: { type: Date }
 });

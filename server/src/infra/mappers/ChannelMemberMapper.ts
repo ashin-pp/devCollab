@@ -9,6 +9,7 @@ export class ChannelMemberMapper {
             raw.added_by.toString(),
             raw.role,
             raw.is_active,
+            raw.status,
             raw.joined_at,
             raw.removed_at,
             raw._id.toString()

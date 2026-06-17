@@ -1,36 +1,38 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { store } from '../store';
 
 const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
 export const useSocket = (workspaceId?: string) => {
-    const socketRef = useRef<Socket | null>(null);
+    const [socket, setSocket] = useState<Socket | null>(null);
 
     useEffect(() => {
-        socketRef.current = io(SOCKET_URL, {
+        const token = store.getState().auth.accessToken;
+        
+        const newSocket = io(SOCKET_URL, {
+            auth: { token },
             withCredentials: true,
             transports: ['websocket', 'polling']
         });
 
-        const socket = socketRef.current;
+        setSocket(newSocket);
 
-        socket.on('connect', () => {
+        newSocket.on('connect', () => {
             console.log('Connected to socket server');
             if (workspaceId) {
-                socket.emit('join_workspace', workspaceId);
+                newSocket.emit('join_workspace', workspaceId);
             }
         });
 
-        socket.on('connect_error', (error) => {
+        newSocket.on('connect_error', (error) => {
             console.error('Socket connection error:', error);
         });
 
         return () => {
-            if (socket) {
-                socket.disconnect();
-            }
+            newSocket.disconnect();
         };
     }, [workspaceId]);
 
-    return socketRef.current;
+    return socket;
 };
