@@ -1,5 +1,5 @@
-import { IUserRepository } from "../../../domain/repositories/IUserRepository";
-import { IHashService } from "../../../domain/services/IHashService";
+import { IUserRepository } from "../../../application/repositories/IUserRepository";
+import { IHashService } from "../../../application/services/IHashService";
 import { AppError } from "../../../domain/errors/AppError";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";

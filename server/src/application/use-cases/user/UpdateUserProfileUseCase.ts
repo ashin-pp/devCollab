@@ -1,4 +1,4 @@
-import { IUserRepository } from "../../../domain/repositories/IUserRepository";
+import { IUserRepository } from "../../../application/repositories/IUserRepository";
 import { AppError } from "../../../domain/errors/AppError";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
@@ -14,7 +14,9 @@ export class UpdateUserProfileUseCase {
             throw new AppError(ErrorMessage.USER_NOT_FOUND, HttpStatusCode.NOT_FOUND);
         }
 
-        const updatedUser = await this.userRepository.update(userId, data);
+        user.updateProfile(data);
+
+        const updatedUser = await this.userRepository.update(userId, user);
         if (!updatedUser || !updatedUser.id) {
              throw new AppError(ErrorMessage.FAILED_TO_UPDATE_PROFILE, HttpStatusCode.INTERNAL_SERVER);
         }

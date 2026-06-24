@@ -1,5 +1,5 @@
-import { IUserRepository } from "../../../domain/repositories/IUserRepository";
-import { IStorageService } from "../../../domain/services/IStorageService";
+import { IUserRepository } from "../../../application/repositories/IUserRepository";
+import { IStorageService } from "../../../application/services/IStorageService";
 import { AppError } from "../../../domain/errors/AppError";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";

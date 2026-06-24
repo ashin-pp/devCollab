@@ -15,6 +15,7 @@ import type { MemberData } from '../types/workspace.types';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import { CreateChannelModal } from '../components/workspace/CreateChannelModal';
+import { InviteMemberModal } from '../components/workspace/InviteMemberModal';
 
 import type { WorkspaceLayoutProps } from '../types/component.types';
 
@@ -28,12 +29,14 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
   const [isOwner, setIsOwner] = useState(false);
   const [channels, setChannels] = useState<Record<string, unknown>[]>([]);
   const [isCreateChannelModalOpen, setIsCreateChannelModalOpen] = useState(false);
+  const [isInviteMemberModalOpen, setIsInviteMemberModalOpen] = useState(false);
   const [workspaceName, setWorkspaceName] = useState('Loading...');
   const [workspaceLogo, setWorkspaceLogo] = useState<string | undefined>(undefined);
+  const [workspacePrivacy, setWorkspacePrivacy] = useState<'public' | 'private'>('private');
   const [inviteCode, setInviteCode] = useState<string>('');
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
-  
+
   const [isMyChannelsOpen, setIsMyChannelsOpen] = useState(true);
   const [isAllChannelsOpen, setIsAllChannelsOpen] = useState(true);
 
@@ -42,7 +45,7 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
       ChannelService.getWorkspaceChannels(workspaceId)
         .then(res => setChannels(res.data?.data || []))
         .catch(err => console.error('Failed to fetch channels', err));
-      
+
       // Fetch unread counts
       ChannelService.getUnreadCounts(workspaceId)
         .then(res => {
@@ -70,12 +73,15 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
     if (workspaceId && user) {
       // Fetch workspace data
       WorkspaceService.getUserWorkspaces()
-        .then((response: { data?: Array<{ id: string; name: string; logo?: string; inviteCode?: string }> }) => {
+        .then((response: { data?: Array<{ id: string; name: string; logo?: string; inviteCode?: string; privacy?: 'public' | 'private' }> }) => {
           const workspace = response.data?.find((w) => w.id === workspaceId);
           if (workspace) {
             setWorkspaceName(workspace.name);
             setWorkspaceLogo(workspace.logo);
             setInviteCode(workspace.inviteCode || '');
+            if (workspace.privacy) {
+              setWorkspacePrivacy(workspace.privacy);
+            }
           }
         })
         .catch((err) => console.error('Failed to fetch workspace data', err));
@@ -85,7 +91,7 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
         const members = response.data || [];
         const currentMember = members.find((m) => m.userId === user.id);
         setIsOwner(currentMember?.role === 'owner');
-        
+
         // Count pending requests if user is owner
         if (currentMember?.role === 'owner') {
           const pendingCount = members.filter((m) => m.status === 'pending').length;
@@ -171,9 +177,7 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
   return (
     <div className="h-screen w-full flex flex-col bg-white overflow-hidden font-sans">
 
-      {/* Top Navbar */}
       <header className="h-14 border-b border-slate-200 flex items-center justify-between px-4 shrink-0 bg-white z-20">
-        {/* Left: Branding */}
         <div className="flex items-center gap-6 w-64 shrink-0">
           <div className="font-bold text-xl tracking-tight text-blue-600 cursor-pointer" onClick={() => navigate('/dashboard')}>
             DevCollab
@@ -189,11 +193,9 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
           </div>
         </div>
 
-        {/* Center: Empty space (search removed) */}
         <div className="flex-1 max-w-2xl px-4">
         </div>
 
-        {/* Right: Actions */}
         <div className="flex items-center gap-4 shrink-0">
           <button className="text-slate-500 hover:text-slate-700 transition-colors">
             <Bell className="w-5 h-5" />
@@ -210,7 +212,7 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
               <LogOut className="w-5 h-5" />
             </button>
           )}
-          <button className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden border border-slate-300 ml-1">
+          <button onClick={() => navigate('/profile', { state: { fromWorkspace: workspaceId } })} className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden border border-slate-300 ml-1 hover:border-slate-400 hover:ring-2 hover:ring-blue-100 transition-all cursor-pointer" title="Go to Profile">
             {user?.profileImage ? (
               <img src={user.profileImage} alt="Profile" className="w-full h-full object-cover" />
             ) : (
@@ -220,281 +222,271 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
         </div>
       </header>
 
-      {/* Main Workspace Area */}
       <div className="flex-1 flex overflow-hidden">
 
-        {/* Left Sidebar */}
-        <aside className="w-[260px] bg-slate-50 border-r border-slate-200 flex flex-col shrink-0">
+        <aside className="w-[280px] bg-slate-50/50 backdrop-blur-xl border-r border-slate-200 flex flex-col shrink-0 relative transition-all duration-300">
 
-          {/* Workspace Header */}
-          <div className="p-4 border-b border-slate-200">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold shadow-sm overflow-hidden">
+          {/* Workspace Header - Premium Glass Effect */}
+          <div onClick={() => navigate(`/workspace/${workspaceId}/dashboard`)} className="p-5 border-b border-slate-200/60 bg-white/40 relative overflow-hidden group cursor-pointer hover:bg-white/60 transition-colors">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl -mr-10 -mt-10 transition-transform duration-700 group-hover:scale-125"></div>
+            <div className="flex items-center gap-3 relative z-10">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-extrabold text-xl shadow-lg shadow-blue-500/20 overflow-hidden shrink-0 border border-blue-400/20">
                 {workspaceLogo ? (
-                  <img 
-                    src={workspaceLogo} 
-                    alt={workspaceName} 
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={workspaceLogo} alt={workspaceName} className="w-full h-full object-cover" />
                 ) : (
                   <span>{workspaceName.substring(0, 2).toUpperCase()}</span>
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <h2 className="font-bold text-slate-900 leading-tight truncate text-lg" title={workspaceName}>
+                <h2 className="font-extrabold text-slate-900 leading-tight truncate text-lg tracking-tight" title={workspaceName}>
                   {workspaceName}
                 </h2>
-                <p className="text-xs text-slate-500">Workspace</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className={`w-2 h-2 rounded-full shadow-sm ${workspacePrivacy === 'public' ? 'bg-emerald-500 shadow-emerald-500/40' : 'bg-orange-500 shadow-orange-500/40'}`}></span>
+                  <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{workspacePrivacy} Workspace</p>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Navigation */}
-          <div className="flex-1 overflow-y-auto py-4 px-3 flex flex-col gap-6 hide-scrollbar">
+          <div className="flex-1 overflow-y-auto py-5 px-3 flex flex-col gap-6 hide-scrollbar relative">
 
-            {/* Channels Group */}
-            <div>
-              <div className="flex items-center justify-between mb-2 px-2">
-                <div className="flex items-center gap-1 text-slate-500 font-bold text-xs uppercase tracking-wider">
-                  <ChevronDown className="w-3 h-3" /> Channels
+            {/* Core Tools Section */}
+            <div className="space-y-1">
+              <div className="px-2 mb-2">
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Main Menu</span>
+              </div>
+
+              <div onClick={() => navigate(`/workspace/${workspaceId}/dm`)} className={`group flex items-center justify-between text-sm py-2.5 px-3 rounded-xl cursor-pointer font-semibold transition-all duration-200 ${isActive('/dm') ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' : 'text-slate-600 hover:bg-white hover:text-blue-600 hover:shadow-sm border border-transparent hover:border-slate-200/60'}`}>
+                <div className="flex items-center gap-3">
+                  <MessageSquare className={`w-4.5 h-4.5 ${isActive('/dm') ? 'text-white' : 'text-slate-400 group-hover:text-blue-500'}`} />
+                  <span>Direct Messages</span>
                 </div>
-                <button 
+                <span className={`${isActive('/dm') ? 'bg-white/20 text-white' : 'bg-blue-50 text-blue-600 group-hover:bg-blue-100'} text-[10px] font-bold px-2 py-0.5 rounded-full transition-colors`}>5</span>
+              </div>
+
+              <div onClick={() => navigate(`/workspace/${workspaceId}/polls`)} className={`group flex items-center justify-between text-sm py-2.5 px-3 rounded-xl cursor-pointer font-semibold transition-all duration-200 ${isActive('/polls') ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' : 'text-slate-600 hover:bg-white hover:text-blue-600 hover:shadow-sm border border-transparent hover:border-slate-200/60'}`}>
+                <div className="flex items-center gap-3">
+                  <BarChart2 className={`w-4.5 h-4.5 ${isActive('/polls') ? 'text-white' : 'text-slate-400 group-hover:text-blue-500'}`} />
+                  <span>Polls</span>
+                </div>
+                <span className={`${isActive('/polls') ? 'bg-white/20 text-white' : 'bg-blue-50 text-blue-600 group-hover:bg-blue-100'} text-[10px] font-bold px-2 py-0.5 rounded-full transition-colors`}>3</span>
+              </div>
+
+              <div className={`group flex items-center justify-between text-sm py-2.5 px-3 rounded-xl cursor-pointer font-semibold transition-all duration-200 ${isActive('/members') ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' : 'text-slate-600 hover:bg-white hover:text-blue-600 hover:shadow-sm border border-transparent hover:border-slate-200/60'}`}>
+                <div className="flex items-center gap-3 flex-1" onClick={() => navigate(`/workspace/${workspaceId}/members`)}>
+                  <Users className={`w-4.5 h-4.5 ${isActive('/members') ? 'text-white' : 'text-slate-400 group-hover:text-blue-500'}`} />
+                  <span>Members </span>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {isOwner && pendingRequestsCount > 0 && (
+                    <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm animate-pulse">
+                      {pendingRequestsCount} new
+                    </span>
+                  )}
+                  {(isOwner || workspacePrivacy === 'public') && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setIsInviteMemberModalOpen(true); }}
+                      className={`p-1.5 rounded-lg transition-colors ${isActive('/members') ? 'hover:bg-white/20 text-white' : 'hover:bg-blue-50 text-slate-400 hover:text-blue-600'}`}
+                      title="Invite Member"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent mx-2 my-1"></div>
+
+            {/* Channels Section */}
+            <div className="flex-1">
+              <div className="flex items-center justify-between px-2 mb-3">
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <Hash className="w-3.5 h-3.5" /> Channels
+                </span>
+                <button
                   onClick={() => setIsCreateChannelModalOpen(true)}
-                  className="p-1 rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors tooltip-trigger"
+                  className="p-1.5 rounded-lg bg-white border border-slate-200/60 text-slate-500 hover:text-blue-600 hover:border-blue-300 hover:shadow-sm hover:bg-blue-50 transition-all shadow-sm"
                   title="Create Channel"
                 >
                   <Plus className="w-3.5 h-3.5" />
                 </button>
               </div>
-              <div className="space-y-1">
-                <div 
-                  onClick={() => setIsMyChannelsOpen(!isMyChannelsOpen)}
-                  className="flex items-center justify-between text-slate-500 text-xs py-1.5 px-3 font-bold uppercase tracking-wider cursor-pointer hover:bg-slate-100 rounded-md transition-colors"
-                >
-                  <div className="flex items-center">
-                    <span className="mr-2">🔖</span> My Channels
+
+              <div className="space-y-4">
+                {/* My Channels */}
+                <div>
+                  <div
+                    onClick={() => setIsMyChannelsOpen(!isMyChannelsOpen)}
+                    className="flex items-center justify-between text-slate-400 text-[11px] py-1.5 px-2 font-bold uppercase tracking-wider cursor-pointer hover:text-slate-600 transition-colors"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-blue-500">🔖</span> My Channels
+                    </div>
+                    {isMyChannelsOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                   </div>
-                  {isMyChannelsOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+
+                  {isMyChannelsOpen && (
+                    <div className="space-y-0.5 mt-1">
+                      {channels.filter((c) => c.createdBy === user?.id).map((channel: Record<string, unknown>) => {
+                        const isPrivate = channel.privacy === 'private';
+                        const channelId = channel.id as string;
+                        const unreadCount = unreadCounts[channelId] || 0;
+
+                        return (
+                          <div
+                            key={channelId}
+                            onClick={() => navigate(`/workspace/${workspaceId}/channels/${channelId}`)}
+                            className={`group flex items-center justify-between text-sm py-2 px-3 rounded-xl cursor-pointer font-medium transition-all ${isActive(`channels/${channelId}`) ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-600 hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-200/60'}`}
+                          >
+                            <div className="flex items-center truncate gap-2.5 flex-1 min-w-0">
+                              {isPrivate ? (
+                                <Lock className={`w-4 h-4 transition-colors shrink-0 ${isActive(`channels/${channelId}`) ? 'text-orange-600' : 'text-orange-400 group-hover:text-orange-600'}`} />
+                              ) : (
+                                <Hash className={`w-4 h-4 transition-colors shrink-0 ${isActive(`channels/${channelId}`) ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-500'}`} />
+                              )}
+                              <span className="truncate">{channel.name as string}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {unreadCount > 0 && (
+                                <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md shadow-sm">
+                                  {unreadCount > 99 ? '99+' : unreadCount}
+                                </span>
+                              )}
+                              {isActive(`channels/${channelId}`) && <div className={`w-1.5 h-1.5 rounded-full ${isPrivate ? 'bg-orange-600' : 'bg-blue-600'}`}></div>}
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {channels.filter(c => c.createdBy === user?.id).length === 0 && (
+                        <div className="text-slate-400 text-xs py-2 px-3 pl-9 italic">No channels created</div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
-                {isMyChannelsOpen && (
-                  <div className="space-y-1">
-                    {channels.filter((c) => c.createdBy === user?.id).map((channel: Record<string, unknown>) => {
-                      const isPrivate = channel.privacy === 'private';
-                      const channelId = channel.id as string;
-                      const unreadCount = unreadCounts[channelId] || 0;
-                      
-                      return (
+                {/* All Channels */}
+                <div>
                   <div
-                    key={channelId}
-                    onClick={() => navigate(`/workspace/${workspaceId}/channels/${channelId}`)}
-                    className={`group flex items-center justify-between text-sm py-2 px-3 pl-6 rounded-xl cursor-pointer font-medium transition-all ${isActive(`channels/${channelId}`) ? 'bg-blue-50/80 text-blue-700 font-bold shadow-sm' : 'text-slate-600 hover:bg-white hover:shadow-sm hover:text-slate-900'}`}
+                    onClick={() => setIsAllChannelsOpen(!isAllChannelsOpen)}
+                    className="flex items-center justify-between text-slate-400 text-[11px] py-1.5 px-2 font-bold uppercase tracking-wider cursor-pointer hover:text-slate-600 transition-colors"
                   >
-                    <div className="flex items-center truncate gap-2 flex-1 min-w-0">
-                      {isPrivate ? (
-                        <Lock className={`w-4 h-4 transition-colors flex-shrink-0 ${isActive(`channels/${channelId}`) ? 'text-orange-600' : 'text-orange-500 group-hover:text-orange-600'}`} />
-                      ) : (
-                        <Hash className={`w-4 h-4 transition-colors flex-shrink-0 ${isActive(`channels/${channelId}`) ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-500'}`} />
-                      )}
-                      <span className="group-hover:translate-x-0.5 transition-transform truncate">{channel.name as string}</span>
-                      {isPrivate ? (
-                        <span className="ml-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 flex-shrink-0">
-                          Private
-                        </span>
-                      ) : (
-                        <span className="ml-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 flex-shrink-0">
-                          Public
-                        </span>
-                      )}
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-slate-400">🌍</span> All Channels
                     </div>
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      {unreadCount > 0 && (
-                        <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                          {unreadCount > 99 ? '99+' : unreadCount}
-                        </span>
-                      )}
-                      {isActive(`channels/${channelId}`) && <div className={`w-2 h-2 rounded-full shadow-sm ${isPrivate ? 'bg-orange-600' : 'bg-blue-600'}`}></div>}
-                    </div>
+                    {isAllChannelsOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                   </div>
-                      );
-                    })}
-                
-                    {channels.filter(c => c.createdBy === user?.id).length === 0 && (
-                      <div className="text-slate-400 text-xs py-2 px-3 pl-6 italic">No channels created</div>
-                    )}
-                  </div>
-                )}
 
-                <div 
-                  onClick={() => setIsAllChannelsOpen(!isAllChannelsOpen)}
-                  className="flex items-center justify-between text-slate-500 text-xs py-1.5 px-3 font-bold uppercase tracking-wider cursor-pointer hover:bg-slate-100 rounded-md transition-colors mt-4"
-                >
-                  <div className="flex items-center">
-                    <span className="mr-2">🌍</span> All Channels
-                  </div>
-                  {isAllChannelsOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                </div>
+                  {isAllChannelsOpen && (
+                    <div className="space-y-0.5 mt-1">
+                      {channels.filter((c) => c.createdBy !== user?.id).map((channel: Record<string, unknown>) => {
+                        const isPrivate = channel.privacy === 'private';
+                        const channelId = channel.id as string;
+                        const unreadCount = unreadCounts[channelId] || 0;
 
-                {isAllChannelsOpen && (
-                  <div className="space-y-1">
-                    {channels.filter((c) => c.createdBy !== user?.id).map((channel: Record<string, unknown>) => {
-                      const isPrivate = channel.privacy === 'private';
-                      const channelId = channel.id as string;
-                      const unreadCount = unreadCounts[channelId] || 0;
-                      
-                      return (
-                  <div
-                    key={channel.id as string}
-                    onClick={() => navigate(`/workspace/${workspaceId}/channels/${channel.id}`)}
-                    className={`group flex items-center justify-between text-sm py-2 px-3 pl-6 rounded-xl cursor-pointer font-medium transition-all ${isActive(`channels/${channel.id}`) ? 'bg-blue-50/80 text-blue-700 font-bold shadow-sm' : 'text-slate-600 hover:bg-white hover:shadow-sm hover:text-slate-900'}`}
-                  >
-                    <div className="flex items-center truncate gap-2 flex-1 min-w-0">
-                      {isPrivate ? (
-                        <Lock className={`w-4 h-4 transition-colors flex-shrink-0 ${isActive(`channels/${channel.id}`) ? 'text-orange-600' : 'text-orange-500 group-hover:text-orange-600'}`} />
-                      ) : (
-                        <Hash className={`w-4 h-4 transition-colors flex-shrink-0 ${isActive(`channels/${channel.id}`) ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-500'}`} />
-                      )}
-                      <span className="group-hover:translate-x-0.5 transition-transform truncate">{channel.name as string}</span>
-                      {isPrivate ? (
-                        <span className="ml-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 flex-shrink-0">
-                          Private
-                        </span>
-                      ) : (
-                        <span className="ml-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 flex-shrink-0">
-                          Public
-                        </span>
+                        return (
+                          <div
+                            key={channelId}
+                            onClick={() => navigate(`/workspace/${workspaceId}/channels/${channelId}`)}
+                            className={`group flex items-center justify-between text-sm py-2 px-3 rounded-xl cursor-pointer font-medium transition-all ${isActive(`channels/${channelId}`) ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-600 hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-200/60'}`}
+                          >
+                            <div className="flex items-center truncate gap-2.5 flex-1 min-w-0">
+                              {isPrivate ? (
+                                <Lock className={`w-4 h-4 transition-colors shrink-0 ${isActive(`channels/${channelId}`) ? 'text-orange-600' : 'text-orange-400 group-hover:text-orange-600'}`} />
+                              ) : (
+                                <Hash className={`w-4 h-4 transition-colors shrink-0 ${isActive(`channels/${channelId}`) ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-500'}`} />
+                              )}
+                              <span className="truncate">{channel.name as string}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {unreadCount > 0 && (
+                                <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md shadow-sm">
+                                  {unreadCount > 99 ? '99+' : unreadCount}
+                                </span>
+                              )}
+                              {isActive(`channels/${channelId}`) && <div className={`w-1.5 h-1.5 rounded-full ${isPrivate ? 'bg-orange-600' : 'bg-blue-600'}`}></div>}
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {channels.filter(c => c.createdBy !== user?.id).length === 0 && (
+                        <div className="text-slate-400 text-xs py-2 px-3 pl-9 italic">No other channels</div>
                       )}
                     </div>
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      {unreadCount > 0 && (
-                        <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                          {unreadCount > 99 ? '99+' : unreadCount}
-                        </span>
-                      )}
-                      {isActive(`channels/${channel.id}`) && <div className={`w-2 h-2 rounded-full shadow-sm ${isPrivate ? 'bg-orange-600' : 'bg-blue-600'}`}></div>}
-                    </div>
-                  </div>
-                      );
-                    })}
-
-                    {channels.filter(c => c.createdBy !== user?.id).length === 0 && (
-                      <div className="text-slate-400 text-xs py-2 px-3 pl-6 italic">No other channels</div>
-                    )}
-                  </div>
-                )}
-                
-                <div className="pt-2 px-2">
-                  <button 
-                    onClick={() => setIsCreateChannelModalOpen(true)}
-                    className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-white border border-slate-200 text-slate-700 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50/50 rounded-xl text-sm font-semibold transition-all shadow-sm group"
-                  >
-                    <Plus className="w-4 h-4 text-slate-400 group-hover:text-blue-500" />
-                    <span>Create New Channel</span>
-                  </button>
+                  )}
                 </div>
               </div>
             </div>
-
-            {/* Other Sections */}
-            <div className="space-y-1.5 mt-4">
-              <div
-                onClick={() => navigate(`/workspace/${workspaceId}/dm`)}
-                className={`group flex items-center justify-between text-sm py-2 px-3 rounded-xl cursor-pointer font-medium transition-all ${isActive('/dm') ? 'bg-blue-50/80 text-blue-700 font-bold shadow-sm' : 'text-slate-600 hover:bg-white hover:shadow-sm hover:text-slate-900'}`}
-              >
-                <div className="flex items-center">
-                  <MessageSquare className={`w-4 h-4 mr-3 transition-colors ${isActive('/dm') ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-500'}`} />
-                  <span className="group-hover:translate-x-0.5 transition-transform">Direct Messages</span>
-                </div>
-                <span className={`${isActive('/dm') ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700 group-hover:bg-blue-100 group-hover:text-blue-700'} transition-colors text-[10px] font-bold px-2 py-0.5 rounded-full`}>5</span>
-              </div>
-              <div
-                onClick={() => navigate(`/workspace/${workspaceId}/polls`)}
-                className={`group flex items-center justify-between text-sm py-2 px-3 rounded-xl cursor-pointer font-medium transition-all ${isActive('/polls') ? 'bg-blue-50/80 text-blue-700 font-bold shadow-sm' : 'text-slate-600 hover:bg-white hover:shadow-sm hover:text-slate-900'}`}
-              >
-                <div className="flex items-center">
-                  <BarChart2 className={`w-4 h-4 mr-3 transition-colors ${isActive('/polls') ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-500'}`} />
-                  <span className="group-hover:translate-x-0.5 transition-transform">Polls</span>
-                </div>
-                <span className={`${isActive('/polls') ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700 group-hover:bg-blue-100 group-hover:text-blue-700'} transition-colors text-[10px] font-bold px-2 py-0.5 rounded-full`}>3</span>
-              </div>
-              <div
-                onClick={() => navigate(`/workspace/${workspaceId}/members`)}
-                className={`group flex items-center justify-between text-sm py-2 px-3 rounded-xl cursor-pointer font-medium transition-all ${isActive('/members') ? 'bg-blue-50/80 text-blue-700 font-bold shadow-sm' : 'text-slate-600 hover:bg-white hover:shadow-sm hover:text-slate-900'}`}
-              >
-                <div className="flex items-center">
-                  <Users className={`w-4 h-4 mr-3 transition-colors ${isActive('/members') ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-500'}`} />
-                  <span className="group-hover:translate-x-0.5 transition-transform">Members</span>
-                </div>
-                {isOwner && pendingRequestsCount > 0 && (
-                  <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                    {pendingRequestsCount}
-                  </span>
-                )}
-              </div>
-              
-              <div className="pt-4 mt-2 border-t border-slate-200/60">
-                <div
-                  onClick={() => navigate('/profile', { state: { fromWorkspace: workspaceId } })}
-                  className="group flex items-center justify-between text-sm py-2.5 px-3 rounded-xl cursor-pointer text-slate-600 hover:bg-slate-800 hover:text-white font-medium transition-all shadow-sm border border-slate-200 hover:border-slate-800"
-                >
-                  <div className="flex items-center">
-                    <UserCircle className="w-4 h-4 mr-3 text-slate-400 group-hover:text-slate-300 transition-colors" />
-                    <span className="uppercase tracking-wider text-xs font-bold">Profile</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
           </div>
 
-          {/* Sidebar Footer */}
-          <div className="p-4 border-t border-slate-200 bg-slate-50 space-y-2.5">
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="group w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-sm font-semibold rounded-xl transition-all shadow-sm hover:shadow"
+          {/* Footer Area - Profile, Invite, Settings */}
+          <div className="p-4 bg-white/40 border-t border-slate-200/60 backdrop-blur-md space-y-3 relative z-10">
+
+            <div
+              onClick={() => navigate('/profile', { state: { fromWorkspace: workspaceId } })}
+              className="group flex items-center justify-between text-sm py-2.5 px-3 rounded-xl cursor-pointer bg-slate-800 text-white font-medium hover:bg-slate-900 transition-all shadow-md shadow-slate-900/10 border border-slate-700"
             >
-              <ArrowLeft className="w-4 h-4 text-slate-400 group-hover:-translate-x-1 transition-transform" />
-              Back to Dashboard
-            </button>
-            
-            {/* Invite Code - Minimal Design */}
-            <div className="space-y-1">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">
-                Invite Code
-              </p>
-              <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2">
-                <span className="flex-1 font-mono text-sm font-bold text-slate-700">
-                  {inviteCode || '---'}
-                </span>
-                <button 
-                  onClick={() => {
-                    if (inviteCode) {
-                      navigator.clipboard.writeText(inviteCode);
-                      toast.success('Copied!');
-                    }
-                  }}
-                  className="p-1.5 hover:bg-blue-50 text-blue-600 rounded transition-colors"
-                  title="Copy"
-                >
-                  <Copy className="w-4 h-4" />
-                </button>
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 rounded-full bg-slate-600 flex items-center justify-center overflow-hidden shrink-0 border border-slate-500">
+                  {user?.profileImage ? (
+                    <img src={user.profileImage} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    <UserIcon className="w-3.5 h-3.5 text-slate-300" />
+                  )}
+                </div>
+                <span className="font-bold text-xs tracking-wide">My Profile</span>
               </div>
+              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-white transition-colors group-hover:translate-x-0.5" />
             </div>
 
-            {isOwner && (
-              <button 
-                onClick={() => navigate(`/workspace/${workspaceId}/settings`)}
-                className="group w-full flex items-center justify-center gap-2 py-2 px-4 bg-transparent hover:bg-slate-200 text-slate-600 text-sm font-semibold rounded-xl transition-colors mt-1"
+            <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2 shadow-sm">
+              <div className="flex-1 min-w-0">
+                <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest mb-0.5">Invite Code</p>
+                <p className="font-mono text-xs font-bold text-slate-700 truncate">{inviteCode || '---'}</p>
+              </div>
+              <button
+                onClick={() => {
+                  if (inviteCode) {
+                    navigator.clipboard.writeText(inviteCode);
+                    toast.success('Copied!');
+                  }
+                }}
+                className="p-1.5 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors shrink-0"
+                title="Copy Invite Code"
               >
-                <Settings className="w-4 h-4 text-slate-400 group-hover:rotate-90 transition-transform duration-300" />
-                Workspace Settings
+                <Copy className="w-4 h-4" />
               </button>
-            )}
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 text-xs font-bold rounded-xl transition-all shadow-sm hover:text-slate-900 group"
+                title="Back to Dashboard"
+              >
+                <ArrowLeft className="w-3.5 h-3.5 text-slate-400 group-hover:-translate-x-0.5 transition-transform" />
+                Exit
+              </button>
+
+              {isOwner && (
+                <button
+                  onClick={() => navigate(`/workspace/${workspaceId}/settings`)}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 text-xs font-bold rounded-xl transition-all shadow-sm hover:text-blue-600 group"
+                  title="Workspace Settings"
+                >
+                  <Settings className="w-3.5 h-3.5 text-slate-400 group-hover:rotate-90 group-hover:text-blue-500 transition-all duration-300" />
+                  Settings
+                </button>
+              )}
+            </div>
           </div>
 
         </aside>
 
-        {/* Content Area */}
         <main className="flex-1 flex flex-col bg-white overflow-hidden relative">
           {children}
         </main>
@@ -510,6 +502,12 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
           setChannels(prev => [...prev, channelWithMembership]);
           navigate(`/workspace/${workspaceId}/channels/${newChannel.id}`);
         }}
+      />
+
+      <InviteMemberModal
+        isOpen={isInviteMemberModalOpen}
+        onClose={() => setIsInviteMemberModalOpen(false)}
+        workspaceId={workspaceId || ''}
       />
     </div>
   );

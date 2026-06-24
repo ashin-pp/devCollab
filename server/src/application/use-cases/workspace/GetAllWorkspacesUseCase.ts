@@ -1,6 +1,6 @@
-import { IWorkspaceRepository } from "../../../domain/repositories/IWorkspaceRepository";
-import { IWorkspaceMemberRepository } from "../../../domain/repositories/IWorkspaceMemberRepository";
-import { IUserRepository } from "../../../domain/repositories/IUserRepository";
+import { IWorkspaceRepository } from "../../../application/repositories/IWorkspaceRepository";
+import { IWorkspaceMemberRepository } from "../../../application/repositories/IWorkspaceMemberRepository";
+import { IUserRepository } from "../../../application/repositories/IUserRepository";
 
 export class GetAllWorkspacesUseCase {
     constructor(

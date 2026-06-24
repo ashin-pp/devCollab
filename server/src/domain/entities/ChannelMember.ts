@@ -11,4 +11,23 @@ export class ChannelMember {
         public lastReadAt?: Date,
         public id?: string
     ) {}
+
+    public approve(): void {
+        this.status = 'approved';
+        this.isActive = true;
+    }
+
+    public reject(): void {
+        this.status = 'rejected';
+        this.isActive = false;
+    }
+
+    public promoteToAdmin(): void {
+        this.role = 'admin';
+    }
+
+    public remove(): void {
+        this.isActive = false;
+        this.removedAt = new Date();
+    }
 }

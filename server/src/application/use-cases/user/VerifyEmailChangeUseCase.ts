@@ -1,5 +1,5 @@
-import { IUserRepository } from "../../../domain/repositories/IUserRepository";
-import { IOtpRepository } from "../../../domain/repositories/IOtpRepository";
+import { IUserRepository } from "../../../application/repositories/IUserRepository";
+import { IOtpRepository } from "../../../application/repositories/IOtpRepository";
 import { AppError } from "../../../domain/errors/AppError";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";

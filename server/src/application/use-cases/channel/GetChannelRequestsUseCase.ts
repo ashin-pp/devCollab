@@ -1,5 +1,5 @@
-import { IChannelMemberRepository } from "../../../domain/repositories/IChannelMemberRepository";
-import { IUserRepository } from "../../../domain/repositories/IUserRepository";
+import { IChannelMemberRepository } from "../../../application/repositories/IChannelMemberRepository";
+import { IUserRepository } from "../../../application/repositories/IUserRepository";
 
 export class GetChannelRequestsUseCase {
     constructor(

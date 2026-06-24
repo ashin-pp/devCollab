@@ -1,5 +1,5 @@
-import { IOtpRepository } from "../../../domain/repositories/IOtpRepository";
-import { IEmailService } from "../../../domain/services/IEmailService";
+import { IOtpRepository } from "../../../application/repositories/IOtpRepository";
+import { IEmailService } from "../../../application/services/IEmailService";
 import { OtpVerification } from "../../../domain/entities/OtpVerification";
 
 export class SendOtpUseCase {

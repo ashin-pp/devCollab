@@ -19,6 +19,7 @@ router.get("/public", workspaceController.getPublicWorkspaces);
 // Workspace members and join requests management
 router.get("/:id/members", workspaceController.getWorkspaceMembers);
 router.post("/:id/requests", workspaceController.handleJoinRequest);
+router.post("/:id/send-invite", workspaceController.sendInviteEmail);
 router.delete("/:id/members/:userId", workspaceController.removeMember);
 router.patch("/:id/members/:userId/block", workspaceController.blockMember);
 // Workspace settings management

@@ -19,21 +19,24 @@ import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 import { AppError } from "../../domain/errors/AppError";
 import { ErrorMessage } from "../../domain/enums/ErrorMessage";
 
+import { SendWorkspaceInviteUseCase } from "../../application/use-cases/workspace/SendWorkspaceInviteUseCase";
+
 export class WorkspaceController {
     constructor(
-        private createWorkspaceUseCase: CreateWorkspaceUseCase,
-        private joinWorkspaceUseCase: JoinWorkspaceUseCase,
-        private getUserWorkspacesUseCase: GetUserWorkspacesUseCase,
-        private getPublicWorkspacesUseCase: GetPublicWorkspacesUseCase,
-        private verifyInviteCodeUseCase: VerifyInviteCodeUseCase,
-        private getWorkspaceMembersUseCase: GetWorkspaceMembersUseCase,
-        private handleJoinRequestUseCase: HandleJoinRequestUseCase,
-        private removeWorkspaceMemberUseCase: RemoveWorkspaceMemberUseCase,
-        private blockWorkspaceMemberUseCase: BlockWorkspaceMemberUseCase,
-        private unblockWorkspaceMemberUseCase: UnblockWorkspaceMemberUseCase,
-        private updateWorkspaceUseCase: UpdateWorkspaceUseCase,
-        private regenerateInviteCodeUseCase: RegenerateInviteCodeUseCase,
-        private deleteWorkspaceUseCase: DeleteWorkspaceUseCase
+        private readonly createWorkspaceUseCase: CreateWorkspaceUseCase,
+        private readonly joinWorkspaceUseCase: JoinWorkspaceUseCase,
+        private readonly getUserWorkspacesUseCase: GetUserWorkspacesUseCase,
+        private readonly getPublicWorkspacesUseCase: GetPublicWorkspacesUseCase,
+        private readonly verifyInviteCodeUseCase: VerifyInviteCodeUseCase,
+        private readonly getWorkspaceMembersUseCase: GetWorkspaceMembersUseCase,
+        private readonly handleJoinRequestUseCase: HandleJoinRequestUseCase,
+        private readonly removeWorkspaceMemberUseCase: RemoveWorkspaceMemberUseCase,
+        private readonly blockWorkspaceMemberUseCase: BlockWorkspaceMemberUseCase,
+        private readonly unblockWorkspaceMemberUseCase: UnblockWorkspaceMemberUseCase,
+        private readonly updateWorkspaceUseCase: UpdateWorkspaceUseCase,
+        private readonly regenerateInviteCodeUseCase: RegenerateInviteCodeUseCase,
+        private readonly deleteWorkspaceUseCase: DeleteWorkspaceUseCase,
+        private readonly sendWorkspaceInviteUseCase: SendWorkspaceInviteUseCase
     ) {}
 
     public create = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
@@ -133,7 +136,7 @@ export class WorkspaceController {
             }
 
             const members = await this.getWorkspaceMembersUseCase.execute(workspaceId, userId, includeProfile);
-            const response = ApiResponse.success("Workspace members fetched successfully", members);
+            const response = ApiResponse.success(SuccessMessage.WORKSPACE_MEMBERS_FETCHED, members);
             
             res.status(HttpStatusCode.OK).json(response);
         } catch (error) {
@@ -264,6 +267,25 @@ export class WorkspaceController {
 
             await this.deleteWorkspaceUseCase.execute(workspaceId, userId);
             const response = ApiResponse.success("Workspace deleted successfully");
+            
+            res.status(HttpStatusCode.OK).json(response);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    public sendInviteEmail = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const userId = req.user?.id;
+            const workspaceId = req.params.id as string;
+            const { targetEmail } = req.body;
+            
+            if (!userId) {
+                throw new AppError(ErrorMessage.UNAUTHORIZED, HttpStatusCode.UNAUTHORIZED);
+            }
+
+            const result = await this.sendWorkspaceInviteUseCase.execute(workspaceId, userId, targetEmail);
+            const response = ApiResponse.success(result.message);
             
             res.status(HttpStatusCode.OK).json(response);
         } catch (error) {

@@ -1,5 +1,5 @@
-import { IOtpRepository } from "../../../domain/repositories/IOtpRepository";
-import { IUserRepository } from "../../../domain/repositories/IUserRepository";
+import { IOtpRepository } from "../../../application/repositories/IOtpRepository";
+import { IUserRepository } from "../../../application/repositories/IUserRepository";
 import { VerifyOtpDto } from "../../dto/VerifyOtpDto";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 

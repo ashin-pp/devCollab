@@ -21,6 +21,7 @@ export const API_ENDPOINTS = {
     CHANGE_EMAIL_REQUEST: '/users/change-email/request',
     CHANGE_EMAIL_VERIFY: '/users/change-email/verify',
     PROFILE_IMAGE: '/users/profile/image',
+    SEARCH: '/users/search',
   },
 
   // Workspace endpoints
@@ -37,6 +38,7 @@ export const API_ENDPOINTS = {
     UNBLOCK_MEMBER: (workspaceId: string, memberId: string) => `/workspaces/${workspaceId}/members/${memberId}/unblock`,
     REQUESTS: (workspaceId: string) => `/workspaces/${workspaceId}/requests`,
     INVITE_CODE: (workspaceId: string) => `/workspaces/${workspaceId}/invite-code`,
+    SEND_INVITE: (workspaceId: string) => `/workspaces/${workspaceId}/send-invite`,
   },
 
   // Channel endpoints
@@ -52,6 +54,14 @@ export const API_ENDPOINTS = {
     READ: (workspaceId: string, channelId: string) => `/workspaces/${workspaceId}/channels/${channelId}/read`,
     UNREAD_COUNTS: (workspaceId: string) => `/workspaces/${workspaceId}/channels/unread-counts`,
     MESSAGES: (workspaceId: string, channelId: string) => `/workspaces/${workspaceId}/channels/${channelId}/messages`,
+  },
+
+  // DM endpoints
+  DM: {
+    START_CONVERSATION: (workspaceId: string) => `/workspaces/${workspaceId}/dm`,
+    CONVERSATIONS: (workspaceId: string) => `/workspaces/${workspaceId}/dm/conversations`,
+    MESSAGES: (conversationId: string) => `/dm/conversations/${conversationId}/messages`,
+    MARK_SEEN: (conversationId: string) => `/dm/conversations/${conversationId}/seen`,
   },
 
   // Admin endpoints

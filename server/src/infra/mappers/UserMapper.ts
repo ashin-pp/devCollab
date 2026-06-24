@@ -1,9 +1,10 @@
 import { User } from "../../domain/entities/User";
 import { IMapper } from "./IMapper";
 import { IUserModel } from "../database/models/UserModel";
+import { UserStatus } from "../../domain/enums/UserStatus";
 
 export class UserMapper implements IMapper<User, IUserModel> {
-    
+
     toDomain(persistence: IUserModel): User {
         return new User(
             persistence.name,
@@ -20,7 +21,7 @@ export class UserMapper implements IMapper<User, IUserModel> {
             persistence.title,
             persistence.google_id,
             persistence.is_verified,
-            persistence.status,
+            (persistence.status as UserStatus) ?? UserStatus.ACTIVE,
             persistence.last_seen,
             persistence._id ? persistence._id.toString() : undefined,
             persistence.created_at,
@@ -45,7 +46,7 @@ export class UserMapper implements IMapper<User, IUserModel> {
             google_id: domain.googleId,
             is_verified: domain.isVerified,
             status: domain.status,
-            last_seen: domain.lastSeen
+            last_seen: domain.lastSeen,
         };
 
         return Object.fromEntries(

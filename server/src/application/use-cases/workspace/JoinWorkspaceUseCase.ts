@@ -1,10 +1,13 @@
-import { IWorkspaceRepository } from "../../../domain/repositories/IWorkspaceRepository";
-import { IWorkspaceMemberRepository } from "../../../domain/repositories/IWorkspaceMemberRepository";
+import { IWorkspaceRepository } from "../../../application/repositories/IWorkspaceRepository";
+import { IWorkspaceMemberRepository } from "../../../application/repositories/IWorkspaceMemberRepository";
 import { WorkspaceMember } from "../../../domain/entities/WorkspaceMember";
 import { JoinWorkspaceDto } from "../../dto/JoinWorkspaceDto";
 import { AppError } from "../../../domain/errors/AppError";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
+import { MemberRole } from "../../../domain/enums/MemberRole";
+import { MemberStatus } from "../../../domain/enums/MemberStatus";
+import { WorkspacePrivacy } from "../../../domain/enums/WorkspacePrivacy";
 
 export class JoinWorkspaceUseCase {
     constructor(
@@ -18,7 +21,7 @@ export class JoinWorkspaceUseCase {
         }
 
         const workspace = await this.workspaceRepository.findByInviteCode(data.inviteCode);
-        
+
         if (!workspace || !workspace.id) {
             throw new AppError(ErrorMessage.INVALID_INVITE_CODE, HttpStatusCode.NOT_FOUND);
         }
@@ -28,29 +31,32 @@ export class JoinWorkspaceUseCase {
         }
 
         const currentMembersCount = await this.workspaceMemberRepository.countMembersInWorkspace(workspace.id);
-        
-        if (currentMembersCount >= workspace.maxMembers) {
+        workspace.setCurrentMemberCount(currentMembersCount);
+
+        if (!workspace.canAddMember()) {
             throw new AppError(ErrorMessage.WORKSPACE_FULL, HttpStatusCode.BAD_REQUEST);
         }
 
         const existingMember = await this.workspaceMemberRepository.findByWorkspaceAndUser(workspace.id, data.userId);
-        
+
         if (existingMember) {
-            if (existingMember.status === 'blocked') {
-                throw new AppError("You have been blocked from joining this workspace", HttpStatusCode.FORBIDDEN);
+            if (existingMember.status === MemberStatus.BLOCKED) {
+                throw new AppError(ErrorMessage.MEMBER_BLOCKED, HttpStatusCode.FORBIDDEN);
             }
             throw new AppError(ErrorMessage.ALREADY_WORKSPACE_MEMBER, HttpStatusCode.CONFLICT);
         }
 
+        const initialStatus = workspace.privacy === WorkspacePrivacy.PRIVATE
+            ? MemberStatus.PENDING
+            : MemberStatus.APPROVED;
+
         const newMember = new WorkspaceMember(
             workspace.id,
             data.userId,
-            'member',
-            workspace.privacy === 'private' ? 'pending' : 'approved'
+            MemberRole.MEMBER,
+            initialStatus
         );
 
-        const createdMember = await this.workspaceMemberRepository.create(newMember);
-
-        return createdMember;
+        return await this.workspaceMemberRepository.create(newMember);
     }
 }

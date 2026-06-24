@@ -1,4 +1,4 @@
-import { IChannelRepository } from "../../../domain/repositories/IChannelRepository";
+import { IChannelRepository } from "../../../application/repositories/IChannelRepository";
 import { Channel } from "../../../domain/entities/Channel";
 import { ChannelModel } from "../models/ChannelModel";
 import { ChannelMapper } from "../../mappers/ChannelMapper";

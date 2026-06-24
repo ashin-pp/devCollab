@@ -1,9 +1,9 @@
 import { Model } from "mongoose";
-import { IUserRepository } from "../../domain/repositories/IUserRepository";
-import { User } from "../../domain/entities/User";
+import { IUserRepository } from "../../../application/repositories/IUserRepository";
+import { User } from "../../../domain/entities/User";
 import { MongoBaseRepository } from "./BaseRepository";
-import { IUserModel } from "../database/models/UserModel";
-import { UserMapper } from "../mappers/UserMapper";
+import { IUserModel } from "../models/UserModel";
+import { UserMapper } from "../../mappers/UserMapper";
 
 export class UserRepository extends MongoBaseRepository<User, IUserModel> implements IUserRepository {
     

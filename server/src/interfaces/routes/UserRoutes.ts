@@ -17,4 +17,6 @@ router.post("/change-email/verify", userController.verifyEmailChange);
 router.post("/profile/image", upload.single('profileImage'), userController.uploadProfileImage);
 router.delete("/profile/image", userController.deleteProfileImage);
 
+router.get("/search", userController.searchByEmail);
+
 export const userRoutes = router;

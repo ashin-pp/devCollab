@@ -1,8 +1,11 @@
-import { IUserRepository } from "../../../domain/repositories/IUserRepository";
-import { IJwtService } from "../../../domain/services/IJwtService";
+import { IUserRepository } from "../../../application/repositories/IUserRepository";
+import { IJwtService } from "../../../application/services/IJwtService";
 import { User } from "../../../domain/entities/User";
 import { GoogleAuthDto } from "../../dto/GoogleAuthDto";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
+import { AppError } from "../../../domain/errors/AppError";
+import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
+import { UserStatus } from "../../../domain/enums/UserStatus";
 
 export class GoogleAuthUseCase {
     constructor(
@@ -18,13 +21,13 @@ export class GoogleAuthUseCase {
         });
 
         if (!response.ok) {
-            throw new Error("Invalid Google Token");
+            throw new AppError(ErrorMessage.INVALID_GOOGLE_TOKEN, HttpStatusCode.UNAUTHORIZED);
         }
 
         const payload = await response.json();
 
         if (!payload || !payload.email) {
-            throw new Error("Invalid Google Token payload");
+            throw new AppError(ErrorMessage.INVALID_GOOGLE_TOKEN_PAYLOAD, HttpStatusCode.UNAUTHORIZED);
         }
 
         const { email, name, sub: googleId, picture } = payload;
@@ -44,20 +47,18 @@ export class GoogleAuthUseCase {
 
             user = await this.userRepository.create(newUser);
         } else if (!user.googleId) {
-            user.googleId = googleId
-
-            user.isVerified = true
+            user.googleId = googleId;
+            user.isVerified = true;
             if (user.id) await this.userRepository.update(user.id, user);
         }
 
-        if (user.status === "blocked") {
-            throw new Error(ErrorMessage.USER_BLOCKED);
+        if (user.status === UserStatus.BLOCKED) {
+            throw new AppError(ErrorMessage.USER_BLOCKED, HttpStatusCode.FORBIDDEN);
         }
 
         const role = 'user';
-        const accessToken = this.jwtService.generateAccessToken(user.id!, role)
-
-        const refreshToken = this.jwtService.generateRefreshToken(user.id!, role)
+        const accessToken = this.jwtService.generateAccessToken(user.id!, role);
+        const refreshToken = this.jwtService.generateRefreshToken(user.id!, role);
 
         return { user, accessToken, refreshToken };
     }

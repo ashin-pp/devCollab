@@ -67,5 +67,10 @@ export const WorkspaceService = {
     deleteWorkspace: async (workspaceId: string) => {
         const response = await api.delete(API_ENDPOINTS.WORKSPACES.DETAIL(workspaceId));
         return response.data;
+    },
+
+    sendInviteEmail: async (workspaceId: string, targetEmail: string) => {
+        const response = await api.post(API_ENDPOINTS.WORKSPACES.SEND_INVITE(workspaceId), { targetEmail });
+        return response.data;
     }
 };

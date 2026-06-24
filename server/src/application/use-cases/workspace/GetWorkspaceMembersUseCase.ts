@@ -1,9 +1,11 @@
-import { IWorkspaceMemberRepository } from "../../../domain/repositories/IWorkspaceMemberRepository";
-import { IUserRepository } from "../../../domain/repositories/IUserRepository";
-import { AppError } from "../../../domain/errors/AppError";
-import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
-import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
-import { IWorkspaceRepository } from "../../../domain/repositories/IWorkspaceRepository";
+import { IWorkspaceMemberRepository } from '../../../application/repositories/IWorkspaceMemberRepository';
+import { IUserRepository } from '../../../application/repositories/IUserRepository';
+import { IWorkspaceRepository } from '../../../application/repositories/IWorkspaceRepository';
+import { AppError } from '../../../domain/errors/AppError';
+import { ErrorMessage } from '../../../domain/enums/ErrorMessage';
+import { HttpStatusCode } from '../../../domain/enums/HttpStatusCode';
+import { MemberStatus } from '../../../domain/enums/MemberStatus';
+import { WorkspaceMemberDTO, MemberUserDTO, MemberUserFullProfileDTO } from '../../dtos/workspace/WorkspaceMemberDTO';
 
 export class GetWorkspaceMembersUseCase {
     constructor(
@@ -12,12 +14,7 @@ export class GetWorkspaceMembersUseCase {
         private userRepository: IUserRepository
     ) {}
 
-    async execute(workspaceId: string, requestUserId: string, includeProfile: boolean = false) {
-        if (!workspaceId) {
-            throw new AppError("Workspace not found", HttpStatusCode.BAD_REQUEST);
-        }
-
-        // Check if the user is the owner of the workspace to see pending members
+    async execute(workspaceId: string, requestUserId: string, includeProfile: boolean = false): Promise<WorkspaceMemberDTO[]> {
         const workspace = await this.workspaceRepository.findById(workspaceId);
         if (!workspace) {
             throw new AppError(ErrorMessage.WORKSPACE_NOT_FOUND, HttpStatusCode.NOT_FOUND);
@@ -28,20 +25,45 @@ export class GetWorkspaceMembersUseCase {
         }
 
         const currentMember = await this.workspaceMemberRepository.findByWorkspaceAndUser(workspaceId, requestUserId);
-        if (currentMember?.status === 'blocked') {
+        if (currentMember?.status === MemberStatus.BLOCKED) {
             throw new AppError(ErrorMessage.MEMBER_BLOCKED, HttpStatusCode.FORBIDDEN);
         }
 
         const isOwner = workspace.createdBy === requestUserId;
-
         const members = await this.workspaceMemberRepository.findAllByWorkspaceId(workspaceId);
-        
-        // Filter out pending members if the request user is not the owner
-        const visibleMembers = isOwner ? members : members.filter(m => m.status === 'approved');
+        const visibleMembers = isOwner ? members : members.filter(m => m.status === MemberStatus.APPROVED);
 
-        const membersWithDetails = await Promise.all(
-            visibleMembers.map(async (member) => {
+        const result: WorkspaceMemberDTO[] = await Promise.all(
+            visibleMembers.map(async (member): Promise<WorkspaceMemberDTO> => {
                 const user = await this.userRepository.findById(member.userId);
+
+                let userDTO: MemberUserDTO | MemberUserFullProfileDTO | null = null;
+
+                if (user) {
+                    if (includeProfile) {
+                        userDTO = {
+                            id: user.id as string,
+                            name: user.name,
+                            email: user.email,
+                            profileImage: user.profileImage,
+                            bio: user.bio,
+                            skills: user.skills ?? [],
+                            github: user.github,
+                            linkedin: user.linkedin,
+                            twitter: user.twitter,
+                            location: user.location,
+                            title: user.title,
+                        } satisfies MemberUserFullProfileDTO;
+                    } else {
+                        userDTO = {
+                            id: user.id as string,
+                            name: user.name,
+                            email: user.email,
+                            profileImage: user.profileImage,
+                        } satisfies MemberUserDTO;
+                    }
+                }
+
                 return {
                     id: member.id,
                     workspaceId: member.workspaceId,
@@ -49,28 +71,11 @@ export class GetWorkspaceMembersUseCase {
                     role: member.role,
                     status: member.status,
                     joinedAt: member.joinedAt,
-                    user: user ? (includeProfile ? {
-                        id: user.id,
-                        name: user.name,
-                        email: user.email,
-                        profileImage: user.profileImage,
-                        bio: user.bio,
-                        skills: user.skills || [],
-                        github: user.github,
-                        linkedin: user.linkedin,
-                        twitter: user.twitter,
-                        location: user.location,
-                        title: user.title
-                    } : {
-                        id: user.id,
-                        name: user.name,
-                        email: user.email,
-                        profileImage: user.profileImage
-                    }) : null
+                    user: userDTO,
                 };
             })
         );
 
-        return membersWithDetails;
+        return result;
     }
 }

@@ -3,7 +3,7 @@ export const SuccessMessage = {
     OTP_SENT: "OTP sent successfully to email",
     EMAIL_VERIFIED: "Email verified successfully!",
     LOGIN_SUCCESS: "Logged in successfully",
-    LOGOUT_SUCCESS:"Logged out successfully",
+    LOGOUT_SUCCESS: "Logged out successfully",
     API_RUNNING: "DevCollab API is running!",
     OTP_SENT_FOR_RESET: "Password reset OTP sent to email",
     PASSWORD_RESET_SUCCESS: "Password has been reset successfully",
@@ -12,5 +12,11 @@ export const SuccessMessage = {
     PASSWORD_CHANGED: "Password changed successfully",
     WORKSPACE_CREATED: "Workspace created successfully",
     WORKSPACE_JOINED: "Joined workspace successfully",
-    WORKSPACE_JOIN_REQUESTED: "Join request sent successfully. Waiting for owner approval."
+    WORKSPACE_JOIN_REQUESTED: "Join request sent successfully. Waiting for owner approval.",
+    WORKSPACE_MEMBERS_FETCHED: "Workspace members fetched successfully",
+    CONVERSATION_STARTED: "Conversation started successfully",
+    CONVERSATION_FETCHED: "Conversations fetched successfully",
+    MESSAGES_FETCHED: "Messages fetched successfully",
+    MESSAGE_SENT: "Message sent successfully",
+    MESSAGES_MARKED_SEEN: "Messages marked as seen",
 } as const;

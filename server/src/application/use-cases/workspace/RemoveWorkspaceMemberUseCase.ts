@@ -1,8 +1,9 @@
-import { IWorkspaceRepository } from "../../../domain/repositories/IWorkspaceRepository";
-import { IWorkspaceMemberRepository } from "../../../domain/repositories/IWorkspaceMemberRepository";
+import { IWorkspaceRepository } from "../../../application/repositories/IWorkspaceRepository";
+import { IWorkspaceMemberRepository } from "../../../application/repositories/IWorkspaceMemberRepository";
 import { AppError } from "../../../domain/errors/AppError";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
+import { MemberRole } from "../../../domain/enums/MemberRole";
 
 export class RemoveWorkspaceMemberUseCase {
     constructor(
@@ -18,20 +19,20 @@ export class RemoveWorkspaceMemberUseCase {
 
         const requesterMember = await this.workspaceMemberRepository.findByWorkspaceAndUser(workspaceId, requesterId);
         if (!requesterMember) {
-            throw new AppError("You are not a member of this workspace", HttpStatusCode.FORBIDDEN);
+            throw new AppError(ErrorMessage.NOT_A_WORKSPACE_MEMBER, HttpStatusCode.FORBIDDEN);
         }
 
         if (requesterId !== targetUserId) {
-            if (requesterMember.role !== 'owner') {
+            if (requesterMember.role !== MemberRole.OWNER) {
                 throw new AppError(ErrorMessage.UNAUTHORIZED_ROLE, HttpStatusCode.FORBIDDEN);
             }
-        } else if (requesterMember.role === 'owner') {
-            throw new AppError("Owner cannot leave the workspace. Delete the workspace instead.", HttpStatusCode.BAD_REQUEST);
+        } else if (requesterMember.role === MemberRole.OWNER) {
+            throw new AppError(ErrorMessage.OWNER_CANNOT_LEAVE, HttpStatusCode.BAD_REQUEST);
         }
 
         const targetMember = await this.workspaceMemberRepository.findByWorkspaceAndUser(workspaceId, targetUserId);
         if (!targetMember) {
-            throw new AppError("Target user is not a member of this workspace", HttpStatusCode.NOT_FOUND);
+            throw new AppError(ErrorMessage.TARGET_NOT_IN_WORKSPACE, HttpStatusCode.NOT_FOUND);
         }
 
         await this.workspaceMemberRepository.remove(workspaceId, targetUserId);

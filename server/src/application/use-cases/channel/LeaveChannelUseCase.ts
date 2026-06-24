@@ -1,6 +1,7 @@
-import { IChannelMemberRepository } from "../../../domain/repositories/IChannelMemberRepository";
-import { IChannelRepository } from "../../../domain/repositories/IChannelRepository";
+import { IChannelMemberRepository } from "../../../application/repositories/IChannelMemberRepository";
+import { IChannelRepository } from "../../../application/repositories/IChannelRepository";
 import { AppError } from "../../../domain/errors/AppError";
+import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 
 export class LeaveChannelUseCase {
@@ -11,21 +12,21 @@ export class LeaveChannelUseCase {
 
     async execute(workspaceId: string, channelId: string, requestUserId: string) {
         if (!workspaceId || !channelId) {
-            throw new AppError("Invalid parameters", HttpStatusCode.BAD_REQUEST);
+            throw new AppError(ErrorMessage.INVALID_PARAMS, HttpStatusCode.BAD_REQUEST);
         }
 
         const channel = await this.channelRepository.findById(channelId);
         if (!channel || channel.workspaceId !== workspaceId) {
-            throw new AppError("Channel not found", HttpStatusCode.NOT_FOUND);
+            throw new AppError(ErrorMessage.CHANNEL_NOT_FOUND, HttpStatusCode.NOT_FOUND);
         }
 
         if (channel.createdBy === requestUserId) {
-            throw new AppError("Channel creator cannot leave the channel. Delete the channel or transfer ownership (if supported).", HttpStatusCode.BAD_REQUEST);
+            throw new AppError(ErrorMessage.CHANNEL_CREATOR_CANNOT_LEAVE, HttpStatusCode.BAD_REQUEST);
         }
 
         const success = await this.channelMemberRepository.remove(channelId, requestUserId);
         if (!success) {
-            throw new AppError("You are not a member of this channel", HttpStatusCode.NOT_FOUND);
+            throw new AppError(ErrorMessage.NOT_CHANNEL_MEMBER, HttpStatusCode.NOT_FOUND);
         }
 
         return true;

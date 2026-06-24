@@ -3,7 +3,7 @@ import {
   Users, ArrowRight, KeyRound, PlusCircle, TerminalSquare, Globe, Lock, Copy, Search, X, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import type { RootState } from '../../store';
 import { useState, useEffect, useRef } from 'react';
 import Swal from 'sweetalert2';
@@ -17,6 +17,7 @@ import type { Workspace } from '../../types/workspace.types';
 export const DashboardPage = () => {
   const user = useSelector((state: RootState) => state.auth.user);
   const navigate = useNavigate();
+  const location = useLocation();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [inviteCode, setInviteCode] = useState('');
   const [isJoining, setIsJoining] = useState(false);
@@ -80,6 +81,41 @@ export const DashboardPage = () => {
     fetchWorkspaces();
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const code = params.get('inviteCode');
+    if (code && !inviteCode) {
+      setInviteCode(code);
+      handleVerifyCodeFromQuery(code);
+    }
+  }, [location.search]);
+
+  const handleVerifyCodeFromQuery = async (code: string) => {
+    setVerifyError('');
+    setIsJoining(true);
+    try {
+      const response = await WorkspaceService.verifyInviteCode(code);
+      setVerificationResult(response.data);
+
+      // Check if already a member (e.g., auto-added via email invite)
+      const myRes = await WorkspaceService.getUserWorkspaces();
+      const workspaces = myRes.data || [];
+      setMyWorkspaces(workspaces);
+
+      const isMember = workspaces.some((ws: Workspace) => ws.id === response.data.id);
+      if (isMember) {
+        setInviteCode('');
+        setVerificationResult(null);
+        navigate(`/workspace/${response.data.id}/dashboard`);
+      }
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      setVerifyError(err.response?.data?.message || 'Invalid invite code');
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
   const handleVerifyCode = async () => {
     if (!inviteCode.trim()) {
       setVerifyError('Please enter a workspace invite code');
@@ -113,7 +149,7 @@ export const DashboardPage = () => {
         setJoinMessage({ type: 'success', text: 'Successfully joined the workspace!' });
         setTimeout(() => {
           setJoinMessage(null);
-          navigate(`/workspace/${response.data.workspaceId}/channels`);
+          navigate(`/workspace/${response.data.workspaceId}/dashboard`);
         }, 1000);
       }
       setInviteCode('');
@@ -132,7 +168,7 @@ export const DashboardPage = () => {
     try {
       const response = await WorkspaceService.joinWorkspace({ inviteCode: code });
       Swal.fire('Success', 'Successfully joined the public workspace!', 'success');
-      navigate(`/workspace/${response.data?.workspaceId || 'error'}/channels`);
+      navigate(`/workspace/${response.data?.workspaceId || 'error'}/dashboard`);
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
       Swal.fire('Error', err.response?.data?.message || 'Failed to join workspace', 'error');
@@ -247,7 +283,7 @@ export const DashboardPage = () => {
                                 Blocked by admin
                               </button>
                             ) : (
-                              <button onClick={() => navigate(`/workspace/${workspace.id}/channels`)} className="flex items-center justify-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-sm w-full">
+                              <button onClick={() => navigate(`/workspace/${workspace.id}/dashboard`)} className="flex items-center justify-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-sm w-full">
                                 Launch Workspace <ArrowRight className="w-4 h-4" />
                               </button>
                             )}
@@ -342,7 +378,7 @@ export const DashboardPage = () => {
                                 Blocked by admin
                               </button>
                             ) : (
-                              <button onClick={() => navigate(`/workspace/${workspace.id}/channels`)} className="flex items-center justify-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-sm w-full">
+                              <button onClick={() => navigate(`/workspace/${workspace.id}/dashboard`)} className="flex items-center justify-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-sm w-full">
                                 Launch Workspace <ArrowRight className="w-4 h-4" />
                               </button>
                             )}
@@ -538,7 +574,7 @@ export const DashboardPage = () => {
                       </button>
                       {myWorkspaces.some(ws => ws.id === verificationResult.id) ? (
                         <button
-                          onClick={() => navigate('/workspace/channels')}
+                          onClick={() => navigate(`/workspace/${verificationResult.id}/dashboard`)}
                           className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg text-xs font-bold transition-colors shadow-sm flex items-center justify-center gap-1"
                         >
                           Already Member

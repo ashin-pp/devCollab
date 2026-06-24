@@ -1,5 +1,5 @@
-import { IAdminRepository } from "../../../domain/repositories/IAdminRepository";
-import { IOtpRepository } from "../../../domain/repositories/IOtpRepository";
+import { IAdminRepository } from "../../../application/repositories/IAdminRepository";
+import { IOtpRepository } from "../../../application/repositories/IOtpRepository";
 import { SendOtpUseCase } from "../auth/SendOtpUseCase";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 
@@ -21,7 +21,7 @@ export class AdminForgotPasswordUseCase {
         if (latestOtp && latestOtp.createdAt) {
              const timeDiff = Date.now() - latestOtp.createdAt.getTime();
              if (timeDiff < 60000) {
-                 throw new Error("Please wait 1 minute before requesting a new OTP.");
+                 throw new Error(ErrorMessage.OTP_COOLDOWN);
              }
         }
 

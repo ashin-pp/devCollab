@@ -1,12 +1,17 @@
+// --- Base Services & Models ---
 import { WinstonLogger } from "../infra/services/WinstonLogger";
 import { UserModel } from "../infra/database/models/UserModel";
-import { UserRepository } from "../infra/repositories/UserRepository";
+import { UserRepository } from "../infra/database/repositories/UserRepository";
 import { BcryptHashService } from "../infra/services/BcryptHashService";
+import { OtpModel } from "../infra/database/models/OtpModel";
+import { OtpRepository } from "../infra/database/repositories/OtpRepository";
+import { NodemailerEmailService } from "../infra/services/NodemailerEmailService";
+import { JwtService } from "../infra/services/JwtService";
+import { CloudinaryStorageService } from "../infra/services/CloudinaryStorageService";
+
+// --- Auth Imports ---
 import { RegisterUserUseCase } from "../application/use-cases/auth/RegisterUserUseCase";
 import { AuthController } from "../interfaces/controllers/AuthController";
-import { OtpModel } from "../infra/database/models/OtpModel";
-import { OtpRepository } from "../infra/repositories/OtpRepository";
-import { NodemailerEmailService } from "../infra/services/NodemailerEmailService";
 import { SendOtpUseCase } from "../application/use-cases/auth/SendOtpUseCase";
 import { VerifyOtpUseCase } from "../application/use-cases/auth/VerifyOtpUseCase";
 import { LoginUserUseCase } from "../application/use-cases/auth/LoginUserUseCase";
@@ -15,11 +20,10 @@ import { ForgotPasswordUseCase } from "../application/use-cases/auth/ForgotPassw
 import { ResetPasswordUseCase } from "../application/use-cases/auth/ResetPasswordUseCase";
 import { RefreshTokenUseCase } from "../application/use-cases/auth/RefreshTokenUseCase";
 import { VerifyResetOtpUseCase } from "../application/use-cases/auth/VerifyResetOtpUseCase";
-import { JwtService } from "../infra/services/JwtService";
 
-// Admin Imports
+// --- Admin Imports ---
 import { AdminModel } from "../infra/database/models/AdminModel";
-import { AdminRepository } from "../infra/repositories/AdminRepository";
+import { AdminRepository } from "../infra/database/repositories/AdminRepository";
 import { CreateAdminUseCase } from "../application/use-cases/admin/CreateAdminUseCase";
 import { AdminLoginUseCase } from "../application/use-cases/admin/AdminLoginUseCase";
 import { AdminForgotPasswordUseCase } from "../application/use-cases/admin/AdminForgotPasswordUseCase";
@@ -27,13 +31,9 @@ import { AdminResetPasswordUseCase } from "../application/use-cases/admin/AdminR
 import { GetAllUsersUseCase } from "../application/use-cases/admin/GetAllUsersUseCase";
 import { ToggleUserStatusUseCase } from "../application/use-cases/admin/ToggleUserStatusUseCase";
 import { AdminRefreshTokenUseCase } from "../application/use-cases/admin/AdminRefreshTokenUseCase";
-import { GetAllWorkspacesUseCase } from "../application/use-cases/workspace/GetAllWorkspacesUseCase";
-import { AdminToggleWorkspaceStatusUseCase } from "../application/use-cases/workspace/AdminToggleWorkspaceStatusUseCase";
-import { AdminGetWorkspaceMembersUseCase } from "../application/use-cases/workspace/AdminGetWorkspaceMembersUseCase";
-import { AdminUpdateWorkspaceMemberStatusUseCase } from "../application/use-cases/workspace/AdminUpdateWorkspaceMemberStatusUseCase";
 import { AdminController } from "../interfaces/controllers/AdminController";
 
-// User Imports
+// --- User Imports ---
 import { GetUserProfileUseCase } from "../application/use-cases/user/GetUserProfileUseCase";
 import { UpdateUserProfileUseCase } from "../application/use-cases/user/UpdateUserProfileUseCase";
 import { ChangePasswordUseCase } from "../application/use-cases/user/ChangePasswordUseCase";
@@ -41,10 +41,10 @@ import { RequestEmailChangeUseCase } from "../application/use-cases/user/Request
 import { VerifyEmailChangeUseCase } from "../application/use-cases/user/VerifyEmailChangeUseCase";
 import { UploadProfileImageUseCase } from "../application/use-cases/user/UploadProfileImageUseCase";
 import { DeleteProfileImageUseCase } from "../application/use-cases/user/DeleteProfileImageUseCase";
+import { SearchUserByEmailUseCase } from "../application/use-cases/user/SearchUserByEmailUseCase";
 import { UserController } from "../interfaces/controllers/UserController";
-import { CloudinaryStorageService } from "../infra/services/CloudinaryStorageService";
 
-// Workspace Imports
+// --- Workspace Imports ---
 import { WorkspaceModel } from "../infra/database/models/WorkspaceModel";
 import { WorkspaceMemberModel } from "../infra/database/models/WorkspaceMemberModel";
 import { WorkspaceRepository } from "../infra/database/repositories/WorkspaceRepository";
@@ -62,7 +62,40 @@ import { UnblockWorkspaceMemberUseCase } from "../application/use-cases/workspac
 import { UpdateWorkspaceUseCase } from "../application/use-cases/workspace/UpdateWorkspaceUseCase";
 import { RegenerateInviteCodeUseCase } from "../application/use-cases/workspace/RegenerateInviteCodeUseCase";
 import { DeleteWorkspaceUseCase } from "../application/use-cases/workspace/DeleteWorkspaceUseCase";
+import { SendWorkspaceInviteUseCase } from "../application/use-cases/workspace/SendWorkspaceInviteUseCase";
 import { WorkspaceController } from "../interfaces/controllers/WorkspaceController";
+
+// Admin workspace use cases
+import { GetAllWorkspacesUseCase } from "../application/use-cases/workspace/GetAllWorkspacesUseCase";
+import { AdminToggleWorkspaceStatusUseCase } from "../application/use-cases/workspace/AdminToggleWorkspaceStatusUseCase";
+import { AdminGetWorkspaceMembersUseCase } from "../application/use-cases/workspace/AdminGetWorkspaceMembersUseCase";
+import { AdminUpdateWorkspaceMemberStatusUseCase } from "../application/use-cases/workspace/AdminUpdateWorkspaceMemberStatusUseCase";
+
+// --- Channel & Message Imports ---
+import { ChannelRepository } from "../infra/database/repositories/ChannelRepository";
+import { ChannelMemberRepository } from "../infra/database/repositories/ChannelMemberRepository";
+import { MessageRepository } from "../infra/database/repositories/MessageRepository";
+import { CreateChannelUseCase } from "../application/use-cases/channel/CreateChannelUseCase";
+import { GetWorkspaceChannelsUseCase } from "../application/use-cases/channel/GetWorkspaceChannelsUseCase";
+import { GetChannelMembersUseCase } from "../application/use-cases/channel/GetChannelMembersUseCase";
+import { AddChannelMemberUseCase } from "../application/use-cases/channel/AddChannelMemberUseCase";
+import { RemoveChannelMemberUseCase } from "../application/use-cases/channel/RemoveChannelMemberUseCase";
+import { UpdateChannelUseCase } from "../application/use-cases/channel/UpdateChannelUseCase";
+import { LeaveChannelUseCase } from "../application/use-cases/channel/LeaveChannelUseCase";
+import { DeleteChannelUseCase } from "../application/use-cases/channel/DeleteChannelUseCase";
+import { JoinChannelUseCase } from "../application/use-cases/channel/JoinChannelUseCase";
+import { GetChannelRequestsUseCase } from "../application/use-cases/channel/GetChannelRequestsUseCase";
+import { UpdateChannelRequestUseCase } from "../application/use-cases/channel/UpdateChannelRequestUseCase";
+import { MarkChannelAsReadUseCase } from "../application/use-cases/channel/MarkChannelAsReadUseCase";
+import { GetUnreadCountsUseCase } from "../application/use-cases/channel/GetUnreadCountsUseCase";
+import { SendMessageUseCase } from "../application/use-cases/channel/SendMessageUseCase";
+import { GetChannelMessagesUseCase } from "../application/use-cases/channel/GetChannelMessagesUseCase";
+import { ChannelController } from "../interfaces/controllers/ChannelController";
+import { MessageController } from "../interfaces/controllers/MessageController";
+
+// ============================================================================
+// INSTANTIATIONS
+// ============================================================================
 
 const logger = new WinstonLogger();
 const hashService = new BcryptHashService();
@@ -136,6 +169,7 @@ const requestEmailChangeUseCase = new RequestEmailChangeUseCase(userRepository, 
 const verifyEmailChangeUseCase = new VerifyEmailChangeUseCase(userRepository, otpRepository);
 const uploadProfileImageUseCase = new UploadProfileImageUseCase(userRepository, cloudinaryStorageService);
 const deleteProfileImageUseCase = new DeleteProfileImageUseCase(userRepository, cloudinaryStorageService);
+const searchUserByEmailUseCase = new SearchUserByEmailUseCase(userRepository);
 
 const userController = new UserController(
     getUserProfileUseCase,
@@ -144,7 +178,8 @@ const userController = new UserController(
     requestEmailChangeUseCase,
     verifyEmailChangeUseCase,
     uploadProfileImageUseCase,
-    deleteProfileImageUseCase
+    deleteProfileImageUseCase,
+    searchUserByEmailUseCase
 );
 
 // Workspace Use Cases
@@ -161,6 +196,7 @@ const unblockWorkspaceMemberUseCase = new UnblockWorkspaceMemberUseCase(workspac
 const updateWorkspaceUseCase = new UpdateWorkspaceUseCase(workspaceRepository, workspaceMemberRepository);
 const regenerateInviteCodeUseCase = new RegenerateInviteCodeUseCase(workspaceRepository, workspaceMemberRepository);
 const deleteWorkspaceUseCase = new DeleteWorkspaceUseCase(workspaceRepository, workspaceMemberRepository);
+const sendWorkspaceInviteUseCase = new SendWorkspaceInviteUseCase(workspaceRepository, workspaceMemberRepository, userRepository, emailService);
 
 const workspaceController = new WorkspaceController(
     createWorkspaceUseCase,
@@ -175,33 +211,11 @@ const workspaceController = new WorkspaceController(
     unblockWorkspaceMemberUseCase,
     updateWorkspaceUseCase,
     regenerateInviteCodeUseCase,
-    deleteWorkspaceUseCase
+    deleteWorkspaceUseCase,
+    sendWorkspaceInviteUseCase
 );
 
-// Channel & Message Imports
-import { ChannelRepository } from "../infra/database/repositories/ChannelRepository";
-import { ChannelMemberRepository } from "../infra/database/repositories/ChannelMemberRepository";
-import { MessageRepository } from "../infra/database/repositories/MessageRepository";
-
-import { CreateChannelUseCase } from "../application/use-cases/channel/CreateChannelUseCase";
-import { GetWorkspaceChannelsUseCase } from "../application/use-cases/channel/GetWorkspaceChannelsUseCase";
-import { GetChannelMembersUseCase } from "../application/use-cases/channel/GetChannelMembersUseCase";
-import { AddChannelMemberUseCase } from "../application/use-cases/channel/AddChannelMemberUseCase";
-import { RemoveChannelMemberUseCase } from "../application/use-cases/channel/RemoveChannelMemberUseCase";
-import { UpdateChannelUseCase } from "../application/use-cases/channel/UpdateChannelUseCase";
-import { LeaveChannelUseCase } from "../application/use-cases/channel/LeaveChannelUseCase";
-import { DeleteChannelUseCase } from "../application/use-cases/channel/DeleteChannelUseCase";
-import { JoinChannelUseCase } from "../application/use-cases/channel/JoinChannelUseCase";
-import { GetChannelRequestsUseCase } from "../application/use-cases/channel/GetChannelRequestsUseCase";
-import { UpdateChannelRequestUseCase } from "../application/use-cases/channel/UpdateChannelRequestUseCase";
-import { MarkChannelAsReadUseCase } from "../application/use-cases/channel/MarkChannelAsReadUseCase";
-import { GetUnreadCountsUseCase } from "../application/use-cases/channel/GetUnreadCountsUseCase";
-import { SendMessageUseCase } from "../application/use-cases/channel/SendMessageUseCase";
-import { GetChannelMessagesUseCase } from "../application/use-cases/channel/GetChannelMessagesUseCase";
-
-import { ChannelController } from "../interfaces/controllers/ChannelController";
-import { MessageController } from "../interfaces/controllers/MessageController";
-
+// Channel & Message Instantiations
 const channelRepository = new ChannelRepository();
 const channelMemberRepository = new ChannelMemberRepository();
 const messageRepository = new MessageRepository();
@@ -240,4 +254,32 @@ const channelController = new ChannelController(
 );
 const messageController = new MessageController(sendMessageUseCase, getChannelMessagesUseCase);
 
-export { logger, authController, adminController, userController, workspaceController, channelController, messageController, jwtService };
+// DM Imports
+import { ConversationRepository } from "../infra/database/repositories/ConversationRepository";
+import { DirectMessageRepository } from "../infra/database/repositories/DirectMessageRepository";
+import { StartConversationUseCase } from "../application/use-cases/dm/StartConversationUseCase";
+import { GetConversationsUseCase } from "../application/use-cases/dm/GetConversationsUseCase";
+import { SendDirectMessageUseCase } from "../application/use-cases/dm/SendDirectMessageUseCase";
+import { GetDirectMessagesUseCase } from "../application/use-cases/dm/GetDirectMessagesUseCase";
+import { MarkMessageAsSeenUseCase } from "../application/use-cases/dm/MarkMessageAsSeenUseCase";
+import { DMController } from "../interfaces/controllers/DMController";
+
+// DM Instantiations
+const conversationRepository = new ConversationRepository();
+const dmRepository = new DirectMessageRepository();
+
+const startConversationUseCase = new StartConversationUseCase(conversationRepository, workspaceMemberRepository);
+const getConversationsUseCase = new GetConversationsUseCase(conversationRepository, userRepository);
+const sendDirectMessageUseCase = new SendDirectMessageUseCase(dmRepository, conversationRepository);
+const getDirectMessagesUseCase = new GetDirectMessagesUseCase(dmRepository, conversationRepository);
+const markMessageAsSeenUseCase = new MarkMessageAsSeenUseCase(dmRepository, conversationRepository);
+
+const dmController = new DMController(
+    startConversationUseCase,
+    getConversationsUseCase,
+    sendDirectMessageUseCase,
+    getDirectMessagesUseCase,
+    markMessageAsSeenUseCase
+);
+
+export { logger, authController, adminController, userController, workspaceController, channelController, messageController, dmController, jwtService };

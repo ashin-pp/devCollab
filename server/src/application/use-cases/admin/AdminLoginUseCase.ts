@@ -1,6 +1,6 @@
-import { IAdminRepository } from "../../../domain/repositories/IAdminRepository";
-import { IHashService } from "../../../domain/services/IHashService";
-import { IJwtService } from "../../../domain/services/IJwtService";
+import { IAdminRepository } from "../../../application/repositories/IAdminRepository";
+import { IHashService } from "../../../application/services/IHashService";
+import { IJwtService } from "../../../application/services/IJwtService";
 import { LoginUserDto } from "../../dto/LoginUserDto";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { Admin } from "../../../domain/entities/Admin";

@@ -42,5 +42,10 @@ export const UserService = {
     deleteProfileImage: async () => {
         const response = await api.delete(API_ENDPOINTS.USER.PROFILE_IMAGE);
         return response.data;
+    },
+
+    searchUserByEmail: async (email: string) => {
+        const response = await api.get(`${API_ENDPOINTS.USER.SEARCH}?email=${encodeURIComponent(email)}`);
+        return response.data;
     }
 };

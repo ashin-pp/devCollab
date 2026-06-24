@@ -1,5 +1,6 @@
-import { IChannelRepository } from "../../../domain/repositories/IChannelRepository";
+import { IChannelRepository } from "../../../application/repositories/IChannelRepository";
 import { AppError } from "../../../domain/errors/AppError";
+import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 
 export class DeleteChannelUseCase {
@@ -7,26 +8,25 @@ export class DeleteChannelUseCase {
 
     async execute(workspaceId: string, channelId: string, requestUserId: string) {
         if (!workspaceId || !channelId) {
-            throw new AppError("Invalid parameters", HttpStatusCode.BAD_REQUEST);
+            throw new AppError(ErrorMessage.INVALID_PARAMS, HttpStatusCode.BAD_REQUEST);
         }
 
         const channel = await this.channelRepository.findById(channelId);
         if (!channel || channel.workspaceId !== workspaceId) {
-            throw new AppError("Channel not found", HttpStatusCode.NOT_FOUND);
+            throw new AppError(ErrorMessage.CHANNEL_NOT_FOUND, HttpStatusCode.NOT_FOUND);
         }
 
         if (channel.createdBy !== requestUserId) {
-            throw new AppError("Only the channel creator can delete the channel", HttpStatusCode.FORBIDDEN);
+            throw new AppError(ErrorMessage.CHANNEL_CREATOR_ONLY, HttpStatusCode.FORBIDDEN);
         }
 
-        // Wait, what if it's the "general" channel? We shouldn't allow deleting the default channel.
         if (channel.name === "general") {
-            throw new AppError("The general channel cannot be deleted", HttpStatusCode.BAD_REQUEST);
+            throw new AppError(ErrorMessage.CANNOT_DELETE_GENERAL_CHANNEL, HttpStatusCode.BAD_REQUEST);
         }
 
         const success = await this.channelRepository.delete(channelId);
         if (!success) {
-            throw new AppError("Failed to delete channel", HttpStatusCode.INTERNAL_SERVER);
+            throw new AppError(ErrorMessage.FAILED_TO_DELETE_CHANNEL, HttpStatusCode.INTERNAL_SERVER);
         }
 
         return true;

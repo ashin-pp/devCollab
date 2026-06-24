@@ -1,6 +1,7 @@
-import { IChannelMemberRepository } from "../../../domain/repositories/IChannelMemberRepository";
-import { IChannelRepository } from "../../../domain/repositories/IChannelRepository";
+import { IChannelMemberRepository } from "../../../application/repositories/IChannelMemberRepository";
+import { IChannelRepository } from "../../../application/repositories/IChannelRepository";
 import { AppError } from "../../../domain/errors/AppError";
+import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 
 export class RemoveChannelMemberUseCase {
@@ -11,29 +12,25 @@ export class RemoveChannelMemberUseCase {
 
     async execute(workspaceId: string, channelId: string, targetUserId: string, requestUserId: string) {
         if (!workspaceId || !channelId || !targetUserId) {
-            throw new AppError("Invalid parameters", HttpStatusCode.BAD_REQUEST);
+            throw new AppError(ErrorMessage.INVALID_PARAMS, HttpStatusCode.BAD_REQUEST);
         }
 
         const channel = await this.channelRepository.findById(channelId);
         if (!channel || channel.workspaceId !== workspaceId) {
-            throw new AppError("Channel not found", HttpStatusCode.NOT_FOUND);
+            throw new AppError(ErrorMessage.CHANNEL_NOT_FOUND, HttpStatusCode.NOT_FOUND);
         }
 
-        // Only the channel creator or a workspace admin should be able to remove members
-        // For simplicity, we check if requestUserId is the creator of the channel.
-        // Wait, what if the user is leaving themselves? That should be handled by LeaveChannelUseCase.
-        // So this is strictly for removing OTHERS.
         if (channel.createdBy !== requestUserId) {
-            throw new AppError("Only the channel creator can remove members", HttpStatusCode.FORBIDDEN);
+            throw new AppError(ErrorMessage.CHANNEL_CREATOR_ONLY, HttpStatusCode.FORBIDDEN);
         }
 
         if (targetUserId === channel.createdBy) {
-            throw new AppError("Creator cannot be removed from the channel", HttpStatusCode.BAD_REQUEST);
+            throw new AppError(ErrorMessage.CHANNEL_CREATOR_CANNOT_BE_REMOVED, HttpStatusCode.BAD_REQUEST);
         }
 
         const success = await this.channelMemberRepository.remove(channelId, targetUserId);
         if (!success) {
-            throw new AppError("Member not found in channel", HttpStatusCode.NOT_FOUND);
+            throw new AppError(ErrorMessage.CHANNEL_MEMBER_NOT_FOUND, HttpStatusCode.NOT_FOUND);
         }
 
         return true;

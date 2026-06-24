@@ -132,6 +132,18 @@ export const MemberProfilePage = () => {
     }
   };
 
+  const handleStartDM = async () => {
+    if (!workspaceId || !userId) return;
+    try {
+      const { DMService } = await import('../../api/dm/dm.service');
+      const res = await DMService.startConversation(workspaceId, userId);
+      const conversation = res.data?.data;
+      navigate(`/workspace/${workspaceId}/dm/${conversation.id}`);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to start conversation');
+    }
+  };
+
   if (isLoading) {
     return (
       <WorkspaceLayout>
@@ -338,7 +350,7 @@ export const MemberProfilePage = () => {
 
               {/* Quick Actions */}
               <div className="flex flex-col sm:flex-row lg:flex-col gap-3">
-                <button className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold">
+                <button onClick={handleStartDM} className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold">
                   <MessageCircle className="w-5 h-5" />
                   Send Message
                 </button>

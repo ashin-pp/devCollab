@@ -1,11 +1,13 @@
-import { IWorkspaceRepository } from "../../../domain/repositories/IWorkspaceRepository";
-import { IWorkspaceMemberRepository } from "../../../domain/repositories/IWorkspaceMemberRepository";
+import { IWorkspaceRepository } from "../../../application/repositories/IWorkspaceRepository";
+import { IWorkspaceMemberRepository } from "../../../application/repositories/IWorkspaceMemberRepository";
 import { Workspace } from "../../../domain/entities/Workspace";
 import { WorkspaceMember } from "../../../domain/entities/WorkspaceMember";
 import { CreateWorkspaceDto } from "../../dto/CreateWorkspaceDto";
 import { AppError } from "../../../domain/errors/AppError";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
+import { WorkspacePrivacy } from "../../../domain/enums/WorkspacePrivacy";
+import { MemberRole } from "../../../domain/enums/MemberRole";
 import crypto from "crypto";
 
 export class CreateWorkspaceUseCase {
@@ -18,6 +20,7 @@ export class CreateWorkspaceUseCase {
         if (!data.name || !data.createdBy) {
             throw new AppError(ErrorMessage.WORKSPACE_NAME_REQUIRED, HttpStatusCode.BAD_REQUEST);
         }
+
         const inviteCode = crypto.randomBytes(4).toString('hex').toUpperCase();
 
         const newWorkspace = new Workspace(
@@ -26,7 +29,7 @@ export class CreateWorkspaceUseCase {
             data.createdBy,
             data.description,
             data.logo,
-            data.privacy || 'private',
+            (data.privacy as WorkspacePrivacy) ?? WorkspacePrivacy.PRIVATE,
             data.maxMembers
         );
 
@@ -39,7 +42,7 @@ export class CreateWorkspaceUseCase {
         const ownerMember = new WorkspaceMember(
             createdWorkspace.id,
             data.createdBy,
-            'owner'
+            MemberRole.OWNER
         );
 
         await this.workspaceMemberRepository.create(ownerMember);

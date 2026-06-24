@@ -1,6 +1,6 @@
-import { IUserRepository } from "../../../domain/repositories/IUserRepository";
-import { IOtpRepository } from "../../../domain/repositories/IOtpRepository";
-import { IHashService } from "../../../domain/services/IHashService";
+import { IUserRepository } from "../../../application/repositories/IUserRepository";
+import { IOtpRepository } from "../../../application/repositories/IOtpRepository";
+import { IHashService } from "../../../application/services/IHashService";
 import { ResetPasswordDto } from "../../dto/ResetPasswordDto";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 
@@ -13,7 +13,7 @@ export class ResetPasswordUseCase {
 
     async execute(data: ResetPasswordDto): Promise<void> {
         if (data.newPassword.trim().length < 6) {
-            throw new Error("Password must be at least 6 characters");
+            throw new Error(ErrorMessage.PASSWORD_TOO_SHORT);
         }
 
         if (data.newPassword !== data.confirmPassword) {
@@ -31,7 +31,7 @@ export class ResetPasswordUseCase {
         }
 
         const hashedPassword = await this.hashService.hash(data.newPassword);
-        
+
         user.password = hashedPassword;
         await this.userRepository.update(user.id, user);
 

@@ -1,9 +1,9 @@
-import { IChannelMemberRepository } from "../../../domain/repositories/IChannelMemberRepository";
-import { IUserRepository } from "../../../domain/repositories/IUserRepository";
-import { IChannelRepository } from "../../../domain/repositories/IChannelRepository";
+import { IChannelMemberRepository } from "../../../application/repositories/IChannelMemberRepository";
+import { IUserRepository } from "../../../application/repositories/IUserRepository";
+import { IChannelRepository } from "../../../application/repositories/IChannelRepository";
 import { AppError } from "../../../domain/errors/AppError";
-import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
+import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 
 export class GetChannelMembersUseCase {
     constructor(
@@ -14,22 +14,21 @@ export class GetChannelMembersUseCase {
 
     async execute(workspaceId: string, channelId: string, requestUserId: string) {
         if (!workspaceId || !channelId) {
-            throw new AppError("Invalid workspace or channel ID", HttpStatusCode.BAD_REQUEST);
+            throw new AppError(ErrorMessage.INVALID_CHANNEL_PARAMS, HttpStatusCode.BAD_REQUEST);
         }
 
         const channel = await this.channelRepository.findById(channelId);
         if (!channel || channel.workspaceId !== workspaceId) {
-            throw new AppError("Channel not found", HttpStatusCode.NOT_FOUND);
+            throw new AppError(ErrorMessage.CHANNEL_NOT_FOUND, HttpStatusCode.NOT_FOUND);
         }
 
-        // Verify the user is a member of the channel
         const memberCheck = await this.channelMemberRepository.findByChannelAndUser(channelId, requestUserId);
         if (!memberCheck) {
-            throw new AppError("You do not have permission to view members of this channel", HttpStatusCode.FORBIDDEN);
+            throw new AppError(ErrorMessage.CANNOT_VIEW_CHANNEL_MEMBERS, HttpStatusCode.FORBIDDEN);
         }
 
         const members = await this.channelMemberRepository.findByChannelId(channelId);
-        
+
         const membersWithDetails = await Promise.all(
             members.map(async (member) => {
                 const user = await this.userRepository.findById(member.userId);

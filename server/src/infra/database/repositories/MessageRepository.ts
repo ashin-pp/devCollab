@@ -1,4 +1,4 @@
-import { IMessageRepository } from "../../../domain/repositories/IMessageRepository";
+import { IMessageRepository } from "../../../application/repositories/IMessageRepository";
 import { Message } from "../../../domain/entities/Message";
 import { MessageModel } from "../models/MessageModel";
 import { MessageMapper } from "../../mappers/MessageMapper";

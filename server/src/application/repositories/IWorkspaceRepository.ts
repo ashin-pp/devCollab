@@ -1,4 +1,4 @@
-import { Workspace } from "../entities/Workspace";
+import { Workspace } from "../../domain/entities/Workspace";
 
 export interface IWorkspaceRepository {
     create(workspace: Workspace): Promise<Workspace>;

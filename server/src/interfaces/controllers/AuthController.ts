@@ -14,15 +14,15 @@ import { VerifyResetOtpUseCase } from "../../application/use-cases/auth/VerifyRe
 
 export class AuthController {
   constructor(
-    private registerUserUseCase: RegisterUserUseCase,
-    private sendOtpUseCase: SendOtpUseCase,
-    private verifyOtpUseCase: VerifyOtpUseCase,
-    private loginUserUseCase: LoginUserUseCase,
-    private googleAuthUseCase: GoogleAuthUseCase,
-    private forgotPasswordUseCase: ForgotPasswordUseCase,
-    private resetPasswordUseCase: ResetPasswordUseCase,
-    private refreshTokenUseCase: RefreshTokenUseCase,
-    private verifyResetOtpUseCase: VerifyResetOtpUseCase
+    private readonly registerUserUseCase: RegisterUserUseCase,
+    private readonly sendOtpUseCase: SendOtpUseCase,
+    private readonly verifyOtpUseCase: VerifyOtpUseCase,
+    private readonly loginUserUseCase: LoginUserUseCase,
+    private readonly googleAuthUseCase: GoogleAuthUseCase,
+    private readonly forgotPasswordUseCase: ForgotPasswordUseCase,
+    private readonly resetPasswordUseCase: ResetPasswordUseCase,
+    private readonly refreshTokenUseCase: RefreshTokenUseCase,
+    private readonly verifyResetOtpUseCase: VerifyResetOtpUseCase
   ) { }
 
   public register = async (req: Request, res: Response, next: NextFunction): Promise<void> => {

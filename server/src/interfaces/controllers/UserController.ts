@@ -16,15 +16,18 @@ import { ChangePasswordDTO } from "../../application/dtos/user/ChangePasswordDTO
 import { RequestEmailChangeUseCase } from "../../application/use-cases/user/RequestEmailChangeUseCase";
 import { VerifyEmailChangeUseCase } from "../../application/use-cases/user/VerifyEmailChangeUseCase";
 
+import { SearchUserByEmailUseCase } from "../../application/use-cases/user/SearchUserByEmailUseCase";
+
 export class UserController {
     constructor(
-        private getUserProfileUseCase: GetUserProfileUseCase,
-        private updateUserProfileUseCase: UpdateUserProfileUseCase,
-        private changePasswordUseCase: ChangePasswordUseCase,
-        private requestEmailChangeUseCase: RequestEmailChangeUseCase,
-        private verifyEmailChangeUseCase: VerifyEmailChangeUseCase,
-        private uploadProfileImageUseCase: UploadProfileImageUseCase,
-        private deleteProfileImageUseCase: DeleteProfileImageUseCase
+        private readonly getUserProfileUseCase: GetUserProfileUseCase,
+        private readonly updateUserProfileUseCase: UpdateUserProfileUseCase,
+        private readonly changePasswordUseCase: ChangePasswordUseCase,
+        private readonly requestEmailChangeUseCase: RequestEmailChangeUseCase,
+        private readonly verifyEmailChangeUseCase: VerifyEmailChangeUseCase,
+        private readonly uploadProfileImageUseCase: UploadProfileImageUseCase,
+        private readonly deleteProfileImageUseCase: DeleteProfileImageUseCase,
+        private readonly searchUserByEmailUseCase: SearchUserByEmailUseCase
     ) {}
 
     public getProfile = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
@@ -132,6 +135,23 @@ export class UserController {
             
             res.status(HttpStatusCode.OK).json(
                 ApiResponse.success("Profile image removed successfully", updatedProfile)
+            );
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    public searchByEmail = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const { email } = req.query;
+            if (!email || typeof email !== 'string') {
+                throw new AppError("Valid email query parameter is required", HttpStatusCode.BAD_REQUEST);
+            }
+
+            const user = await this.searchUserByEmailUseCase.execute(email as string);
+            
+            res.status(HttpStatusCode.OK).json(
+                ApiResponse.success("User found", user)
             );
         } catch (error) {
             next(error);

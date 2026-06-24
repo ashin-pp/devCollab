@@ -1,5 +1,5 @@
-import { IWorkspaceRepository } from "../../../domain/repositories/IWorkspaceRepository";
-import { IWorkspaceMemberRepository } from "../../../domain/repositories/IWorkspaceMemberRepository";
+import { IWorkspaceRepository } from "../../../application/repositories/IWorkspaceRepository";
+import { IWorkspaceMemberRepository } from "../../../application/repositories/IWorkspaceMemberRepository";
 import { Workspace } from "../../../domain/entities/Workspace";
 import { WorkspaceMember } from "../../../domain/entities/WorkspaceMember";
 

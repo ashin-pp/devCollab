@@ -1,4 +1,4 @@
-import { Channel } from "../entities/Channel";
+import { Channel } from "../../domain/entities/Channel";
 
 export interface IChannelRepository {
     create(channel: Channel): Promise<Channel>;

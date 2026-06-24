@@ -1,4 +1,4 @@
-import { IWorkspaceRepository } from "../../../domain/repositories/IWorkspaceRepository";
+import { IWorkspaceRepository } from "../../../application/repositories/IWorkspaceRepository";
 import { AppError } from "../../../domain/errors/AppError";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
@@ -14,7 +14,7 @@ export class AdminToggleWorkspaceStatusUseCase {
 
         const updated = await this.workspaceRepository.update(workspaceId, { isActive });
         if (!updated) {
-            throw new AppError("Failed to update workspace status", HttpStatusCode.INTERNAL_SERVER);
+            throw new AppError(ErrorMessage.FAILED_TO_UPDATE_WORKSPACE_STATUS, HttpStatusCode.INTERNAL_SERVER);
         }
     }
 }

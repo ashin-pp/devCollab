@@ -1,5 +1,5 @@
 import { v2 as cloudinary } from 'cloudinary';
-import { IStorageService } from '../../domain/services/IStorageService';
+import { IStorageService } from '../../application/services/IStorageService';
 import { envConfig } from '../config/envConfig';
 
 export class CloudinaryStorageService implements IStorageService {

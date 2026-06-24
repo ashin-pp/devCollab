@@ -1,6 +1,10 @@
-import { IChannelRepository } from "../../../domain/repositories/IChannelRepository";
-import { IChannelMemberRepository } from "../../../domain/repositories/IChannelMemberRepository";
+import { IChannelRepository } from "../../../application/repositories/IChannelRepository";
+import { IChannelMemberRepository } from "../../../application/repositories/IChannelMemberRepository";
 import { ChannelMember } from "../../../domain/entities/ChannelMember";
+import { AppError } from "../../../domain/errors/AppError";
+import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
+import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
+import { ChannelMemberRole, ChannelMemberStatus } from "../../../domain/enums/ChannelMemberStatus";
 
 export class JoinChannelUseCase {
     constructor(
@@ -11,38 +15,37 @@ export class JoinChannelUseCase {
     async execute(workspaceId: string, channelId: string, userId: string): Promise<{ success: boolean; status: string; message: string }> {
         const channel = await this.channelRepository.findById(channelId);
         if (!channel || channel.workspaceId !== workspaceId) {
-            throw new Error('Channel not found');
+            throw new AppError(ErrorMessage.CHANNEL_NOT_FOUND, HttpStatusCode.NOT_FOUND);
         }
 
         const existingMember = await this.channelMemberRepository.findByChannelAndUser(channelId, userId);
         if (existingMember) {
-            if (existingMember.status === 'approved') {
-                throw new Error('User is already a member of this channel');
-            } else if (existingMember.status === 'pending') {
-                throw new Error('Join request is already pending');
-            } else if (existingMember.status === 'rejected') {
-                // If rejected previously, allow to request again
-                await this.channelMemberRepository.updateStatus(channelId, userId, 'pending');
-                return { success: true, status: 'pending', message: 'Join request submitted' };
+            if (existingMember.status === ChannelMemberStatus.APPROVED) {
+                throw new AppError(ErrorMessage.ALREADY_CHANNEL_MEMBER, HttpStatusCode.BAD_REQUEST);
+            } else if (existingMember.status === ChannelMemberStatus.PENDING) {
+                throw new AppError(ErrorMessage.CHANNEL_JOIN_REQUEST_PENDING, HttpStatusCode.BAD_REQUEST);
+            } else if (existingMember.status === ChannelMemberStatus.REJECTED) {
+                await this.channelMemberRepository.updateStatus(channelId, userId, ChannelMemberStatus.PENDING);
+                return { success: true, status: ChannelMemberStatus.PENDING, message: 'Join request submitted' };
             }
         }
 
-        const newStatus: 'approved' | 'pending' = channel.privacy === 'public' ? 'approved' : 'pending';
+        const newStatus = channel.privacy === 'public' ? ChannelMemberStatus.APPROVED : ChannelMemberStatus.PENDING;
         const member = new ChannelMember(
             channelId,
             userId,
-            userId, // self-joined
-            'member',
+            userId,
+            ChannelMemberRole.MEMBER,
             true,
             newStatus
         );
 
         await this.channelMemberRepository.create(member);
 
-        return { 
-            success: true, 
+        return {
+            success: true,
             status: newStatus,
-            message: newStatus === 'approved' ? 'Successfully joined the channel' : 'Join request submitted'
+            message: newStatus === ChannelMemberStatus.APPROVED ? 'Successfully joined the channel' : 'Join request submitted'
         };
     }
 }

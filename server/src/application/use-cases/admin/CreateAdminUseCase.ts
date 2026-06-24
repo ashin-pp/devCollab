@@ -1,5 +1,5 @@
-import { IAdminRepository } from "../../../domain/repositories/IAdminRepository";
-import { IHashService } from "../../../domain/services/IHashService";
+import { IAdminRepository } from "../../../application/repositories/IAdminRepository";
+import { IHashService } from "../../../application/services/IHashService";
 import { Admin } from "../../../domain/entities/Admin";
 import { RegisterUserDto } from "../../dto/RegisterUserDto";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
@@ -15,9 +15,9 @@ export class CreateAdminUseCase {
         if (existingAdmin) {
             throw new Error(ErrorMessage.EMAIL_ALREADY_EXISTS);
         }
-        
+
         if (!data.password || data.password.trim().length < 6) {
-            throw new Error("Password must be at least 6 characters");
+            throw new Error(ErrorMessage.PASSWORD_TOO_SHORT);
         }
 
         if (data.password !== data.confirmPassword) {
@@ -25,13 +25,13 @@ export class CreateAdminUseCase {
         }
 
         const hashedPassword = await this.hashService.hash(data.password!);
-        
+
         const newAdmin = new Admin(
             data.name,
             data.email,
             hashedPassword
         );
-        
+
         return await this.adminRepository.create(newAdmin);
     }
 }

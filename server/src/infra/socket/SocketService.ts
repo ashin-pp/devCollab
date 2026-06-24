@@ -89,6 +89,45 @@ export class SocketService {
                 this._io.to(`channel:${message.channelId}`).emit('message_received', message);
             });
 
+            // --- DM Socket Events ---
+            socket.on('join_conversation', (conversationId: string) => {
+                logger.info(`User ${user.id} joining conversation: ${conversationId}`);
+                socket.join(`conversation:${conversationId}`);
+            });
+
+            socket.on('leave_conversation', (conversationId: string) => {
+                socket.leave(`conversation:${conversationId}`);
+            });
+
+            socket.on('dm_typing', (data: { conversationId: string, userName: string }) => {
+                socket.to(`conversation:${data.conversationId}`).emit('user_dm_typing', {
+                    conversationId: data.conversationId,
+                    userId: user.id,
+                    userName: data.userName
+                });
+            });
+
+            socket.on('dm_stop_typing', (data: { conversationId: string, userName: string }) => {
+                socket.to(`conversation:${data.conversationId}`).emit('user_dm_stopped_typing', {
+                    conversationId: data.conversationId,
+                    userId: user.id,
+                    userName: data.userName
+                });
+            });
+
+            socket.on('new_dm', (message: any) => {
+                logger.info(`Received new_dm for conversation ${message.conversationId} from user ${user.id}`);
+                this._io.to(`conversation:${message.conversationId}`).emit('dm_received', message);
+            });
+
+            socket.on('dm_seen', (data: { conversationId: string, userId: string }) => {
+                // Broadcast to the other user that messages were seen
+                socket.to(`conversation:${data.conversationId}`).emit('dm_messages_seen', {
+                    conversationId: data.conversationId,
+                    userId: user.id
+                });
+            });
+
             socket.on('disconnect', () => {
                 logger.info(`User disconnected: ${user.id}`);
             });

@@ -1,7 +1,8 @@
-import { IChannelRepository } from "../../../domain/repositories/IChannelRepository";
-import { IChannelMemberRepository } from "../../../domain/repositories/IChannelMemberRepository";
-import { IMessageRepository } from "../../../domain/repositories/IMessageRepository";
+import { IChannelRepository } from "../../../application/repositories/IChannelRepository";
+import { IChannelMemberRepository } from "../../../application/repositories/IChannelMemberRepository";
+import { IMessageRepository } from "../../../application/repositories/IMessageRepository";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
+import { ChannelMemberStatus } from "../../../domain/enums/ChannelMemberStatus";
 
 export class GetUnreadCountsUseCase {
     constructor(
@@ -17,7 +18,7 @@ export class GetUnreadCountsUseCase {
 
         for (const channel of allChannels) {
             const membership = await this.channelMemberRepository.findByChannelIdAndUserId(channel.id!, userId);
-            if (membership && membership.status === 'approved') {
+            if (membership && membership.status === ChannelMemberStatus.APPROVED) {
                 userChannels.push({ channel, membership });
             }
         }

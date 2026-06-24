@@ -8,8 +8,8 @@ import { ErrorMessage } from '../../domain/enums/ErrorMessage';
 
 export class MessageController {
     constructor(
-        private sendMessageUseCase: SendMessageUseCase,
-        private getChannelMessagesUseCase: GetChannelMessagesUseCase
+        private readonly sendMessageUseCase: SendMessageUseCase,
+        private readonly getChannelMessagesUseCase: GetChannelMessagesUseCase
     ) {}
 
     sendMessage = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {

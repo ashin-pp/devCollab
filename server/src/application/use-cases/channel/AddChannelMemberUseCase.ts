@@ -1,9 +1,12 @@
-import { IChannelMemberRepository } from "../../../domain/repositories/IChannelMemberRepository";
-import { IWorkspaceMemberRepository } from "../../../domain/repositories/IWorkspaceMemberRepository";
-import { IChannelRepository } from "../../../domain/repositories/IChannelRepository";
+import { IChannelMemberRepository } from "../../../application/repositories/IChannelMemberRepository";
+import { IWorkspaceMemberRepository } from "../../../application/repositories/IWorkspaceMemberRepository";
+import { IChannelRepository } from "../../../application/repositories/IChannelRepository";
 import { ChannelMember } from "../../../domain/entities/ChannelMember";
 import { AppError } from "../../../domain/errors/AppError";
+import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
+import { MemberStatus } from "../../../domain/enums/MemberStatus";
+import { ChannelMemberRole, ChannelMemberStatus } from "../../../domain/enums/ChannelMemberStatus";
 
 export class AddChannelMemberUseCase {
     constructor(
@@ -14,53 +17,46 @@ export class AddChannelMemberUseCase {
 
     async execute(workspaceId: string, channelId: string, userIds: string[], requestUserId: string) {
         if (!workspaceId || !channelId || !userIds || userIds.length === 0) {
-            throw new AppError("Invalid input parameters", HttpStatusCode.BAD_REQUEST);
+            throw new AppError(ErrorMessage.INVALID_INPUT_PARAMS, HttpStatusCode.BAD_REQUEST);
         }
 
         const channel = await this.channelRepository.findById(channelId);
         if (!channel || channel.workspaceId !== workspaceId) {
-            throw new AppError("Channel not found", HttpStatusCode.NOT_FOUND);
+            throw new AppError(ErrorMessage.CHANNEL_NOT_FOUND, HttpStatusCode.NOT_FOUND);
         }
 
-        // Verify request user is a member of the channel
         const requestMember = await this.channelMemberRepository.findByChannelAndUser(channelId, requestUserId);
-        
-        // If it's a private channel, only creator or admin can add. For now, we allow any member to add to public channels.
-        // Actually, let's keep it simple: any channel member can add another workspace member to a channel.
+
         if (!requestMember && channel.createdBy !== requestUserId) {
-            // But wait, if channel is public, anyone in workspace can join. If private, only members can invite.
             if (channel.privacy === 'private') {
-                throw new AppError("You don't have permission to add members to this private channel", HttpStatusCode.FORBIDDEN);
+                throw new AppError(ErrorMessage.CANNOT_ADD_TO_PRIVATE_CHANNEL, HttpStatusCode.FORBIDDEN);
             }
-            // For public channel, anyone in the workspace can add themselves or others
             const workspaceMember = await this.workspaceMemberRepository.findByWorkspaceAndUser(workspaceId, requestUserId);
-            if (!workspaceMember || workspaceMember.status !== 'approved') {
-                throw new AppError("You must be an approved workspace member to join channels", HttpStatusCode.FORBIDDEN);
+            if (!workspaceMember || workspaceMember.status !== MemberStatus.APPROVED) {
+                throw new AppError(ErrorMessage.NOT_APPROVED_TO_JOIN_CHANNEL, HttpStatusCode.FORBIDDEN);
             }
         }
 
         const addedMembers = [];
 
         for (const targetUserId of userIds) {
-            // Check if user is in workspace
             const workspaceMember = await this.workspaceMemberRepository.findByWorkspaceAndUser(workspaceId, targetUserId);
-            if (!workspaceMember || workspaceMember.status !== 'approved') {
-                continue; // Skip invalid users
+            if (!workspaceMember || workspaceMember.status !== MemberStatus.APPROVED) {
+                continue;
             }
 
-            // Check if already in channel
             const existingMember = await this.channelMemberRepository.findByChannelAndUser(channelId, targetUserId);
             if (existingMember) {
-                continue; // Skip existing members
+                continue;
             }
 
             const newMember = new ChannelMember(
                 channelId,
                 targetUserId,
                 requestUserId,
-                'member',
+                ChannelMemberRole.MEMBER,
                 true,
-                'approved',
+                ChannelMemberStatus.APPROVED,
                 new Date()
             );
 

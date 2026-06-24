@@ -1,5 +1,5 @@
-import { IChannelRepository } from "../../../domain/repositories/IChannelRepository";
-import { IChannelMemberRepository } from "../../../domain/repositories/IChannelMemberRepository";
+import { IChannelRepository } from "../../../application/repositories/IChannelRepository";
+import { IChannelMemberRepository } from "../../../application/repositories/IChannelMemberRepository";
 import { Channel } from "../../../domain/entities/Channel";
 import { ChannelMember } from "../../../domain/entities/ChannelMember";
 

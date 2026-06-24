@@ -12,4 +12,20 @@ export class Channel {
         public isMember?: boolean,
         public hasPendingRequest?: boolean
     ) {}
+
+    public archive(): void {
+        this.isActive = false;
+    }
+
+    public makePrivate(): void {
+        this.privacy = 'private';
+    }
+
+    public makePublic(): void {
+        this.privacy = 'public';
+    }
+
+    public updateDescription(newDescription: string): void {
+        this.description = newDescription;
+    }
 }

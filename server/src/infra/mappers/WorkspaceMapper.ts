@@ -1,10 +1,11 @@
 import { Workspace } from "../../domain/entities/Workspace";
 import { IMapper } from "./IMapper";
 import { IWorkspaceModel } from "../database/models/WorkspaceModel";
+import { WorkspacePrivacy } from "../../domain/enums/WorkspacePrivacy";
 import mongoose from "mongoose";
 
 export class WorkspaceMapper implements IMapper<Workspace, IWorkspaceModel> {
-    
+
     toDomain(persistence: IWorkspaceModel): Workspace {
         return new Workspace(
             persistence.name,
@@ -12,7 +13,7 @@ export class WorkspaceMapper implements IMapper<Workspace, IWorkspaceModel> {
             persistence.created_by.toString(),
             persistence.description,
             persistence.logo,
-            persistence.privacy,
+            (persistence.privacy as WorkspacePrivacy) ?? WorkspacePrivacy.PRIVATE,
             persistence.max_members,
             persistence.is_active,
             persistence._id ? persistence._id.toString() : undefined,
@@ -29,7 +30,7 @@ export class WorkspaceMapper implements IMapper<Workspace, IWorkspaceModel> {
             invite_code: domain.inviteCode,
             privacy: domain.privacy,
             max_members: domain.maxMembers,
-            is_active: domain.isActive
+            is_active: domain.isActive,
         };
 
         if (domain.createdBy) {

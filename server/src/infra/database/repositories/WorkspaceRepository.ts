@@ -1,4 +1,4 @@
-import { IWorkspaceRepository } from "../../../domain/repositories/IWorkspaceRepository";
+import { IWorkspaceRepository } from "../../../application/repositories/IWorkspaceRepository";
 import { Workspace } from "../../../domain/entities/Workspace";
 import { WorkspaceModel } from "../models/WorkspaceModel";
 import { WorkspaceMapper } from "../../mappers/WorkspaceMapper";

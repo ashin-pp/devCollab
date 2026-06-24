@@ -1,6 +1,7 @@
-import { IChannelRepository } from "../../../domain/repositories/IChannelRepository";
-import { IChannelMemberRepository } from "../../../domain/repositories/IChannelMemberRepository";
+import { IChannelRepository } from "../../../application/repositories/IChannelRepository";
+import { IChannelMemberRepository } from "../../../application/repositories/IChannelMemberRepository";
 import { Channel } from "../../../domain/entities/Channel";
+import { ChannelMemberStatus } from "../../../domain/enums/ChannelMemberStatus";
 
 export class GetWorkspaceChannelsUseCase {
     constructor(
@@ -12,8 +13,8 @@ export class GetWorkspaceChannelsUseCase {
         const allChannels = await this.channelRepository.findByWorkspaceId(workspaceId);
         const userMemberships = await this.channelMemberRepository.findByUserId(userId);
         
-        const approvedChannelIds = userMemberships.filter(m => m.status === 'approved').map(m => m.channelId);
-        const pendingChannelIds = userMemberships.filter(m => m.status === 'pending').map(m => m.channelId);
+        const approvedChannelIds = userMemberships.filter(m => m.status === ChannelMemberStatus.APPROVED).map(m => m.channelId);
+        const pendingChannelIds = userMemberships.filter(m => m.status === ChannelMemberStatus.PENDING).map(m => m.channelId);
 
         // Visible channels: All channels are visible in this new design.
         const visibleChannels = allChannels;

@@ -9,6 +9,8 @@ import { UserPublicRoute } from './guards/UserPublicRoute';
 
 import { DashboardPage } from '../pages/user/DashboardPage';
 import { UserProtectedRoute } from './guards/UserProtectedRoute';
+import { WorkspaceDashboardPage } from '../pages/workspace/WorkspaceDashboardPage';
+import { DMChatPage } from '../pages/workspace/DMChatPage';
 import { DummyChannelPage } from '../pages/workspace/DummyChannelPage';
 import { WorkspaceMembersPage } from '../pages/workspace/WorkspaceMembersPage';
 import { WorkspaceSettingsPage } from '../pages/workspace/WorkspaceSettingsPage';
@@ -33,9 +35,12 @@ export const ClientRoutes = () => {
         <Route path="dashboard" element={<DashboardPage />} />
 
         {/* Workspace Routes */}
+        <Route path="workspace/:workspaceId" element={<Navigate to="dashboard" replace />} />
+        <Route path="workspace/:workspaceId/dashboard" element={<WorkspaceDashboardPage />} />
         <Route path="workspace/:workspaceId/channels/:channelId" element={<WorkspaceChannelPage />} />
         <Route path="workspace/:workspaceId/channels" element={<WorkspaceChannelPage />} />
-        <Route path="workspace/:workspaceId/dm" element={<DummyChannelPage />} />
+        <Route path="workspace/:workspaceId/dm" element={<DMChatPage />} />
+        <Route path="workspace/:workspaceId/dm/:conversationId" element={<DMChatPage />} />
         <Route path="workspace/:workspaceId/polls" element={<DummyChannelPage />} />
         <Route path="workspace/:workspaceId/members" element={<WorkspaceMembersPage />} />
         <Route path="workspace/:workspaceId/members/:userId/profile" element={<MemberProfilePage />} />

@@ -1,4 +1,4 @@
-import { IChannelMemberRepository } from "../../../domain/repositories/IChannelMemberRepository";
+import { IChannelMemberRepository } from "../../../application/repositories/IChannelMemberRepository";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 
 export class MarkChannelAsReadUseCase {

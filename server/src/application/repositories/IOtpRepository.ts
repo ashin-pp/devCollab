@@ -1,5 +1,5 @@
 import { IBaseRepository } from "./IBaseRepository";
-import { OtpVerification } from "../../domain/entities/OtpVerification";
+import { OtpVerification } from "../../domain/../domain/entities/OtpVerification";
 
 export interface IOtpRepository extends IBaseRepository<OtpVerification> {
     findValidOtpByEmail(email: string, otp: string): Promise<OtpVerification | null>;

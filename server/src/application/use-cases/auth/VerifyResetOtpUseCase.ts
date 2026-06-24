@@ -1,4 +1,4 @@
-import { IOtpRepository } from "../../../domain/repositories/IOtpRepository";
+import { IOtpRepository } from "../../../application/repositories/IOtpRepository";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 
 export class VerifyResetOtpUseCase {

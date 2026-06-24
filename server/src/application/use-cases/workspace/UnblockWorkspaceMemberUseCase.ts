@@ -1,9 +1,10 @@
-import { IWorkspaceRepository } from "../../../domain/repositories/IWorkspaceRepository";
-import { IWorkspaceMemberRepository } from "../../../domain/repositories/IWorkspaceMemberRepository";
+import { IWorkspaceRepository } from "../../../application/repositories/IWorkspaceRepository";
+import { IWorkspaceMemberRepository } from "../../../application/repositories/IWorkspaceMemberRepository";
 import { AppError } from "../../../domain/errors/AppError";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { WorkspaceMember } from "../../../domain/entities/WorkspaceMember";
+import { MemberRole } from "../../../domain/enums/MemberRole";
 
 export class UnblockWorkspaceMemberUseCase {
     constructor(
@@ -18,22 +19,22 @@ export class UnblockWorkspaceMemberUseCase {
         }
 
         const ownerMember = await this.workspaceMemberRepository.findByWorkspaceAndUser(workspaceId, ownerId);
-        if (!ownerMember || ownerMember.role !== 'owner') {
+        if (!ownerMember || ownerMember.role !== MemberRole.OWNER) {
             throw new AppError(ErrorMessage.UNAUTHORIZED_ROLE, HttpStatusCode.FORBIDDEN);
         }
 
         if (ownerId === targetUserId) {
-            throw new AppError("Cannot unblock the owner of the workspace", HttpStatusCode.BAD_REQUEST);
+            throw new AppError(ErrorMessage.CANNOT_UNBLOCK_OWNER, HttpStatusCode.BAD_REQUEST);
         }
 
         const targetMember = await this.workspaceMemberRepository.findByWorkspaceAndUser(workspaceId, targetUserId);
         if (!targetMember) {
-            throw new AppError("Target user is not a member of this workspace", HttpStatusCode.NOT_FOUND);
+            throw new AppError(ErrorMessage.TARGET_NOT_IN_WORKSPACE, HttpStatusCode.NOT_FOUND);
         }
 
         const updatedMember = await this.workspaceMemberRepository.updateStatus(workspaceId, targetUserId, 'approved');
         if (!updatedMember) {
-            throw new AppError("Failed to unblock member", HttpStatusCode.INTERNAL_SERVER);
+            throw new AppError(ErrorMessage.FAILED_TO_UNBLOCK_MEMBER, HttpStatusCode.INTERNAL_SERVER);
         }
 
         return updatedMember;

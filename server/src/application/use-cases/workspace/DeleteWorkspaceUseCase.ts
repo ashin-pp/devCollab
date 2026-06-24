@@ -1,8 +1,9 @@
-import { IWorkspaceRepository } from "../../../domain/repositories/IWorkspaceRepository";
-import { IWorkspaceMemberRepository } from "../../../domain/repositories/IWorkspaceMemberRepository";
+import { IWorkspaceRepository } from "../../../application/repositories/IWorkspaceRepository";
+import { IWorkspaceMemberRepository } from "../../../application/repositories/IWorkspaceMemberRepository";
 import { AppError } from "../../../domain/errors/AppError";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
+import { MemberRole } from "../../../domain/enums/MemberRole";
 
 export class DeleteWorkspaceUseCase {
     constructor(
@@ -17,7 +18,7 @@ export class DeleteWorkspaceUseCase {
         }
 
         const ownerMember = await this.workspaceMemberRepository.findByWorkspaceAndUser(workspaceId, ownerId);
-        if (!ownerMember || ownerMember.role !== 'owner') {
+        if (!ownerMember || ownerMember.role !== MemberRole.OWNER) {
             throw new AppError(ErrorMessage.UNAUTHORIZED_ROLE, HttpStatusCode.FORBIDDEN);
         }
 
@@ -25,7 +26,7 @@ export class DeleteWorkspaceUseCase {
 
         const deleted = await this.workspaceRepository.delete(workspaceId);
         if (!deleted) {
-            throw new AppError("Failed to delete workspace", HttpStatusCode.INTERNAL_SERVER);
+            throw new AppError(ErrorMessage.FAILED_TO_DELETE_WORKSPACE, HttpStatusCode.INTERNAL_SERVER);
         }
     }
 }

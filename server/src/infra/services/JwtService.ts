@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import { IJwtService } from "../../domain/services/IJwtService";
+import { IJwtService } from "../../application/services/IJwtService";
 import { JwtExpiry } from "../../domain/enums/JwtExpiry";
 
 export class JwtService implements IJwtService {
@@ -18,9 +18,9 @@ export class JwtService implements IJwtService {
         });
     }
 
-    verifyRefreshToken(token: string): any {
+    verifyRefreshToken(token: string): { id: string; role: string } {
         try {
-            return jwt.verify(token, this._refreshSecret as string);
+            return jwt.verify(token, this._refreshSecret as string) as { id: string; role: string };
         } catch (error) {
             throw new Error("Invalid or expired refresh token");
         }

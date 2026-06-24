@@ -19,19 +19,19 @@ import { ErrorMessage } from '../../domain/enums/ErrorMessage';
 
 export class ChannelController {
     constructor(
-        private createChannelUseCase: CreateChannelUseCase,
-        private getWorkspaceChannelsUseCase: GetWorkspaceChannelsUseCase,
-        private getChannelMembersUseCase: GetChannelMembersUseCase,
-        private addChannelMemberUseCase: AddChannelMemberUseCase,
-        private removeChannelMemberUseCase: RemoveChannelMemberUseCase,
-        private updateChannelUseCase: UpdateChannelUseCase,
-        private leaveChannelUseCase: LeaveChannelUseCase,
-        private deleteChannelUseCase: DeleteChannelUseCase,
-        private joinChannelUseCase: JoinChannelUseCase,
-        private getChannelRequestsUseCase: GetChannelRequestsUseCase,
-        private updateChannelRequestUseCase: UpdateChannelRequestUseCase,
-        private markChannelAsReadUseCase: MarkChannelAsReadUseCase,
-        private getUnreadCountsUseCase: GetUnreadCountsUseCase
+        private readonly createChannelUseCase: CreateChannelUseCase,
+        private readonly getWorkspaceChannelsUseCase: GetWorkspaceChannelsUseCase,
+        private readonly getChannelMembersUseCase: GetChannelMembersUseCase,
+        private readonly addChannelMemberUseCase: AddChannelMemberUseCase,
+        private readonly removeChannelMemberUseCase: RemoveChannelMemberUseCase,
+        private readonly updateChannelUseCase: UpdateChannelUseCase,
+        private readonly leaveChannelUseCase: LeaveChannelUseCase,
+        private readonly deleteChannelUseCase: DeleteChannelUseCase,
+        private readonly joinChannelUseCase: JoinChannelUseCase,
+        private readonly getChannelRequestsUseCase: GetChannelRequestsUseCase,
+        private readonly updateChannelRequestUseCase: UpdateChannelRequestUseCase,
+        private readonly markChannelAsReadUseCase: MarkChannelAsReadUseCase,
+        private readonly getUnreadCountsUseCase: GetUnreadCountsUseCase
     ) {}
 
     createChannel = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
