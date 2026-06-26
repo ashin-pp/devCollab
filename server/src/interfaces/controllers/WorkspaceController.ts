@@ -67,11 +67,12 @@ export class WorkspaceController {
                 throw new AppError(ErrorMessage.UNAUTHORIZED, HttpStatusCode.UNAUTHORIZED);
             }
 
-            const { inviteCode } = req.body;
+            const { inviteCode, isFromEmailLink } = req.body;
             
             const joinData = {
                 inviteCode,
-                userId
+                userId,
+                isFromEmailLink
             };
 
             const member = await this.joinWorkspaceUseCase.execute(joinData);

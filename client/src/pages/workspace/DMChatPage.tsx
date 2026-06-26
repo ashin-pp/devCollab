@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { useSocket } from '../../hooks/useSocket';
 import { format, isToday, isYesterday } from 'date-fns';
+import type { Conversation, DirectMessage } from '../../types/dm.types';
+import type { MemberData } from '../../types/workspace.types';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -56,15 +58,15 @@ const Avatar = ({
 const NewMessageModal = ({
   members, onSelect, onClose, isStarting,
 }: {
-  members: any[];
-  onSelect: (member: any) => void;
+  members: MemberData[];
+  onSelect: (member: MemberData) => void;
   onClose: () => void;
   isStarting: boolean;
 }) => {
   const [q, setQ] = useState('');
   const filtered = members.filter(m =>
-    m.user?.name?.toLowerCase().includes(q.toLowerCase()) ||
-    m.user?.email?.toLowerCase().includes(q.toLowerCase())
+    (m.user?.name || '').toLowerCase().includes(q.toLowerCase()) ||
+    (m.user?.email || '').toLowerCase().includes(q.toLowerCase())
   );
 
   return (
@@ -139,12 +141,12 @@ const NewMessageModal = ({
 const ConversationList = ({
   conversations, activeConvId, isLoading, searchTerm, setSearchTerm, onSelect, onNewDM,
 }: {
-  conversations: any[]; activeConvId?: string; isLoading: boolean;
+  conversations: Conversation[]; activeConvId?: string; isLoading: boolean;
   searchTerm: string; setSearchTerm: (s: string) => void;
-  onSelect: (conv: any) => void; onNewDM: () => void;
+  onSelect: (conv: Conversation) => void; onNewDM: () => void;
 }) => {
   const filtered = conversations.filter(c =>
-    c.otherUser?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+    (c.otherUser?.name || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -193,38 +195,50 @@ const ConversationList = ({
             </button>
           </div>
         ) : (
-          filtered.map(conv => {
-            const isActive = conv.id === activeConvId;
-            return (
-              <button
-                key={conv.id}
-                onClick={() => onSelect(conv)}
-                className={`w-full flex items-center gap-3 px-3 py-3 text-left transition-colors ${
-                  isActive ? 'bg-blue-50' : 'hover:bg-slate-50'
-                }`}
-              >
-                <div className="relative shrink-0">
-                  <Avatar user={{ ...conv.otherUser, id: conv.otherUser?.id || conv.participant2Id }} size="md" />
-                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-400 border-2 border-white rounded-full" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-1">
-                    <span className={`text-sm font-semibold truncate ${isActive ? 'text-blue-700' : 'text-slate-900'}`}>
-                      {conv.otherUser?.name || 'Unknown'}
-                    </span>
-                    {conv.lastMessageAt && (
-                      <span className="text-[10px] text-slate-400 shrink-0">
-                        {formatConvTime(conv.lastMessageAt)}
-                      </span>
-                    )}
+          <div className="px-2 py-2 space-y-0.5">
+            {filtered.map(conv => {
+              const isActive = conv.id === activeConvId;
+              const hasUnread = !!conv.unreadCount && conv.unreadCount > 0 && !isActive;
+              return (
+                <button
+                  key={conv.id}
+                  onClick={() => onSelect(conv)}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 text-left rounded-xl transition-all duration-200 ${
+                    isActive 
+                      ? 'bg-blue-50/80 ring-1 ring-blue-200 shadow-sm' 
+                      : 'hover:bg-slate-100/80 active:bg-slate-200/50'
+                  }`}
+                >
+                  <div className="relative shrink-0">
+                    <Avatar user={{ ...conv.otherUser, id: conv.otherUser?.id }} size="md" />
+                    <span className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full ${isActive ? 'bg-blue-500' : 'bg-emerald-400'}`} />
                   </div>
-                  <p className="text-xs text-slate-500 truncate mt-0.5">
-                    {conv.lastMessage || 'No messages yet'}
-                  </p>
-                </div>
-              </button>
-            );
-          })
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className={`text-sm font-bold truncate ${isActive ? 'text-blue-900' : hasUnread ? 'text-slate-900' : 'text-slate-700'}`}>
+                        {conv.otherUser?.name || 'Unknown'}
+                      </span>
+                      {conv.lastMessageAt && (
+                        <span className={`text-[10px] font-medium shrink-0 ${isActive ? 'text-blue-500' : hasUnread ? 'text-blue-600 font-bold' : 'text-slate-400'}`}>
+                          {formatConvTime(conv.lastMessageAt)}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between gap-3 mt-0.5">
+                      <p className={`text-[13px] truncate ${isActive ? 'text-blue-700' : hasUnread ? 'text-slate-800 font-semibold' : 'text-slate-500'}`}>
+                        {conv.lastMessage || 'No messages yet'}
+                      </p>
+                      {hasUnread && (
+                        <span className="flex items-center justify-center min-w-[20px] h-[20px] px-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] font-extrabold rounded-full shadow-md shadow-blue-500/30 transform transition-transform animate-pulse-once shrink-0">
+                          {conv.unreadCount}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         )}
       </div>
     </div>
@@ -237,11 +251,11 @@ const ChatPanel = ({
   conversation, messages, newMessage, isLoading, otherUserTyping, currentUser,
   onChangeMessage, onSendMessage, messagesEndRef,
 }: {
-  conversation: any; messages: any[]; newMessage: string; isLoading: boolean;
-  otherUserTyping: boolean; currentUser: any;
+  conversation: Conversation; messages: DirectMessage[]; newMessage: string; isLoading: boolean;
+  otherUserTyping: boolean; currentUser: { id?: string; name?: string; profileImage?: string } | null;
   onChangeMessage: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSendMessage: (e: React.FormEvent) => void;
-  messagesEndRef: React.RefObject<HTMLDivElement>;
+  messagesEndRef: React.RefObject<HTMLDivElement | null>;
 }) => {
   const otherUser = conversation?.otherUser;
 
@@ -283,9 +297,11 @@ const ChatPanel = ({
               const isMine = msg.senderId === currentUser?.id;
               const prevMsg = messages[index - 1];
               const isGrouped = prevMsg?.senderId === msg.senderId;
+              const msgDate = msg.createdAt ? new Date(msg.createdAt) : new Date();
+              const prevDate = prevMsg?.createdAt ? new Date(prevMsg.createdAt) : new Date(0);
               const showTimestamp =
                 !prevMsg ||
-                new Date(msg.createdAt).getTime() - new Date(prevMsg.createdAt).getTime() > 5 * 60 * 1000;
+                msgDate.getTime() - prevDate.getTime() > 5 * 60 * 1000;
 
               return (
                 <div key={msg.id || index}>
@@ -294,9 +310,9 @@ const ChatPanel = ({
                     <div className="flex items-center gap-3 my-4">
                       <div className="flex-1 h-px bg-slate-200" />
                       <span className="text-[11px] text-slate-400 font-medium shrink-0">
-                        {isToday(new Date(msg.createdAt))
-                          ? `Today at ${format(new Date(msg.createdAt), 'h:mm a')}`
-                          : format(new Date(msg.createdAt), 'MMM d, h:mm a')}
+                        {isToday(msgDate)
+                          ? `Today at ${format(msgDate, 'h:mm a')}`
+                          : format(msgDate, 'MMM d, h:mm a')}
                       </span>
                       <div className="flex-1 h-px bg-slate-200" />
                     </div>
@@ -329,11 +345,11 @@ const ChatPanel = ({
                         {msg.content}
                       </div>
                       <div
-                        className={`flex items-center gap-1 px-1 text-[10px] text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity ${
+                        className={`flex items-center gap-1 px-1 text-[10px] text-slate-400 transition-opacity ${
                           isMine ? 'flex-row-reverse' : ''
                         }`}
                       >
-                        <span>{msg.createdAt ? format(new Date(msg.createdAt), 'h:mm a') : ''}</span>
+                        <span>{msg.createdAt ? format(msgDate, 'h:mm a') : ''}</span>
                         {isMine &&
                           (msg.isSeen ? (
                             <CheckCheck className="w-3 h-3 text-blue-500" />
@@ -410,35 +426,43 @@ export const DMChatPage = () => {
   const socket = useSocket(workspaceId);
 
   // Conversations
-  const [conversations, setConversations] = useState<any[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loadingConvs, setLoadingConvs] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
   // Active chat
-  const [activeConversation, setActiveConversation] = useState<any>(null);
+  const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const [newMessage, setNewMessage] = useState('');
   const [loadingMsgs, setLoadingMsgs] = useState(false);
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
 
   const [otherUserTyping, setOtherUserTyping] = useState(false);
 
   // New message modal
   const [showNewMsg, setShowNewMsg] = useState(false);
-  const [workspaceMembers, setWorkspaceMembers] = useState<any[]>([]);
+  const [workspaceMembers, setWorkspaceMembers] = useState<MemberData[]>([]);
   const [isStartingConv, setIsStartingConv] = useState(false);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load conversations
+  // Fetch Conversations
   useEffect(() => {
     if (!workspaceId) return;
+    setLoadingConvs(true);
     DMService.getConversations(workspaceId)
-      .then(res => setConversations(res.data?.data || []))
+      .then(res => {
+        const convs: Conversation[] = res.data?.data || [];
+        setConversations(convs);
+
+        if (socket) {
+          convs.forEach(c => socket.emit('join_conversation', c.id));
+        }
+      })
       .catch(console.error)
       .finally(() => setLoadingConvs(false));
-  }, [workspaceId]);
+  }, [workspaceId, socket]);
 
   // Set active conversation from URL param
   useEffect(() => {
@@ -449,16 +473,27 @@ export const DMChatPage = () => {
 
   // Load messages
   useEffect(() => {
-    if (!activeConversation) return;
+    if (!activeConversation || !currentUser) return;
     setLoadingMsgs(true);
     setMessages([]);
     DMService.getMessages(activeConversation.id)
       .then(res => setMessages(res.data?.data || []))
       .catch(console.error)
       .finally(() => setLoadingMsgs(false));
+      
     DMService.markAsSeen(activeConversation.id).catch(console.error);
-    navigate(`/workspace/${workspaceId}/dm/${activeConversation.id}`, { replace: true });
-  }, [activeConversation?.id]);
+    
+    // Optimistically clear unread count for the active conversation
+    setConversations(prev => prev.map(c => c.id === activeConversation.id ? { ...c, unreadCount: 0 } : c));
+    
+    // Alert the other user we've seen the messages
+    if (socket) {
+      socket.emit('dm_seen', { conversationId: activeConversation.id, userId: currentUser.id });
+    }
+    
+    // Dispatch local event to update sidebar
+    window.dispatchEvent(new CustomEvent('dm-read', { detail: { conversationId: activeConversation.id } }));
+  }, [activeConversation?.id, currentUser, socket]);
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -468,48 +503,50 @@ export const DMChatPage = () => {
   // Load workspace members when modal opens
   useEffect(() => {
     if (!showNewMsg || !workspaceId) return;
-    WorkspaceService.getWorkspaceMembers(workspaceId, true)
-      .then((res: any) => {
-        // Backend returns response.data which is already the array (ApiResponse.success wraps in { data: [...] })
-        const all: any[] = res.data || res || [];
-        const currentId = currentUser?.id || (currentUser as any)?._id;
-        // Show approved members only, exclude self
-        const others = all.filter((m: any) => m.userId !== currentId && m.status === 'approved');
+    WorkspaceService.getWorkspaceMembers(workspaceId, false)
+      .then((res: { data?: MemberData[] }) => {
+        const all = res.data || [];
+        const currentId = currentUser?.id || (currentUser as { _id?: string })?._id;
+        const others = all.filter((m: MemberData) => m.userId !== currentId && m.status === 'approved');
         setWorkspaceMembers(others);
       })
       .catch(console.error);
-  }, [showNewMsg, workspaceId]);
+  }, [showNewMsg, workspaceId, currentUser]);
 
   // Socket events
   useEffect(() => {
-    if (!socket || !activeConversation || !currentUser) return;
+    if (!socket || !currentUser) return;
 
-    socket.emit('join_conversation', activeConversation.id);
-
-    const handleDMReceived = (message: any) => {
-      if (message.conversationId !== activeConversation.id) {
+    const handleDMReceived = (message: DirectMessage) => {
+      if (message.conversationId !== activeConversation?.id) {
         setConversations(prev =>
           prev.map(c =>
             c.id === message.conversationId
-              ? { ...c, lastMessage: message.content, lastMessageAt: message.createdAt }
+              ? { 
+                  ...c, 
+                  lastMessage: message.content, 
+                  lastMessageAt: message.createdAt,
+                  unreadCount: (c.unreadCount || 0) + (message.senderId !== currentUser.id ? 1 : 0)
+                }
               : c
           )
         );
         return;
       }
+      // If it IS the active conversation
       setMessages(prev => (prev.find(m => m.id === message.id) ? prev : [...prev, message]));
       if (message.senderId !== currentUser.id) {
         DMService.markAsSeen(activeConversation.id).catch(console.error);
         socket.emit('dm_seen', { conversationId: activeConversation.id, userId: currentUser.id });
       }
     };
-    const handleTyping = (data: any) => {
-      if (data.userId !== currentUser.id) setOtherUserTyping(true);
+    const handleTyping = (data: { conversationId: string, userName: string }) => {
+      if (data.conversationId === activeConversation?.id) setOtherUserTyping(true);
     };
-    const handleStopTyping = (data: any) => {
-      if (data.userId !== currentUser.id) setOtherUserTyping(false);
+    const handleStopTyping = (data: { conversationId: string, userName: string }) => {
+      if (data.conversationId === activeConversation?.id) setOtherUserTyping(false);
     };
-    const handleSeen = (data: any) => {
+    const handleSeen = (data: { userId: string }) => {
       if (data.userId !== currentUser.id) {
         setMessages(prev => prev.map(m => (m.senderId === currentUser.id ? { ...m, isSeen: true } : m)));
       }
@@ -521,7 +558,6 @@ export const DMChatPage = () => {
     socket.on('dm_messages_seen', handleSeen);
 
     return () => {
-      socket.emit('leave_conversation', activeConversation.id);
       socket.off('dm_received', handleDMReceived);
       socket.off('user_dm_typing', handleTyping);
       socket.off('user_dm_stopped_typing', handleStopTyping);
@@ -530,30 +566,33 @@ export const DMChatPage = () => {
   }, [socket, activeConversation?.id, currentUser]);
 
   // Start a new conversation from the member picker
-  const handleStartConversation = async (member: any) => {
+  const handleStartConversation = async (member: MemberData) => {
     if (!workspaceId) return;
     setIsStartingConv(true);
     try {
       const res = await DMService.startConversation(workspaceId, member.userId);
-      const newConv = res.data?.data;
+      const newConv: Conversation = res.data?.data;
 
-      // Upsert conversation in the list
-      setConversations(prev => {
-        const exists = prev.find(c => c.id === newConv.id);
-        if (exists) return prev;
-        return [{ ...newConv, otherUser: member.user }, ...prev];
-      });
-
-      setActiveConversation({ ...newConv, otherUser: member.user });
-      setShowNewMsg(false);
+      if (newConv) {
+        const otherUserMapped = { 
+          id: member.userId, 
+          name: member.user?.name || '', 
+          profileImage: member.user?.profileImage 
+        };
+        setConversations(prev => {
+          const exists = prev.find(c => c.id === newConv.id);
+          if (exists) return prev;
+          return [{ ...newConv, otherUser: otherUserMapped }, ...prev];
+        });
+        setShowNewMsg(false);
+        navigate(`/workspace/${workspaceId}/dm/${newConv.id}`);
+      }
     } catch (err) {
       console.error('Failed to start conversation', err);
     } finally {
       setIsStartingConv(false);
     }
   };
-
-
 
   const handleChangeMessage = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewMessage(e.target.value);
@@ -568,11 +607,13 @@ export const DMChatPage = () => {
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     typingTimeoutRef.current = setTimeout(() => {
       setIsTyping(false);
-      socket?.emit('dm_stop_typing', {
-        conversationId: activeConversation?.id,
-        userName: currentUser?.name,
-        userId: currentUser?.id,
-      });
+      if (activeConversation) {
+        socket?.emit('dm_stop_typing', {
+          conversationId: activeConversation.id,
+          userName: currentUser?.name,
+          userId: currentUser?.id,
+        });
+      }
     }, 2000);
   };
 
@@ -590,6 +631,8 @@ export const DMChatPage = () => {
       });
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     }
+    if (!workspaceId || !activeConversation) return;
+
     try {
       const res = await DMService.sendMessage(activeConversation.id, content);
       const sentMessage = res.data?.data;
@@ -636,7 +679,7 @@ export const DMChatPage = () => {
           isLoading={loadingConvs}
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
-          onSelect={conv => setActiveConversation(conv)}
+          onSelect={conv => navigate(`/workspace/${workspaceId}/dm/${conv.id}`)}
           onNewDM={() => setShowNewMsg(true)}
         />
 

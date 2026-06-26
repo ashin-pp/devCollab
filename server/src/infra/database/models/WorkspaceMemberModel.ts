@@ -4,7 +4,7 @@ export interface IWorkspaceMemberModel extends Document {
     workspace_id: mongoose.Types.ObjectId;
     user_id: mongoose.Types.ObjectId;
     role: 'owner' | 'member';
-    status: 'pending' | 'approved' | 'blocked';
+    status: 'pending' | 'approved' | 'blocked' | 'invited';
     joined_at: Date;
 }
 
@@ -12,7 +12,7 @@ const WorkspaceMemberSchema: Schema = new Schema({
     workspace_id: { type: Schema.Types.ObjectId, ref: 'Workspace', required: true },
     user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     role: { type: String, enum: ['owner', 'member'], default: 'member' },
-    status: { type: String, enum: ['pending', 'approved', 'blocked'], default: 'approved' }
+    status: { type: String, enum: ['pending', 'approved', 'blocked', 'invited'], default: 'approved' }
 }, {
     timestamps: { createdAt: 'joined_at', updatedAt: false }
 });

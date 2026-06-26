@@ -50,15 +50,15 @@ export class SendWorkspaceInviteUseCase {
             if (existingMember.status === MemberStatus.APPROVED) {
                 throw new AppError(ErrorMessage.MEMBER_ALREADY_IN_WORKSPACE, HttpStatusCode.BAD_REQUEST);
             }
-            if (existingMember.status === MemberStatus.PENDING) {
-                await this.workspaceMemberRepository.updateStatus(workspace.id, targetUser.id, MemberStatus.APPROVED);
+            if (existingMember.status === MemberStatus.PENDING || existingMember.status === MemberStatus.INVITED) {
+                await this.workspaceMemberRepository.updateStatus(workspace.id, targetUser.id, MemberStatus.INVITED);
             }
         } else {
             const newMember = new WorkspaceMember(
                 workspace.id,
                 targetUser.id,
                 MemberRole.MEMBER,
-                MemberStatus.APPROVED,
+                MemberStatus.INVITED,
                 new Date()
             );
             await this.workspaceMemberRepository.create(newMember);

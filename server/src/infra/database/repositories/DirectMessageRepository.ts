@@ -50,4 +50,19 @@ export class DirectMessageRepository implements IDirectMessageRepository {
             { $set: { isSeen: true } }
         );
     }
+
+    async findLastMessageByConversationId(conversationId: string): Promise<DirectMessage | null> {
+        const doc = await DirectMessageModel.findOne({ conversationId })
+            .sort({ createdAt: -1 })
+            .lean();
+        return doc ? this.toEntity(doc) : null;
+    }
+
+    async countUnreadMessages(conversationId: string, receiverId: string): Promise<number> {
+        return DirectMessageModel.countDocuments({
+            conversationId,
+            senderId: { $ne: receiverId },
+            isSeen: false
+        });
+    }
 }

@@ -5,7 +5,7 @@ import {
 import { useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
 import type { RootState } from '../../store';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Swal from 'sweetalert2';
 import toast from 'react-hot-toast';
 
@@ -24,6 +24,7 @@ export const DashboardPage = () => {
   const [verificationResult, setVerificationResult] = useState<Record<string, unknown> | null>(null);
   const [verifyError, setVerifyError] = useState('');
   const [joinMessage, setJoinMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [isFromEmailLink, setIsFromEmailLink] = useState(false);
 
   const [myWorkspaces, setMyWorkspaces] = useState<Workspace[]>([]);
   const [publicWorkspaces, setPublicWorkspaces] = useState<Workspace[]>([]);
@@ -32,7 +33,9 @@ export const DashboardPage = () => {
   const [publicCurrentPage, setPublicCurrentPage] = useState(1);
 
   useEffect(() => {
-    setPublicCurrentPage(1);
+    setTimeout(() => {
+      setPublicCurrentPage(1);
+    }, 0);
   }, [searchQuery]);
 
   const unjoinedPublicWorkspaces = publicWorkspaces.filter(
@@ -81,18 +84,10 @@ export const DashboardPage = () => {
     fetchWorkspaces();
   }, []);
 
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const code = params.get('inviteCode');
-    if (code && !inviteCode) {
-      setInviteCode(code);
-      handleVerifyCodeFromQuery(code);
-    }
-  }, [location.search]);
-
-  const handleVerifyCodeFromQuery = async (code: string) => {
+  const handleVerifyCodeFromQuery = useCallback(async (code: string) => {
     setVerifyError('');
     setIsJoining(true);
+    setIsFromEmailLink(true);
     try {
       const response = await WorkspaceService.verifyInviteCode(code);
       setVerificationResult(response.data);
@@ -114,7 +109,18 @@ export const DashboardPage = () => {
     } finally {
       setIsJoining(false);
     }
-  };
+  }, [navigate]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const code = params.get('inviteCode');
+    if (code && !inviteCode) {
+      setTimeout(() => {
+        setInviteCode(code);
+        handleVerifyCodeFromQuery(code);
+      }, 0);
+    }
+  }, [location.search, inviteCode, handleVerifyCodeFromQuery]);
 
   const handleVerifyCode = async () => {
     if (!inviteCode.trim()) {
@@ -124,6 +130,7 @@ export const DashboardPage = () => {
 
     setVerifyError('');
     setIsJoining(true);
+    setIsFromEmailLink(false);
     try {
       const response = await WorkspaceService.verifyInviteCode(inviteCode);
       await new Promise(resolve => setTimeout(resolve, 1500));
@@ -140,12 +147,15 @@ export const DashboardPage = () => {
   const handleJoinWorkspace = async () => {
     setIsJoining(true);
     try {
-      const response = await WorkspaceService.joinWorkspace({ inviteCode });
+      await new Promise(resolve => setTimeout(resolve, 800)); // small loader feeling
+      const response = await WorkspaceService.joinWorkspace({ inviteCode, isFromEmailLink });
 
       if (response.data?.status === 'pending') {
-        setJoinMessage({ type: 'success', text: 'Join request sent to private workspace! Waiting for owner approval.' });
+        toast.success('Join request sent! Waiting for owner approval.');
+        setJoinMessage({ type: 'success', text: 'Join request sent! Waiting for owner approval.' });
         setTimeout(() => setJoinMessage(null), 5000);
       } else {
+        toast.success('Successfully joined the workspace!');
         setJoinMessage({ type: 'success', text: 'Successfully joined the workspace!' });
         setTimeout(() => {
           setJoinMessage(null);
@@ -156,6 +166,7 @@ export const DashboardPage = () => {
       setVerificationResult(null);
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || 'Failed to join workspace');
       setJoinMessage({ type: 'error', text: err.response?.data?.message || 'Failed to join workspace' });
       setTimeout(() => setJoinMessage(null), 5000);
     } finally {
@@ -533,51 +544,33 @@ export const DashboardPage = () => {
               </p>
 
               <div className="space-y-4">
-                {!verificationResult ? (
-                  <>
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                        Enter Workspace Code
-                      </label>
-                      <input
-                        type="text"
-                        value={inviteCode}
-                        onChange={(e) => { setInviteCode(e.target.value); setVerifyError(''); }}
-                        placeholder="e.g. DC-123-XYZ"
-                        className={`w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${verifyError ? 'border-red-300 bg-red-50 text-red-900' : 'border-slate-300'}`}
-                      />
-                      {verifyError && (
-                        <p className="mt-1.5 text-xs text-red-500 font-medium">{verifyError}</p>
-                      )}
-                    </div>
-                    <button
-                      onClick={handleVerifyCode}
-                      disabled={isJoining}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-sm font-bold transition-colors shadow-sm disabled:opacity-50"
-                    >
-                      {isJoining ? 'Verifying...' : 'Verify Code'}
-                    </button>
-                  </>
-                ) : (
-                  <div className="border border-slate-200 rounded-xl p-4 bg-slate-50">
+                {verificationResult && !isFromEmailLink ? (
+                  <div className="border border-slate-200 rounded-xl p-4 bg-slate-50 mt-4">
                     <div className="flex items-center gap-2 mb-2">
                       <Building2 className="w-5 h-5 text-blue-600" />
-                      <h4 className="font-bold text-slate-900">{verificationResult.name}</h4>
+                      <h4 className="font-bold text-slate-900">{String(verificationResult.name)}</h4>
                     </div>
                     <p className="text-xs text-slate-500 mb-4">{verificationResult.description || 'No description'}</p>
+                    {joinMessage && (
+                      <div className={`mb-4 p-2 rounded-lg text-xs font-bold text-center animate-in fade-in ${
+                        joinMessage.type === 'success' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-red-50 text-red-600 border border-red-200'
+                      }`}>
+                        {joinMessage.text}
+                      </div>
+                    )}
                     <div className="flex gap-2">
                       <button
                         onClick={() => { setVerificationResult(null); setInviteCode(''); }}
-                        className="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 py-2 rounded-lg text-xs font-bold transition-colors shadow-sm"
+                        className="flex-1 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 py-2 rounded-lg text-xs font-bold transition-colors shadow-sm"
                       >
-                        {myWorkspaces.some(ws => ws.id === verificationResult.id) ? 'Close' : 'Cancel'}
+                        Cancel
                       </button>
                       {myWorkspaces.some(ws => ws.id === verificationResult.id) ? (
                         <button
                           onClick={() => navigate(`/workspace/${verificationResult.id}/dashboard`)}
-                          className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg text-xs font-bold transition-colors shadow-sm flex items-center justify-center gap-1"
+                          className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg text-xs font-bold transition-colors shadow-sm"
                         >
-                          Already Member
+                          Open Workspace
                         </button>
                       ) : (
                         <button
@@ -590,14 +583,38 @@ export const DashboardPage = () => {
                       )}
                     </div>
                   </div>
-                )}
-                
-                {joinMessage && (
-                  <div className={`mt-4 p-3 rounded-lg text-sm font-semibold flex items-center justify-center transition-all animate-in fade-in slide-in-from-top-2 ${
-                    joinMessage.type === 'success' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-red-50 text-red-600 border border-red-200'
-                  }`}>
-                    {joinMessage.text}
-                  </div>
+                ) : (
+                  <>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <KeyRound className="h-5 w-5 text-slate-400" />
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="e.g. WX-1234-YZ"
+                        value={inviteCode}
+                        onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-mono"
+                      />
+                    </div>
+                    {verifyError && (
+                      <p className="text-xs text-red-500 font-medium">{verifyError}</p>
+                    )}
+                    {joinMessage && !verificationResult && (
+                      <div className={`mt-2 p-2 rounded-lg text-xs font-bold text-center animate-in fade-in ${
+                        joinMessage.type === 'success' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-red-50 text-red-600 border border-red-200'
+                      }`}>
+                        {joinMessage.text}
+                      </div>
+                    )}
+                    <button
+                      onClick={handleVerifyCode}
+                      disabled={isJoining || !inviteCode.trim()}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-sm font-bold transition-colors shadow-sm disabled:opacity-50 mt-4"
+                    >
+                      {isJoining ? 'Verifying...' : 'Verify Code'}
+                    </button>
+                  </>
                 )}
               </div>
             </div>
@@ -628,6 +645,68 @@ export const DashboardPage = () => {
         onClose={() => setIsCreateModalOpen(false)}
         onSuccess={handleWorkspaceCreated}
       />
+
+      {verificationResult && isFromEmailLink && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-8 relative">
+              <button 
+                onClick={() => { setVerificationResult(null); setInviteCode(''); navigate(location.pathname, { replace: true }); }} 
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors bg-slate-100 hover:bg-slate-200 rounded-full p-2"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              
+              <div className="flex justify-center mb-6 mt-2">
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-600 flex items-center justify-center shadow-inner border border-blue-100">
+                  <Building2 className="w-10 h-10" />
+                </div>
+              </div>
+              
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold text-slate-900 mb-2">You've been invited!</h2>
+                <p className="text-slate-500 font-medium">Join the <span className="font-bold text-slate-800">{String(verificationResult.name)}</span> workspace to start collaborating with your team.</p>
+                {verificationResult.description && (
+                  <p className="text-sm text-slate-500 mt-4 px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 italic">"{String(verificationResult.description)}"</p>
+                )}
+              </div>
+
+              {joinMessage && (
+                <div className={`mb-6 p-3 rounded-xl text-sm font-semibold flex items-center justify-center transition-all animate-in fade-in ${
+                  joinMessage.type === 'success' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-red-50 text-red-600 border border-red-200'
+                }`}>
+                  {joinMessage.text}
+                </div>
+              )}
+
+              <div className="flex flex-col gap-3">
+                {myWorkspaces.some(ws => ws.id === verificationResult.id) ? (
+                  <button
+                    onClick={() => navigate(`/workspace/${String(verificationResult.id)}/dashboard`)}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-xl text-sm font-bold transition-colors shadow-sm"
+                  >
+                    You're Already a Member - Go to Workspace
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleJoinWorkspace}
+                    disabled={isJoining}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl text-sm font-bold transition-colors shadow-sm disabled:opacity-50"
+                  >
+                    {isJoining ? 'Joining...' : 'Accept Invite'}
+                  </button>
+                )}
+                <button
+                  onClick={() => { setVerificationResult(null); setInviteCode(''); navigate(location.pathname, { replace: true }); }}
+                  className="w-full bg-white hover:bg-slate-50 text-slate-600 py-3 rounded-xl text-sm font-bold transition-colors border border-transparent hover:border-slate-200"
+                >
+                  Decline
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </UserLayout>
   );
 };

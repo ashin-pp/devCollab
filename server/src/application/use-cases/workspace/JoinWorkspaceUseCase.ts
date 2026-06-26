@@ -43,7 +43,18 @@ export class JoinWorkspaceUseCase {
             if (existingMember.status === MemberStatus.BLOCKED) {
                 throw new AppError(ErrorMessage.MEMBER_BLOCKED, HttpStatusCode.FORBIDDEN);
             }
+            if (existingMember.status === MemberStatus.INVITED) {
+                const updatedMember = await this.workspaceMemberRepository.updateStatus(workspace.id, data.userId, MemberStatus.APPROVED);
+                return updatedMember || existingMember;
+            }
+            if (existingMember.status === MemberStatus.PENDING) {
+                throw new AppError(ErrorMessage.WORKSPACE_JOIN_REQUEST_PENDING, HttpStatusCode.CONFLICT);
+            }
             throw new AppError(ErrorMessage.ALREADY_WORKSPACE_MEMBER, HttpStatusCode.CONFLICT);
+        }
+
+        if (workspace.privacy === WorkspacePrivacy.PRIVATE && data.isFromEmailLink) {
+            throw new AppError(ErrorMessage.INVITE_LINK_EXPIRED, HttpStatusCode.FORBIDDEN);
         }
 
         const initialStatus = workspace.privacy === WorkspacePrivacy.PRIVATE

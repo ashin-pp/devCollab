@@ -8,6 +8,7 @@ export interface CreateWorkspaceData {
 
 export interface JoinWorkspaceData {
     inviteCode: string;
+    isFromEmailLink?: boolean;
 }
 
 export interface WorkspaceData {

@@ -9,9 +9,11 @@ import { useSelector } from 'react-redux';
 import type { RootState } from '../store';
 import { WorkspaceService } from '../api/workspace/workspace.service';
 import { ChannelService } from '../api/workspace/channel.service';
+import { DMService } from '../api/dm/dm.service';
 import { useSocket } from '../hooks/useSocket';
 import type { ChannelData } from '../types/channel.types';
 import type { MemberData } from '../types/workspace.types';
+import type { Conversation, DirectMessage } from '../types/dm.types';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import { CreateChannelModal } from '../components/workspace/CreateChannelModal';
@@ -36,6 +38,7 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
   const [inviteCode, setInviteCode] = useState<string>('');
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+  const [totalUnreadDMs, setTotalUnreadDMs] = useState(0);
 
   const [isMyChannelsOpen, setIsMyChannelsOpen] = useState(true);
   const [isAllChannelsOpen, setIsAllChannelsOpen] = useState(true);
@@ -54,6 +57,15 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
           }
         })
         .catch(err => console.error('Failed to fetch unread counts', err));
+
+      // Fetch DM conversations for unread counts
+      DMService.getConversations(workspaceId)
+        .then(res => {
+          const convs: Conversation[] = res.data?.data || [];
+          const unreadTotal = convs.filter((conv: Conversation) => (conv.unreadCount || 0) > 0).length;
+          setTotalUnreadDMs(unreadTotal);
+        })
+        .catch(console.error);
     }
   };
 
@@ -90,6 +102,14 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
       WorkspaceService.getWorkspaceMembers(workspaceId, false).then((response: { data?: MemberData[] }) => {
         const members = response.data || [];
         const currentMember = members.find((m) => m.userId === user.id);
+        
+        if (!currentMember || currentMember.status !== 'approved' && currentMember.status !== 'invited' && currentMember.role !== 'owner') {
+          // If they aren't in the list, or they are pending, kick them out
+          toast.error('You are no longer a member of this workspace');
+          navigate('/dashboard');
+          return;
+        }
+
         setIsOwner(currentMember?.role === 'owner');
 
         // Count pending requests if user is owner
@@ -126,10 +146,38 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
 
     socket.on('message_received', handleNewMessage);
 
+    const handleDMReceived = (message: DirectMessage) => {
+      // Re-fetch to accurately get the count of conversations with unread messages
+      if (workspaceId) {
+        DMService.getConversations(workspaceId)
+          .then(res => {
+            const convs: Conversation[] = res.data?.data || [];
+            const unreadTotal = convs.filter((conv: Conversation) => (conv.unreadCount || 0) > 0).length;
+            setTotalUnreadDMs(unreadTotal);
+          })
+          .catch(console.error);
+      }
+    };
+
+    socket.on('dm_received', handleDMReceived);
+
+    // Join all conversations to receive their messages
+    if (workspaceId) {
+      DMService.getConversations(workspaceId)
+        .then(res => {
+          const convs: Conversation[] = res.data?.data || [];
+          convs.forEach((conv: Conversation) => {
+            socket.emit('join_conversation', conv.id);
+          });
+        })
+        .catch(console.error);
+    }
+
     return () => {
       socket.off('message_received', handleNewMessage);
+      socket.off('dm_received', handleDMReceived);
     };
-  }, [socket, user, location]);
+  }, [socket, user, location, workspaceId]);
 
   // Listen for channel-read events to clear unread count
   useEffect(() => {
@@ -144,10 +192,27 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
 
     window.addEventListener('channel-read', handleChannelRead);
 
+    const handleDMRead = (event: Event) => {
+      // Re-fetch DMs to recalculate unread total properly 
+      // or we can just subtract, but fetching is safer for total count
+      if (workspaceId) {
+        DMService.getConversations(workspaceId)
+          .then(res => {
+            const convs: Conversation[] = res.data?.data || [];
+            const unreadTotal = convs.filter((conv: Conversation) => (conv.unreadCount || 0) > 0).length;
+            setTotalUnreadDMs(unreadTotal);
+          })
+          .catch(console.error);
+      }
+    };
+
+    window.addEventListener('dm-read', handleDMRead);
+
     return () => {
       window.removeEventListener('channel-read', handleChannelRead);
+      window.removeEventListener('dm-read', handleDMRead);
     };
-  }, []);
+  }, [workspaceId]);
 
   const isActive = (path: string) => location.pathname.includes(path);
 
@@ -257,37 +322,41 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
                 <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Main Menu</span>
               </div>
 
-              <div onClick={() => navigate(`/workspace/${workspaceId}/dm`)} className={`group flex items-center justify-between text-sm py-2.5 px-3 rounded-xl cursor-pointer font-semibold transition-all duration-200 ${isActive('/dm') ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' : 'text-slate-600 hover:bg-white hover:text-blue-600 hover:shadow-sm border border-transparent hover:border-slate-200/60'}`}>
+              <div onClick={() => navigate(`/workspace/${workspaceId}/dm`)} className={`group flex items-center justify-between text-sm py-2.5 px-3 rounded-xl cursor-pointer font-bold transition-all duration-200 ${isActive('/dm') ? 'bg-blue-50/80 ring-1 ring-blue-200 shadow-sm text-blue-700' : 'text-slate-600 hover:bg-slate-100/80 active:bg-slate-200/50'}`}>
                 <div className="flex items-center gap-3">
-                  <MessageSquare className={`w-4.5 h-4.5 ${isActive('/dm') ? 'text-white' : 'text-slate-400 group-hover:text-blue-500'}`} />
+                  <MessageSquare className={`w-4.5 h-4.5 ${isActive('/dm') ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-500'}`} />
                   <span>Direct Messages</span>
                 </div>
-                <span className={`${isActive('/dm') ? 'bg-white/20 text-white' : 'bg-blue-50 text-blue-600 group-hover:bg-blue-100'} text-[10px] font-bold px-2 py-0.5 rounded-full transition-colors`}>5</span>
+                {totalUnreadDMs > 0 && (
+                  <span className="flex items-center justify-center min-w-[20px] h-[20px] px-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] font-extrabold rounded-full shadow-md shadow-blue-500/30 transform transition-transform animate-pulse-once shrink-0">
+                    {totalUnreadDMs}
+                  </span>
+                )}
               </div>
 
-              <div onClick={() => navigate(`/workspace/${workspaceId}/polls`)} className={`group flex items-center justify-between text-sm py-2.5 px-3 rounded-xl cursor-pointer font-semibold transition-all duration-200 ${isActive('/polls') ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' : 'text-slate-600 hover:bg-white hover:text-blue-600 hover:shadow-sm border border-transparent hover:border-slate-200/60'}`}>
+              <div onClick={() => navigate(`/workspace/${workspaceId}/polls`)} className={`group flex items-center justify-between text-sm py-2.5 px-3 rounded-xl cursor-pointer font-bold transition-all duration-200 ${isActive('/polls') ? 'bg-blue-50/80 ring-1 ring-blue-200 shadow-sm text-blue-700' : 'text-slate-600 hover:bg-slate-100/80 active:bg-slate-200/50'}`}>
                 <div className="flex items-center gap-3">
-                  <BarChart2 className={`w-4.5 h-4.5 ${isActive('/polls') ? 'text-white' : 'text-slate-400 group-hover:text-blue-500'}`} />
+                  <BarChart2 className={`w-4.5 h-4.5 ${isActive('/polls') ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-500'}`} />
                   <span>Polls</span>
                 </div>
-                <span className={`${isActive('/polls') ? 'bg-white/20 text-white' : 'bg-blue-50 text-blue-600 group-hover:bg-blue-100'} text-[10px] font-bold px-2 py-0.5 rounded-full transition-colors`}>3</span>
+                {/* Remove static count if not dynamic, or keep new style */}
               </div>
 
-              <div className={`group flex items-center justify-between text-sm py-2.5 px-3 rounded-xl cursor-pointer font-semibold transition-all duration-200 ${isActive('/members') ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' : 'text-slate-600 hover:bg-white hover:text-blue-600 hover:shadow-sm border border-transparent hover:border-slate-200/60'}`}>
+              <div className={`group flex items-center justify-between text-sm py-2.5 px-3 rounded-xl cursor-pointer font-bold transition-all duration-200 ${isActive('/members') ? 'bg-blue-50/80 ring-1 ring-blue-200 shadow-sm text-blue-700' : 'text-slate-600 hover:bg-slate-100/80 active:bg-slate-200/50'}`}>
                 <div className="flex items-center gap-3 flex-1" onClick={() => navigate(`/workspace/${workspaceId}/members`)}>
-                  <Users className={`w-4.5 h-4.5 ${isActive('/members') ? 'text-white' : 'text-slate-400 group-hover:text-blue-500'}`} />
+                  <Users className={`w-4.5 h-4.5 ${isActive('/members') ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-500'}`} />
                   <span>Members </span>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   {isOwner && pendingRequestsCount > 0 && (
-                    <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm animate-pulse">
+                    <span className="flex items-center justify-center min-w-[20px] h-[20px] px-1.5 bg-gradient-to-r from-red-500 to-rose-600 text-white text-[10px] font-extrabold rounded-full shadow-md shadow-red-500/30 transform transition-transform animate-pulse shrink-0">
                       {pendingRequestsCount} new
                     </span>
                   )}
                   {(isOwner || workspacePrivacy === 'public') && (
                     <button
                       onClick={(e) => { e.stopPropagation(); setIsInviteMemberModalOpen(true); }}
-                      className={`p-1.5 rounded-lg transition-colors ${isActive('/members') ? 'hover:bg-white/20 text-white' : 'hover:bg-blue-50 text-slate-400 hover:text-blue-600'}`}
+                      className={`p-1.5 rounded-lg transition-colors ${isActive('/members') ? 'hover:bg-blue-100 text-blue-600' : 'hover:bg-slate-200 text-slate-400 hover:text-blue-600'}`}
                       title="Invite Member"
                     >
                       <Plus className="w-4 h-4" />
@@ -339,11 +408,11 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
                           <div
                             key={channelId}
                             onClick={() => navigate(`/workspace/${workspaceId}/channels/${channelId}`)}
-                            className={`group flex items-center justify-between text-sm py-2 px-3 rounded-xl cursor-pointer font-medium transition-all ${isActive(`channels/${channelId}`) ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-600 hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-200/60'}`}
+                            className={`group flex items-center justify-between text-sm py-2 px-3 rounded-xl cursor-pointer font-bold transition-all duration-200 ${isActive(`channels/${channelId}`) ? 'bg-blue-50/80 ring-1 ring-blue-200 shadow-sm text-blue-700' : 'text-slate-600 hover:bg-slate-100/80 active:bg-slate-200/50'}`}
                           >
                             <div className="flex items-center truncate gap-2.5 flex-1 min-w-0">
                               {isPrivate ? (
-                                <Lock className={`w-4 h-4 transition-colors shrink-0 ${isActive(`channels/${channelId}`) ? 'text-orange-600' : 'text-orange-400 group-hover:text-orange-600'}`} />
+                                <Lock className={`w-4 h-4 transition-colors shrink-0 ${isActive(`channels/${channelId}`) ? 'text-orange-600' : 'text-orange-400 group-hover:text-orange-500'}`} />
                               ) : (
                                 <Hash className={`w-4 h-4 transition-colors shrink-0 ${isActive(`channels/${channelId}`) ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-500'}`} />
                               )}
@@ -351,7 +420,7 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
                               {unreadCount > 0 && (
-                                <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md shadow-sm">
+                                <span className="flex items-center justify-center min-w-[20px] h-[20px] px-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] font-extrabold rounded-full shadow-md shadow-blue-500/30 transform transition-transform animate-pulse-once shrink-0">
                                   {unreadCount > 99 ? '99+' : unreadCount}
                                 </span>
                               )}
@@ -391,11 +460,11 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
                           <div
                             key={channelId}
                             onClick={() => navigate(`/workspace/${workspaceId}/channels/${channelId}`)}
-                            className={`group flex items-center justify-between text-sm py-2 px-3 rounded-xl cursor-pointer font-medium transition-all ${isActive(`channels/${channelId}`) ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-600 hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-200/60'}`}
+                            className={`group flex items-center justify-between text-sm py-2 px-3 rounded-xl cursor-pointer font-bold transition-all duration-200 ${isActive(`channels/${channelId}`) ? 'bg-blue-50/80 ring-1 ring-blue-200 shadow-sm text-blue-700' : 'text-slate-600 hover:bg-slate-100/80 active:bg-slate-200/50'}`}
                           >
                             <div className="flex items-center truncate gap-2.5 flex-1 min-w-0">
                               {isPrivate ? (
-                                <Lock className={`w-4 h-4 transition-colors shrink-0 ${isActive(`channels/${channelId}`) ? 'text-orange-600' : 'text-orange-400 group-hover:text-orange-600'}`} />
+                                <Lock className={`w-4 h-4 transition-colors shrink-0 ${isActive(`channels/${channelId}`) ? 'text-orange-600' : 'text-orange-400 group-hover:text-orange-500'}`} />
                               ) : (
                                 <Hash className={`w-4 h-4 transition-colors shrink-0 ${isActive(`channels/${channelId}`) ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-500'}`} />
                               )}
@@ -403,7 +472,7 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
                               {unreadCount > 0 && (
-                                <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md shadow-sm">
+                                <span className="flex items-center justify-center min-w-[20px] h-[20px] px-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] font-extrabold rounded-full shadow-md shadow-blue-500/30 transform transition-transform animate-pulse-once shrink-0">
                                   {unreadCount > 99 ? '99+' : unreadCount}
                                 </span>
                               )}

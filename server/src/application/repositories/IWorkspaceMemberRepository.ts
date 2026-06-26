@@ -8,5 +8,5 @@ export interface IWorkspaceMemberRepository {
     remove(workspaceId: string, userId: string): Promise<boolean>;
     removeAllFromWorkspace(workspaceId: string): Promise<boolean>;
     countMembersInWorkspace(workspaceId: string): Promise<number>;
-    updateStatus(workspaceId: string, userId: string, status: 'pending' | 'approved' | 'blocked'): Promise<WorkspaceMember | null>;
+    updateStatus(workspaceId: string, userId: string, status: 'pending' | 'approved' | 'blocked' | 'invited'): Promise<WorkspaceMember | null>;
 }

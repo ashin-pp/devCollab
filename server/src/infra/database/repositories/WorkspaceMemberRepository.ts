@@ -58,7 +58,7 @@ export class WorkspaceMemberRepository implements IWorkspaceMemberRepository {
         return await WorkspaceMemberModel.countDocuments({ workspace_id: workspaceId });
     }
 
-    async updateStatus(workspaceId: string, userId: string, status: 'pending' | 'approved' | 'blocked'): Promise<WorkspaceMember | null> {
+    async updateStatus(workspaceId: string, userId: string, status: 'pending' | 'approved' | 'blocked' | 'invited'): Promise<WorkspaceMember | null> {
         const updatedMember = await WorkspaceMemberModel.findOneAndUpdate(
             { workspace_id: workspaceId, user_id: userId },
             { status },

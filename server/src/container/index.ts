@@ -269,7 +269,7 @@ const conversationRepository = new ConversationRepository();
 const dmRepository = new DirectMessageRepository();
 
 const startConversationUseCase = new StartConversationUseCase(conversationRepository, workspaceMemberRepository);
-const getConversationsUseCase = new GetConversationsUseCase(conversationRepository, userRepository);
+const getConversationsUseCase = new GetConversationsUseCase(conversationRepository, userRepository, dmRepository);
 const sendDirectMessageUseCase = new SendDirectMessageUseCase(dmRepository, conversationRepository);
 const getDirectMessagesUseCase = new GetDirectMessagesUseCase(dmRepository, conversationRepository);
 const markMessageAsSeenUseCase = new MarkMessageAsSeenUseCase(dmRepository, conversationRepository);
