@@ -15,12 +15,16 @@ export class OtpMapper implements IMapper<OtpVerification, IOtpModel> {
         );
     }
 
-    toPersistence(domain: Partial<OtpVerification>): any {
-        return {
+    toPersistence(domain: Partial<OtpVerification>): Partial<IOtpModel> {
+        const persistence: Partial<IOtpModel> = {
             email: domain.email,
             otp: domain.otp,
             expires_at: domain.expiresAt,
             is_used: domain.isUsed
         };
+
+        return Object.fromEntries(
+            Object.entries(persistence).filter(([_, value]) => value !== undefined)
+        ) as Partial<IOtpModel>;
     }
 }

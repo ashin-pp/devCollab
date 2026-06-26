@@ -5,15 +5,12 @@ export const NotFoundPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Check if we are in an admin route to adapt the theme slightly if needed
   const isAdminRoute = location.pathname.startsWith('/admin');
 
   return (
     <div className={`min-h-screen w-full flex items-center justify-center font-mono relative overflow-hidden ${isAdminRoute ? 'bg-[#0d1117]' : 'bg-slate-900'}`}>
-      {/* Background Grid Pattern */}
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+CjxwYXRoIGQ9Ik0wIDBoNDB2NDBIMHoiIGZpbGw9Im5vbmUiLz4KPHBhdGggZD0iTTAgNDBoNDBWMGgtMXYzOWgtMzl2MXoiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wMykiLz4KPC9zdmc+')] pointer-events-none"></div>
 
-      {/* Top Left Logo */}
       <div className="absolute top-6 left-6 flex items-center gap-2">
         <Terminal className={`w-5 h-5 ${isAdminRoute ? 'text-amber-500' : 'text-blue-500'}`} />
         <span className={`${isAdminRoute ? 'text-amber-500' : 'text-blue-500'} font-bold tracking-widest text-sm uppercase`}>DEVCOLLAB // {isAdminRoute ? 'ADMIN' : 'SYSTEM'}</span>

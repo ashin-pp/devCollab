@@ -25,7 +25,6 @@ export const LoginPage = () => {
     if (location.state?.error) {
       setError(location.state.error);
       toast.error(location.state.error);
-      // Clear state so refresh doesn't show it again
       window.history.replaceState({}, document.title);
     }
   }, [location]);
@@ -45,13 +44,12 @@ export const LoginPage = () => {
     try {
       const response = await AuthService.login({ email, password });
 
-      // Update Redux Store
       dispatch(setCredentials({
         user: response.data.user,
         accessToken: response.data.accessToken
       }));
       toast.success('Successfully logged in!');
-      navigate('/user/dashboard');
+      navigate('/dashboard');
 
     } catch (err: unknown) {
       let errMsg = 'Login failed. Please try again.';
@@ -76,7 +74,7 @@ export const LoginPage = () => {
         accessToken: response.data.accessToken
       }));
       toast.success('Successfully logged in with Google!');
-      navigate('/user/dashboard');
+      navigate('/dashboard');
     } catch (err: unknown) {
       if (isAxiosError(err)) {
         toast.error(err.response?.data?.error?.message || err.response?.data?.message || "Google authentication failed");
@@ -95,14 +93,11 @@ export const LoginPage = () => {
 
   return (
     <div className="min-h-screen w-full flex bg-white font-sans">
-      {/* Left Panel - Branding & Testimonial */}
       <div className="hidden lg:flex w-1/2 bg-[#f4f7fb] relative flex-col justify-between p-12 overflow-hidden">
-        {/* Background Gradients */}
         <div className="absolute top-[20%] left-[-10%] w-[50%] h-[50%] bg-blue-400/20 rounded-full blur-[100px]"></div>
         <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-purple-400/20 rounded-full blur-[120px]"></div>
 
         <div className="relative z-10">
-          {/* Logo */}
           <a href="/" className="flex items-center gap-2 mb-8 hover:opacity-80 transition-opacity">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-md">
               <Box className="w-5 h-5 text-white" />
@@ -110,13 +105,11 @@ export const LoginPage = () => {
             <span className="font-bold text-xl tracking-tight text-slate-900">DevCollab</span>
           </a>
 
-          {/* Status Badge */}
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100/50 border border-emerald-200 mb-16">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
             <span className="text-xs font-bold tracking-wider text-emerald-700 uppercase">All Systems Operational</span>
           </div>
 
-          {/* Main Copy */}
           <h1 className="text-5xl font-extrabold text-slate-900 tracking-tight leading-[1.1] mb-6">
             Welcome back to<br />
             <span className="text-blue-600">your workspace.</span>
@@ -125,7 +118,6 @@ export const LoginPage = () => {
             Resume your workflow and collaborate with your team in the most advanced engineering environment.
           </p>
 
-          {/* Testimonial Card */}
           <div className="bg-white/80 backdrop-blur-md border border-white p-6 rounded-2xl shadow-xl shadow-slate-200/50 max-w-md relative">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm">
@@ -142,15 +134,12 @@ export const LoginPage = () => {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="relative z-10 text-xs font-medium text-slate-400">
           &copy; 2024 DevCollab Infrastructure.
         </div>
       </div>
 
-      {/* Right Panel - Form */}
       <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-8 sm:p-12 relative">
-        {/* Top Header */}
         <div className="absolute top-8 left-8 right-8 flex justify-between items-center hidden sm:flex">
           <div className="flex items-center gap-3">
             <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center">
@@ -166,7 +155,6 @@ export const LoginPage = () => {
           </div>
         </div>
 
-        {/* Form Container */}
         <div className="w-full max-w-[420px] mt-12 lg:mt-0">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-extrabold text-slate-900 mb-2 font-serif tracking-tight">Log in to DevCollab</h2>

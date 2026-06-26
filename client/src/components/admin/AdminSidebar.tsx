@@ -1,4 +1,4 @@
-import { LayoutDashboard, Server, Users, BarChart3, Wallet, LogOut, Settings } from 'lucide-react';
+import { LayoutDashboard, Server, Users, BarChart3, Wallet, LogOut, Settings, User } from 'lucide-react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
@@ -60,8 +60,8 @@ export const AdminSidebar = () => {
 
       {/* User Profile */}
       <div className="p-6 border-b border-[#30363d] flex items-center gap-3">
-        <div className="w-10 h-10 border border-amber-500/30 rounded overflow-hidden">
-           <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=AdminBoss" alt="Root Admin" className="w-full h-full object-cover bg-[#010409]" />
+        <div className="w-10 h-10 border border-amber-500/30 rounded flex items-center justify-center bg-[#010409]">
+           <User className="w-5 h-5 text-amber-500/50" />
         </div>
         <div>
           <div className="text-sm font-bold text-white tracking-wider">ROOT_ADMIN</div>

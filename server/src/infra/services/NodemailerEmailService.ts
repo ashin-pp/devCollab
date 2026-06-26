@@ -1,12 +1,12 @@
 import nodemailer from "nodemailer";
-import { IEmailService } from "../../domain/services/IEmailService";
+import { IEmailService } from "../../application/services/IEmailService";
 import { logger } from "../../container";
 
 export class NodemailerEmailService implements IEmailService {
-    private transporter;
+    private _transporter;
 
     constructor() {
-        this.transporter = nodemailer.createTransport({
+        this._transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
                 user: process.env.EMAIL_USER,
@@ -32,12 +32,40 @@ export class NodemailerEmailService implements IEmailService {
         };
 
         try {
-            await this.transporter.sendMail(mailOptions);
+            await this._transporter.sendMail(mailOptions);
             logger.info(`OTP Email successfully sent to ${email}`);
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             logger.error(`Failed to send email to ${email}:`, { error: errorMessage });
             throw new Error("Failed to send email. Please try again later.");
+        }
+    }
+
+    async sendWorkspaceInviteEmail(email: string, workspaceName: string, inviteLink: string): Promise<void> {
+        const mailOptions = {
+            from: `"DevCollab" <${process.env.EMAIL_USER}>`,
+            to: email,
+            subject: `You've been invited to join ${workspaceName} on DevCollab!`,
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2>You're Invited!</h2>
+                    <p>You have been invited to join the workspace <strong>${workspaceName}</strong> on DevCollab.</p>
+                    <p>Click the link below to accept the invitation and join the team:</p>
+                    <a href="${inviteLink}" style="display: inline-block; padding: 12px 24px; background-color: #4F46E5; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 16px;">
+                        Join Workspace
+                    </a>
+                    <p style="margin-top: 24px; font-size: 14px; color: #666;">If you don't have an account, you will be prompted to create one first.</p>
+                </div>
+            `
+        };
+
+        try {
+            await this._transporter.sendMail(mailOptions);
+            logger.info(`Workspace Invite Email successfully sent to ${email}`);
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            logger.error(`Failed to send invite email to ${email}:`, { error: errorMessage });
+            throw new Error("Failed to send invite email. Please try again later.");
         }
     }
 }

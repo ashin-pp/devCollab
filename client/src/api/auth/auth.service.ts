@@ -1,60 +1,46 @@
 import { api } from "../axios"
+import { API_ENDPOINTS } from '../../config/api.constants';
+import type { RegisterData, LoginData, ResetPasswordData } from '../../types/auth.types';
 
-export interface RegisterData {
-    name: string
-    email: string
-    password?: string
-    confirmPassword?: string
-}
-export interface LoginData {
-    email: string
-    password: string
-}
-export interface ResetPasswordData {
-    email: string;
-    otp: string;
-    newPassword: string;
-    confirmPassword: string;
-}
 export const AuthService = {
     login: async (data: LoginData) => {
-        const response = await api.post('/auth/login', data)
+        const response = await api.post(API_ENDPOINTS.AUTH.LOGIN, data)
         return response.data
     },
     googleAuth: async (token: string) => {
-        const response = await api.post('/auth/google', { token })
+        const response = await api.post(API_ENDPOINTS.AUTH.GOOGLE, { token })
         return response.data
     },
     register: async (data: RegisterData) => {
-        const response = await api.post('/auth/register', data)
+        const response = await api.post(API_ENDPOINTS.AUTH.REGISTER, data)
         return response.data
     },
     logout: async () => {
-        const response = await api.post('/auth/logout')
+        const response = await api.post(API_ENDPOINTS.AUTH.LOGOUT)
         return response.data
     },
     refresh: async () => {
-        const response = await api.get('/auth/refresh')
+        const response = await api.get(API_ENDPOINTS.AUTH.REFRESH)
         return response.data
     },
     sendOtp: async (email: string) => {
-        const response = await api.post('/auth/send-otp', { email })
+        const response = await api.post(API_ENDPOINTS.AUTH.SEND_OTP, { email })
         return response.data
     },
     verifyOtp: async (email: string, otp: string) => {
-        const response = await api.post('/auth/verify-otp', { email, otp })
+        const response = await api.post(API_ENDPOINTS.AUTH.VERIFY_OTP, { email, otp })
         return response.data
     },
     forgotPassword: async (email: string) => {
-        const response = await api.post('/auth/forgot-password', { email })
+        const response = await api.post(API_ENDPOINTS.AUTH.FORGOT_PASSWORD, { email })
         return response.data
     },
     verifyResetOtp: async (email: string, otp: string) => {
-        const response = await api.post('/auth/verify-reset-otp', { email, otp })
+        const response = await api.post(API_ENDPOINTS.AUTH.VERIFY_RESET_OTP, { email, otp })
         return response.data
     },
     resetPassword: async (data: ResetPasswordData) => {
-        const response = await api.post('/auth/reset-password', data)
+        const response = await api.post(API_ENDPOINTS.AUTH.RESET_PASSWORD, data)
         return response.data
     }
 }

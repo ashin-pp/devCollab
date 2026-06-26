@@ -76,11 +76,9 @@ export const RegisterPage = () => {
     try {
       await AuthService.register({ name, email, password, confirmPassword });
       
-      // Request an OTP immediately after registering
       await AuthService.sendOtp(email);
       toast.success('Registration successful! OTP sent to your email.', { duration: 4000 });
       
-      // Initialize the timer for the OTP verification page
       localStorage.setItem('otpResendTimer', '60');
       localStorage.setItem('otpResendTimestamp', Date.now().toString());
       
@@ -107,8 +105,8 @@ export const RegisterPage = () => {
         user: response.data.user,
         accessToken: response.data.accessToken
       }));
-      toast.success('Successfully logged in with Google!');
-      navigate('/user/dashboard');
+      toast.success("Login successful!");
+      navigate('/dashboard');
     } catch (err: unknown) {
       if (isAxiosError(err)) {
         toast.error(err.response?.data?.error?.message || err.response?.data?.message || "Google authentication failed");
@@ -127,14 +125,11 @@ export const RegisterPage = () => {
 
   return (
     <div className="min-h-screen w-full flex bg-white font-sans">
-      {/* Left Panel - Branding & Features */}
       <div className="hidden lg:flex w-1/2 bg-[#f4f7fb] relative flex-col justify-between p-12 overflow-hidden">
-        {/* Background Gradients */}
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-400/20 rounded-full blur-[100px]"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-indigo-400/20 rounded-full blur-[120px]"></div>
 
         <div className="relative z-10">
-          {/* Logo */}
           <a href="/" className="flex items-center gap-2 mb-8 hover:opacity-80 transition-opacity">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-md">
               <Box className="w-5 h-5 text-white" />
@@ -142,13 +137,11 @@ export const RegisterPage = () => {
             <span className="font-bold text-xl tracking-tight text-slate-900">DevCollab</span>
           </a>
 
-          {/* Status Badge */}
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-100/50 border border-blue-200 mb-16">
             <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
             <span className="text-xs font-bold tracking-wider text-blue-700 uppercase">Systems Online - 1.2.4</span>
           </div>
 
-          {/* Main Copy */}
           <h1 className="text-5xl font-extrabold text-slate-900 tracking-tight leading-[1.1] mb-6">
             Build the future<br />
             <span className="text-blue-600">together.</span>
@@ -157,7 +150,6 @@ export const RegisterPage = () => {
             Join thousands of engineers in a workspace designed for high-performance technical collaboration and rapid deployment.
           </p>
 
-          {/* Features */}
           <div className="space-y-6">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center text-blue-600">
@@ -180,15 +172,12 @@ export const RegisterPage = () => {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="relative z-10 text-xs font-medium text-slate-400">
           &copy; 2024 DevCollab Infrastructure.
         </div>
       </div>
 
-      {/* Right Panel - Form */}
       <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-8 sm:p-12 relative">
-        {/* Top Header */}
         <div className="absolute top-8 left-8 right-8 flex justify-between items-center hidden sm:flex">
           <div className="flex items-center gap-3">
             <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">1</div>
@@ -202,7 +191,6 @@ export const RegisterPage = () => {
           </div>
         </div>
 
-        {/* Form Container */}
         <div className="w-full max-w-[420px] mt-12 lg:mt-0">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-extrabold text-slate-900 mb-2 font-serif tracking-tight">Create your account</h2>

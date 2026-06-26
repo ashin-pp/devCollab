@@ -1,10 +1,4 @@
-import type { LucideIcon } from 'lucide-react';
-
-interface FeatureCardProps {
-  title: string;
-  description: string;
-  Icon: LucideIcon;
-}
+import type { FeatureCardProps } from '../../types/component.types';
 
 export const FeatureCard: React.FC<FeatureCardProps> = ({ title, description, Icon }) => {
   return (

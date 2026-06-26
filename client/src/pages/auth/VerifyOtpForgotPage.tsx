@@ -116,11 +116,9 @@ export const VerifyOtpForgotPage = () => {
 
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#f4f7fb] font-sans relative overflow-hidden p-4">
-      {/* Subtle Background Elements */}
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-400/10 rounded-full blur-[100px] pointer-events-none"></div>
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-400/10 rounded-full blur-[100px] pointer-events-none"></div>
 
-      {/* Decorative Crosshairs (as seen in mockup) */}
       <div className="absolute top-20 right-20 w-40 h-40 opacity-10 pointer-events-none">
         <div className="absolute top-1/2 left-0 w-full h-px bg-blue-900"></div>
         <div className="absolute top-0 left-1/2 w-px h-full bg-blue-900"></div>
@@ -132,7 +130,6 @@ export const VerifyOtpForgotPage = () => {
         <div className="absolute inset-10 rounded-full border border-blue-900"></div>
       </div>
 
-      {/* Logo */}
       <div className="flex items-center gap-2 mb-8 relative z-10">
         <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-md">
           <Box className="w-5 h-5 text-white" />
@@ -140,7 +137,6 @@ export const VerifyOtpForgotPage = () => {
         <span className="font-bold text-xl tracking-tight text-slate-900">DevCollab</span>
       </div>
 
-      {/* Main Card */}
       <div className="w-full max-w-[480px] bg-white rounded-2xl shadow-xl shadow-slate-200/50 p-8 sm:p-12 relative z-10 border border-slate-100">
         <div className="text-center mb-8">
           <div className="w-12 h-12 bg-blue-50 border border-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm">
@@ -203,7 +199,6 @@ export const VerifyOtpForgotPage = () => {
         </div>
       </div>
 
-      {/* Footer */}
       <div className="absolute bottom-8 text-center w-full">
         <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">
           &copy; 2024 DevCollab Infrastructure

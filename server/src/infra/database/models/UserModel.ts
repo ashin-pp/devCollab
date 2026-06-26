@@ -12,6 +12,8 @@ export interface IUserModel extends Document {
     github?: string;
     linkedin?: string;
     twitter?: string;
+    location?: string;
+    title?: string;
     google_id?: string;
     is_verified: boolean;
     status: string;
@@ -35,6 +37,8 @@ const UserSchema: Schema = new Schema({
     github: { type: String },
     linkedin: { type: String },
     twitter: { type: String },
+    location: { type: String },
+    title: { type: String },
     google_id: { type: String },
     is_verified: { type: Boolean, default: false },
     status: { type: String, default: "active" },

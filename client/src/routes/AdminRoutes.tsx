@@ -5,6 +5,8 @@ import { AdminVerifyOtpPage } from '../pages/admin/AdminVerifyOtpPage';
 import { AdminResetPasswordPage } from '../pages/admin/AdminResetPasswordPage';
 import { AdminDashboardPage } from '../pages/admin/AdminDashboardPage';
 import { AdminUserManagementPage } from '../pages/admin/AdminUserManagementPage';
+import { AdminWorkspaceManagementPage } from '../pages/admin/AdminWorkspaceManagementPage';
+import { AdminWorkspaceMembersPage } from '../pages/admin/AdminWorkspaceMembersPage';
 import { NotFoundPage } from '../pages/NotFoundPage';
 import { AdminPublicRoute } from './guards/AdminPublicRoute';
 import { AdminProtectedRoute } from './guards/AdminProtectedRoute';
@@ -24,6 +26,8 @@ export const AdminRoutes = () => {
       <Route element={<AdminProtectedRoute />}>
         <Route path="dashboard" element={<AdminDashboardPage />} />
         <Route path="users" element={<AdminUserManagementPage />} />
+        <Route path="workspaces" element={<AdminWorkspaceManagementPage />} />
+        <Route path="workspaces/:workspaceId/members" element={<AdminWorkspaceMembersPage />} />
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />

@@ -14,11 +14,15 @@ export class AdminMapper implements IMapper<Admin, IAdminModel> {
         );
     }
 
-    toPersistence(domain: Partial<Admin>): any {
-        return {
+    toPersistence(domain: Partial<Admin>): Partial<IAdminModel> {
+        const persistence: Partial<IAdminModel> = {
             name: domain.name,
             email: domain.email,
             password: domain.password
         };
+
+        return Object.fromEntries(
+            Object.entries(persistence).filter(([_, value]) => value !== undefined)
+        ) as Partial<IAdminModel>;
     }
 }

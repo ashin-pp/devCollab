@@ -1,5 +1,5 @@
-import { IUserRepository } from "../../../domain/repositories/IUserRepository";
-import { IHashService } from "../../../domain/services/IHashService";
+import { IUserRepository } from "../../../application/repositories/IUserRepository";
+import { IHashService } from "../../../application/services/IHashService";
 import { RegisterUserDto } from "../../dto/RegisterUserDto";
 import { User } from "../../../domain/entities/User";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
@@ -11,14 +11,14 @@ export class RegisterUserUseCase {
     ) { }
 
     async execute(data: RegisterUserDto): Promise<User> {
-        const existingUser = await this.userRepository.findByEmail(data.email)
+        const existingUser = await this.userRepository.findByEmail(data.email);
         if (existingUser) {
             throw new Error(ErrorMessage.EMAIL_ALREADY_EXISTS);
         }
 
         if (data.password !== undefined) {
             if (data.password.trim().length < 6) {
-                throw new Error("Password must be at least 6 characters");
+                throw new Error(ErrorMessage.PASSWORD_TOO_SHORT);
             }
             if (data.password !== data.confirmPassword) {
                 throw new Error(ErrorMessage.PASSWORDS_DO_NOT_MATCH);
@@ -26,17 +26,19 @@ export class RegisterUserUseCase {
         } else if (data.confirmPassword !== undefined) {
              throw new Error(ErrorMessage.PASSWORDS_DO_NOT_MATCH);
         }
-        let hashedPassword = data.password
+
+        let hashedPassword = data.password;
         if (data.password) {
-            hashedPassword = await this.hashService.hash(data.password)
+            hashedPassword = await this.hashService.hash(data.password);
         }
+
         const newUser = new User(
             data.name,
             data.email,
             hashedPassword
         );
-        const savedUser = await this.userRepository.create(newUser);
 
+        const savedUser = await this.userRepository.create(newUser);
         return savedUser;
     }
 }

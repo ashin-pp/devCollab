@@ -1,4 +1,4 @@
-import { IUserRepository } from "../../../domain/repositories/IUserRepository";
+import { IUserRepository } from "../../../application/repositories/IUserRepository";
 import { SendOtpUseCase } from "./SendOtpUseCase";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 

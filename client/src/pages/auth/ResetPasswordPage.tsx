@@ -54,11 +54,9 @@ export const ResetPasswordPage = () => {
 
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#f4f7fb] font-sans relative overflow-hidden p-4">
-      {/* Subtle Background Elements */}
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-400/10 rounded-full blur-[100px] pointer-events-none"></div>
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-400/10 rounded-full blur-[100px] pointer-events-none"></div>
 
-      {/* Logo */}
       <div className="flex items-center gap-2 mb-8 relative z-10">
         <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-md">
           <Box className="w-5 h-5 text-white" />
@@ -66,7 +64,6 @@ export const ResetPasswordPage = () => {
         <span className="font-bold text-xl tracking-tight text-slate-900">DevCollab</span>
       </div>
 
-      {/* Main Card */}
       <div className="w-full max-w-[480px] bg-white rounded-2xl shadow-xl shadow-slate-200/50 p-8 sm:p-12 relative z-10 border border-slate-100">
         <div className="text-center mb-8">
           <h2 className="text-2xl font-bold text-slate-900 mb-3 tracking-tight">Reset Password</h2>
@@ -103,7 +100,6 @@ export const ResetPasswordPage = () => {
             </div>
           </div>
 
-          {/* Password Strength Indicator */}
           <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/60">
             <div className="flex justify-between items-center mb-2">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Password Strength</span>
@@ -175,7 +171,6 @@ export const ResetPasswordPage = () => {
         </div>
       </div>
 
-      {/* Footer */}
       <div className="absolute bottom-8 text-center w-full">
         <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">
           &copy; 2024 DevCollab Infrastructure
