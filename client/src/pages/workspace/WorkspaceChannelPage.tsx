@@ -1,76 +1,86 @@
 import { useState, useEffect, useRef } from 'react';
+import EmojiPicker from 'emoji-picker-react';
 import { WorkspaceLayout } from '../../layouts/WorkspaceLayout';
-import { Hash, Star, Bold, Italic, Code, Link as LinkIcon, List, Send, X, Smile, Plus, AtSign, ChevronDown, Users, Settings, LogOut, Lock } from 'lucide-react';
-import { useSelector } from 'react-redux';
+import { Hash, Star, Bold, Italic, Code, Link as LinkIcon, List, Send, X, Smile, Plus, AtSign, ChevronDown, Users, Settings, LogOut, Lock, BarChart2 } from 'lucide-react';
+import { useSelector, useDispatch } from 'react-redux';
 import { useParams, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import type { RootState } from '../../store/index';
+import { addPoll, updatePoll, removePoll } from '../../store/slices/pollSlice';
 import { useSocket } from '../../hooks/useSocket';
 import { MessageService } from '../../api/workspace/message.service';
 import { format } from 'date-fns';
 
 import { ChannelService } from '../../api/workspace/channel.service';
+import { useWorkspaceChannels, useChannelMembers } from '../../hooks/useChannels';
+import { useChannelMessages } from '../../hooks/useMessages';
 import { ChannelMembersModal } from '../../components/workspace/ChannelMembersModal';
 import { AddChannelMemberModal } from '../../components/workspace/AddChannelMemberModal';
 import { ChannelSettingsModal } from '../../components/workspace/ChannelSettingsModal';
 import type { MessageData, ChannelData } from '../../types/channel.types';
+import DOMPurify from 'dompurify';
+
+const renderMessageContent = (content: string) => {
+  if (!content) return null;
+  // Convert old markdown format for backwards compatibility
+  let html = content.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\*(.*?)\*/g, '<i>$1</i>');
+  // Sanitize to prevent XSS
+  const cleanHtml = DOMPurify.sanitize(html, { ALLOWED_TAGS: ['b', 'i', 'strong', 'em', 'br', 'div', 'span'] });
+  return <div dangerouslySetInnerHTML={{ __html: cleanHtml }} />;
+};
+import { ChannelPollsList } from '../../components/polls/ChannelPollsList';
+import { CreatePollModal } from '../../components/polls/CreatePollModal';
 
 export const WorkspaceChannelPage = () => {
   const { workspaceId, channelId } = useParams<{ workspaceId: string, channelId: string }>();
   const navigate = useNavigate();
   const user = useSelector((state: RootState) => state.auth.user);
-  
+  const dispatch = useDispatch();
+
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<MessageData[]>([]);
+  const textareaRef = useRef<HTMLDivElement>(null);
   const [showThread, setShowThread] = useState(false);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [isChannelDropdownOpen, setIsChannelDropdownOpen] = useState(false);
-  
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [hasMoreMessages, setHasMoreMessages] = useState(true);
-  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
-  const [totalMessages, setTotalMessages] = useState(0);
-  
+
+  const { channels, refetch: refetchChannels } = useWorkspaceChannels(workspaceId);
   const [currentChannel, setCurrentChannel] = useState<ChannelData | null>(null);
-  const [channelMembers, setChannelMembers] = useState<Array<{ id: string; userId: string; user?: { name: string; profileImage?: string } }>>([]);
-  const [memberImagesMap, setMemberImagesMap] = useState<Record<string, string>>({});
+
+  const { members: channelMembers, setMembers: setChannelMembers, imageMap: memberImagesMap, setImageMap: setMemberImagesMap, refetch: refetchMembers } = useChannelMembers(workspaceId, channelId);
+
+  const {
+    messages, setMessages, loading: isLoadingMessages, hasMore: hasMoreMessages,
+    totalMessages, currentPage, fetchMessages
+  } = useChannelMessages(workspaceId, channelId);
+
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
   const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  
+  const [isCreatePollModalOpen, setIsCreatePollModalOpen] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
+  const [isBoldActive, setIsBoldActive] = useState(false);
+  const [isItalicActive, setIsItalicActive] = useState(false);
+
+  useEffect(() => {
+    if (channels.length > 0 && channelId) {
+      const channel = channels.find(c => c.id === channelId);
+      if (channel && (!currentChannel || currentChannel.id !== channel.id)) {
+        setCurrentChannel(channel);
+      }
+    }
+  }, [channels, channelId]);
+
   const socket = useSocket(workspaceId);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchChannelData = () => {
     if (workspaceId && channelId) {
-      ChannelService.getWorkspaceChannels(workspaceId)
-        .then(res => {
-          const channel = res.data?.data?.find((c: ChannelData) => c.id === channelId);
-          if (channel) setCurrentChannel(channel);
-        })
-        .catch(err => console.error('Failed to fetch channels', err));
-
+      refetchChannels();
       fetchMessages(1, true); // Fetch first page and reset
-
-      // Fetch channel members and create image mapping
-      ChannelService.getMembers(workspaceId, channelId)
-        .then(res => {
-          const members = res.data?.data || [];
-          setChannelMembers(members);
-          
-          // Create a map of userId -> profileImage for quick lookup
-          const imageMap: Record<string, string> = {};
-          members.forEach((member: { userId: string; user?: { profileImage?: string } }) => {
-            if (member.user?.profileImage) {
-              imageMap[member.userId] = member.user.profileImage;
-            }
-          });
-          setMemberImagesMap(imageMap);
-        })
-        .catch(err => console.error('Failed to fetch channel members', err));
+      refetchMembers();
 
       // Fetch pending requests count if user is the channel creator
       ChannelService.getWorkspaceChannels(workspaceId)
@@ -90,48 +100,7 @@ export const WorkspaceChannelPage = () => {
     }
   };
 
-  const fetchMessages = async (page: number = 1, reset: boolean = false) => {
-    if (!workspaceId || !channelId) return;
-    
-    setIsLoadingMessages(true);
-    try {
-      const res = await MessageService.getChannelMessages(workspaceId, channelId, page, 20);
-      
-      // Handle different response structures
-      let newMessages: MessageData[] = [];
-      let pagination = { total: 0, page: 1, totalPages: 1 };
-      
-      if (res.data?.data?.messages) {
-        // Paginated response
-        newMessages = res.data.data.messages.reverse();
-        pagination = res.data.data.pagination;
-      } else if (res.data?.data && Array.isArray(res.data.data)) {
-        // Simple array response
-        newMessages = res.data.data.reverse();
-        pagination = { total: res.data.data.length, page: 1, totalPages: 1 };
-      } else if (Array.isArray(res.data)) {
-        // Direct array response
-        newMessages = res.data.reverse();
-        pagination = { total: res.data.length, page: 1, totalPages: 1 };
-      }
-      
-      if (reset) {
-        setMessages(newMessages);
-        setCurrentPage(1);
-      } else {
-        // Prepend older messages to the beginning
-        setMessages(prev => [...newMessages, ...prev]);
-      }
-      
-      setTotalMessages(pagination.total || newMessages.length);
-      setHasMoreMessages(page < (pagination.totalPages || 1));
-      setCurrentPage(page);
-    } catch (err) {
-      console.error('Failed to fetch messages', err);
-    } finally {
-      setIsLoadingMessages(false);
-    }
-  };
+
 
   const loadMoreMessages = () => {
     if (hasMoreMessages && !isLoadingMessages) {
@@ -150,7 +119,7 @@ export const WorkspaceChannelPage = () => {
         } else {
           import('react-hot-toast').then(m => m.default.success('Successfully joined the channel'));
           setCurrentChannel(prev => prev ? { ...prev, isMember: true } : null);
-          fetchChannelData(); 
+          fetchChannelData();
         }
       }
     } catch (error: unknown) {
@@ -161,7 +130,7 @@ export const WorkspaceChannelPage = () => {
 
   useEffect(() => {
     fetchChannelData();
-    
+
     // Mark channel as read when user enters
     if (workspaceId && channelId) {
       ChannelService.markAsRead(workspaceId, channelId)
@@ -183,7 +152,7 @@ export const WorkspaceChannelPage = () => {
     if (socket.connected) {
       joinChannel();
     }
-    
+
     socket.on('connect', joinChannel);
 
     const handleNewMessage = (newMsg: MessageData) => {
@@ -198,7 +167,7 @@ export const WorkspaceChannelPage = () => {
     const handleTyping = (data: { userId: string, userName: string }) => {
       // Don't show current user's typing indicator
       if (data.userId === user?.id) return;
-      
+
       setTypingUsers(prev => {
         if (!prev.includes(data.userName)) return [...prev, data.userName];
         return prev;
@@ -219,7 +188,7 @@ export const WorkspaceChannelPage = () => {
             icon: '🚫'
           });
         });
-        
+
         // Redirect after short delay
         setTimeout(() => {
           navigate(`/workspace/${workspaceId}/channels`);
@@ -235,28 +204,12 @@ export const WorkspaceChannelPage = () => {
           messageType: 'text',
           createdAt: new Date().toISOString()
         };
-        
+
         setMessages(prev => [...prev, systemMessage]);
-        
+
         // Update channel members list
-        if (workspaceId && channelId) {
-          ChannelService.getMembers(workspaceId, channelId)
-            .then(res => {
-              const updatedMembers = res.data?.data || [];
-              setChannelMembers(updatedMembers);
-              
-              // Update member images map
-              const imageMap: Record<string, string> = {};
-              updatedMembers.forEach((member: { userId: string; user?: { profileImage?: string } }) => {
-                if (member.user?.profileImage) {
-                  imageMap[member.userId] = member.user.profileImage;
-                }
-              });
-              setMemberImagesMap(imageMap);
-            })
-            .catch(err => console.error('Failed to refresh members', err));
-        }
-        
+        refetchMembers();
+
         scrollToBottom();
       }
     };
@@ -265,6 +218,15 @@ export const WorkspaceChannelPage = () => {
     socket.on('user_typing', handleTyping);
     socket.on('user_stopped_typing', handleStopTyping);
     socket.on('member_removed', handleMemberRemoved);
+    socket.on('new_poll', (poll) => {
+      dispatch(addPoll(poll));
+    });
+    socket.on('poll_voted', (poll) => {
+      dispatch(updatePoll(poll));
+    });
+    socket.on('poll_deleted', (pollId) => {
+      dispatch(removePoll(pollId));
+    });
 
     return () => {
       socket.off('connect', joinChannel);
@@ -273,6 +235,9 @@ export const WorkspaceChannelPage = () => {
       socket.off('user_typing', handleTyping);
       socket.off('user_stopped_typing', handleStopTyping);
       socket.off('member_removed', handleMemberRemoved);
+      socket.off('new_poll');
+      socket.off('poll_voted');
+      socket.off('poll_deleted');
     };
   }, [socket, channelId, user, navigate, workspaceId]);
 
@@ -288,12 +253,12 @@ export const WorkspaceChannelPage = () => {
 
   const handleTyping = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(e.target.value);
-    
+
     if (socket && channelId && user) {
       socket.emit('typing', { channelId, userId: user.id, userName: user.name });
-      
+
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-      
+
       typingTimeoutRef.current = setTimeout(() => {
         socket.emit('stop_typing', { channelId, userId: user.id, userName: user.name });
       }, 2000);
@@ -301,12 +266,12 @@ export const WorkspaceChannelPage = () => {
   };
 
   const handleSendMessage = async () => {
-    if (!message.trim() || !workspaceId || !channelId || !user) return;
-    
+    if (!message.replace(/<[^>]+>/g, '').trim() || !workspaceId || !channelId || !user) return;
+
     try {
       const res = await MessageService.sendMessage(workspaceId, channelId, message);
       const newMsg = res.data?.data;
-      
+
       const newMsgObj = {
         ...newMsg,
         senderName: user.name,
@@ -318,14 +283,19 @@ export const WorkspaceChannelPage = () => {
         return [...prev, newMsgObj];
       });
 
+      if (textareaRef.current) {
+        textareaRef.current.innerHTML = '';
+      }
+      setTypingUsers(prev => prev.filter(id => id !== user?.id));
+
       // Emit socket event
       if (socket) {
         socket.emit('new_message', newMsgObj);
         socket.emit('stop_typing', { channelId, userId: user.id, userName: user.name });
       }
-      
+
       setMessage('');
-      
+
       // Clear typing timeout
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
@@ -336,12 +306,28 @@ export const WorkspaceChannelPage = () => {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
   };
+
+  const handleFormat = (command: string) => {
+    document.execCommand(command, false, undefined);
+    if (textareaRef.current) {
+      setMessage(textareaRef.current.innerHTML);
+      textareaRef.current.focus();
+    }
+    checkFormatting();
+  };
+
+  const checkFormatting = () => {
+    setIsBoldActive(document.queryCommandState('bold'));
+    setIsItalicActive(document.queryCommandState('italic'));
+  };
+
+  if (!channelId) return <div className="p-8 text-center text-slate-500">Select a channel to start messaging</div>;
 
   return (
     <WorkspaceLayout>
@@ -352,7 +338,7 @@ export const WorkspaceChannelPage = () => {
           <header className="h-14 border-b border-slate-200 flex items-center justify-between px-6 shrink-0 bg-white">
             <div className="flex items-center gap-3">
               <div className="relative">
-                <button 
+                <button
                   onClick={() => setIsChannelDropdownOpen(!isChannelDropdownOpen)}
                   className="font-bold text-slate-900 text-lg flex items-center hover:bg-slate-100 px-2 py-1 rounded transition-colors"
                 >
@@ -378,7 +364,7 @@ export const WorkspaceChannelPage = () => {
                   )}
                   <ChevronDown className="w-4 h-4 ml-1 text-slate-500" />
                 </button>
-                
+
                 {isChannelDropdownOpen && (
                   <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-slate-200 shadow-lg rounded-xl z-50 overflow-hidden">
                     <div className="p-3 border-b border-slate-100">
@@ -409,7 +395,7 @@ export const WorkspaceChannelPage = () => {
                       )}
                     </div>
                     <div className="py-1">
-                      <button 
+                      <button
                         onClick={() => { setIsMembersModalOpen(true); setIsChannelDropdownOpen(false); }}
                         className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-2 transition-colors"
                       >
@@ -420,9 +406,9 @@ export const WorkspaceChannelPage = () => {
                           </span>
                         )}
                       </button>
-                      
+
                       {currentChannel?.createdBy === user?.id && (
-                        <button 
+                        <button
                           onClick={() => { setIsSettingsModalOpen(true); setIsChannelDropdownOpen(false); }}
                           className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-2 transition-colors"
                         >
@@ -432,10 +418,10 @@ export const WorkspaceChannelPage = () => {
                     </div>
                     {currentChannel?.createdBy !== user?.id && (
                       <div className="py-1 border-t border-slate-100">
-                        <button 
+                        <button
                           onClick={async () => {
                             setIsChannelDropdownOpen(false);
-                            
+
                             const result = await Swal.fire({
                               title: 'Leave Channel?',
                               text: "Are you sure you want to leave this channel?",
@@ -445,9 +431,9 @@ export const WorkspaceChannelPage = () => {
                               cancelButtonColor: '#64748b',
                               confirmButtonText: 'Yes, leave channel'
                             });
-                            
+
                             if (!result.isConfirmed) return;
-                            
+
                             try {
                               await ChannelService.leaveChannel(workspaceId as string, channelId as string);
                               navigate(`/workspace/${workspaceId}/channels`);
@@ -492,7 +478,7 @@ export const WorkspaceChannelPage = () => {
               </div>
 
               <div className="flex items-center">
-                <button 
+                <button
                   onClick={() => setIsMembersModalOpen(true)}
                   className="flex -space-x-2 hover:opacity-80 transition-opacity cursor-pointer"
                   title="View channel members"
@@ -553,31 +539,33 @@ export const WorkspaceChannelPage = () => {
               <p className="text-slate-500 text-center max-w-md mb-8">
                 {currentChannel?.description || "You are not a member of this channel. Join to see messages and participate in the conversation."}
               </p>
-              
+
               {currentChannel?.hasPendingRequest ? (
-                <button 
+                <button
                   disabled
                   className="px-6 py-2.5 bg-slate-200 text-slate-500 font-semibold rounded-xl flex items-center gap-2 cursor-not-allowed"
                 >
                   <Lock className="w-5 h-5" /> Request Pending
                 </button>
               ) : (
-                <button 
+                <button
                   onClick={handleJoinChannel}
                   className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-sm flex items-center gap-2"
                 >
-                  <Plus className="w-5 h-5" /> 
+                  <Plus className="w-5 h-5" />
                   {currentChannel?.privacy === 'private' ? 'Request to Join' : 'Join Channel'}
                 </button>
               )}
             </div>
           ) : (
             <>
-              <div className="px-6 py-2 border-b border-slate-100 bg-slate-50/50">
-                <p className="text-xs text-slate-500">{currentChannel?.description || "Central engineering and platform architecture discussions."}</p>
-                {/* Typing Indicator */}
-                {typingUsers.length > 0 && (
-                  <div className="flex items-center gap-2 mt-1 text-xs text-slate-600 italic">
+              {/* Channel Polls */}
+              <ChannelPollsList workspaceId={workspaceId as string} channelId={channelId as string} />
+
+              {/* Typing Indicator */}
+              {typingUsers.length > 0 && (
+                <div className="px-6 py-2 border-b border-slate-100 bg-slate-50/50">
+                  <div className="flex items-center gap-2 text-xs text-slate-600 italic">
                     <div className="flex gap-1">
                       <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce"></span>
                       <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></span>
@@ -585,131 +573,172 @@ export const WorkspaceChannelPage = () => {
                     </div>
                     <span>{typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...</span>
                   </div>
+                </div>
+              )}
+
+              <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#f8fafc] relative">
+
+                {/* Load More Messages Button */}
+                {hasMoreMessages && (
+                  <div className="flex justify-center pb-4">
+                    <button
+                      onClick={loadMoreMessages}
+                      disabled={isLoadingMessages}
+                      className="px-4 py-2 bg-blue-50 text-blue-600 text-sm font-semibold rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      {isLoadingMessages ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                          Loading...
+                        </>
+                      ) : (
+                        `Load older messages (${totalMessages - messages.length} more)`
+                      )}
+                    </button>
+                  </div>
                 )}
+
+                {messages.map((msg) => {
+                  const isMe = msg.senderId === user?.id;
+                  const senderInitial = msg.senderName?.[0]?.toUpperCase() || 'U';
+                  const isSystemMessage = msg.senderId === 'system';
+
+                  // Get profile image from member map or use current user's image
+                  const senderImage = isMe
+                    ? user?.profileImage
+                    : (memberImagesMap[msg.senderId] || msg.senderImage);
+
+                  // System message (member removed, etc.)
+                  if (isSystemMessage) {
+                    return (
+                      <div key={msg.id || msg._id as string} className="flex justify-center">
+                        <div className="bg-orange-50 border border-orange-200 text-orange-800 text-sm px-4 py-2 rounded-full max-w-[80%] text-center">
+                          {msg.content}
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div key={msg.id || msg._id as string} className={`flex gap-4 group ${isMe ? 'flex-row-reverse' : ''}`}>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold shrink-0 shadow-sm overflow-hidden ${isMe ? 'bg-indigo-500 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                        {senderImage ? (
+                          <img
+                            src={senderImage}
+                            alt={msg.senderName || 'User'}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span>{senderInitial}</span>
+                        )}
+                      </div>
+                      <div className={`flex-1 min-w-0 flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                        <div className={`flex items-baseline gap-2 mb-1 ${isMe ? 'flex-row-reverse' : ''}`}>
+                          <span className="font-bold text-slate-900 text-sm">{isMe ? 'You' : (msg.senderName || 'User')}</span>
+                          <span className="text-xs text-slate-500">
+                            {msg.createdAt ? format(new Date(msg.createdAt), 'h:mm a') : 'Now'}
+                          </span>
+                        </div>
+                        <div className={`text-[15px] leading-relaxed whitespace-pre-wrap px-4 py-2.5 max-w-[85%] shadow-sm ${isMe
+                          ? 'bg-indigo-500 text-white rounded-2xl rounded-tr-sm shadow-indigo-500/20'
+                          : 'bg-white border border-slate-200 text-slate-700 rounded-2xl rounded-tl-sm'
+                          }`}>
+                          {renderMessageContent(msg.content)}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                <div ref={messagesEndRef} />
               </div>
 
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              <div className="p-4 bg-white">
+                <div className="border border-slate-300 rounded-2xl overflow-visible focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all shadow-sm bg-slate-50 relative">
 
-            {/* Load More Messages Button */}
-            {hasMoreMessages && (
-              <div className="flex justify-center pb-4">
-                <button
-                  onClick={loadMoreMessages}
-                  disabled={isLoadingMessages}
-                  className="px-4 py-2 bg-blue-50 text-blue-600 text-sm font-semibold rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  {isLoadingMessages ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                      Loading...
-                    </>
-                  ) : (
-                    `Load older messages (${totalMessages - messages.length} more)`
-                  )}
-                </button>
-              </div>
-            )}
+                  {/* AI Commands Bar - Minimal Pill Style */}
+                  <div className="px-4 pt-3 flex items-center gap-2 overflow-x-auto hide-scrollbar">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">AI</span>
+                    <button className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full hover:bg-indigo-100 transition-colors shadow-sm">@task</button>
+                    <button className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full hover:bg-indigo-100 transition-colors shadow-sm">@notify</button>
+                    <button className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full hover:bg-indigo-100 transition-colors shadow-sm">@remind</button>
+                    <button className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full hover:bg-indigo-100 transition-colors shadow-sm">@info</button>
+                    <button className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full hover:bg-indigo-100 transition-colors shadow-sm">@schedule</button>
+                    <button className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full hover:bg-indigo-100 transition-colors shadow-sm">@summary</button>
+                  </div>
 
-            {messages.map((msg) => {
-              const isMe = msg.senderId === user?.id;
-              const senderInitial = msg.senderName?.[0]?.toUpperCase() || 'U';
-              const isSystemMessage = msg.senderId === 'system';
-              
-              // Get profile image from member map or use current user's image
-              const senderImage = isMe 
-                ? user?.profileImage 
-                : (memberImagesMap[msg.senderId] || msg.senderImage);
-              
-              // System message (member removed, etc.)
-              if (isSystemMessage) {
-                return (
-                  <div key={msg.id || msg._id as string} className="flex justify-center">
-                    <div className="bg-orange-50 border border-orange-200 text-orange-800 text-sm px-4 py-2 rounded-full max-w-[80%] text-center">
-                      {msg.content}
+                  <div
+                    ref={textareaRef}
+                    contentEditable
+                    onInput={(e) => {
+                      handleTyping(e as any);
+                      setMessage(e.currentTarget.innerHTML);
+                      checkFormatting();
+                    }}
+                    onKeyDown={handleKeyDown}
+                    onKeyUp={checkFormatting}
+                    onMouseUp={checkFormatting}
+                    className="w-full resize-none px-4 py-3 min-h-[60px] max-h-[200px] text-[15px] focus:outline-none text-slate-800 bg-transparent overflow-y-auto cursor-text empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400"
+                    data-placeholder="Message #channel..."
+                  />
+
+                  <div className="px-3 pb-3 flex items-center justify-between">
+                    <div className="flex items-center gap-0.5">
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                          className={`p-1.5 rounded-lg transition-colors ${showEmojiPicker ? 'bg-blue-100 text-blue-600' : 'text-slate-500 hover:bg-slate-200 hover:text-slate-700'}`}
+                          title="Add Emoji"
+                        >
+                          <Smile className="w-5 h-5" />
+                        </button>
+                        {showEmojiPicker && (
+                          <div className="absolute bottom-full mb-2 left-0 z-50 shadow-2xl rounded-xl bg-white border border-slate-200 overflow-hidden">
+                            <div className="flex justify-between items-center p-2 border-b border-slate-100 bg-slate-50">
+                              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Emojis</span>
+                              <button onClick={() => setShowEmojiPicker(false)} className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-full transition-colors">
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                            <EmojiPicker
+                              onEmojiClick={(emojiData) => {
+                                setMessage(prev => prev + emojiData.emoji);
+                                setShowEmojiPicker(false);
+                              }}
+                              width={320}
+                              height={400}
+                            />
+                          </div>
+                        )}
+                      </div>
+                      <button onMouseDown={(e) => e.preventDefault()} onClick={() => handleFormat('bold')} className={`p-1.5 rounded-lg transition-colors ${isBoldActive ? 'bg-blue-100 text-blue-600' : 'text-slate-500 hover:bg-slate-200 hover:text-slate-700'}`} title="Format Bold"><Bold className="w-4 h-4" /></button>
+                      <button onMouseDown={(e) => e.preventDefault()} onClick={() => handleFormat('italic')} className={`p-1.5 rounded-lg transition-colors ${isItalicActive ? 'bg-blue-100 text-blue-600' : 'text-slate-500 hover:bg-slate-200 hover:text-slate-700'}`} title="Format Italic"><Italic className="w-4 h-4" /></button>
+                      <button className="p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-700 rounded-lg transition-colors" title="Mention"><AtSign className="w-4 h-4" /></button>
+                      <div className="w-px h-5 bg-slate-300 mx-1.5"></div>
+                      <button
+                        onClick={() => setIsCreatePollModalOpen(true)}
+                        className="p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-700 rounded-lg transition-colors"
+                        title="Create Poll"
+                      >
+                        <BarChart2 className="w-4 h-4" />
+                      </button>
+                      <button className="p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-700 rounded-lg transition-colors" title="Add Attachment"><Plus className="w-4 h-4" /></button>
                     </div>
-                  </div>
-                );
-              }
-              
-              return (
-                <div key={msg.id || msg._id as string} className={`flex gap-4 group ${isMe ? 'flex-row-reverse' : ''}`}>
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold shrink-0 shadow-sm overflow-hidden ${isMe ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700'}`}>
-                    {senderImage ? (
-                      <img 
-                        src={senderImage} 
-                        alt={msg.senderName || 'User'} 
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <span>{senderInitial}</span>
-                    )}
-                  </div>
-                  <div className={`flex-1 min-w-0 flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                    <div className={`flex items-baseline gap-2 mb-1 ${isMe ? 'flex-row-reverse' : ''}`}>
-                      <span className="font-bold text-slate-900 text-sm">{isMe ? 'You' : (msg.senderName || 'User')}</span>
-                      <span className="text-xs text-slate-500">
-                        {msg.createdAt ? format(new Date(msg.createdAt), 'h:mm a') : 'Now'}
-                      </span>
-                    </div>
-                    <div className={`text-[15px] leading-relaxed whitespace-pre-wrap px-4 py-2.5 max-w-[85%] shadow-sm ${
-                      isMe 
-                        ? 'bg-blue-600 text-white rounded-2xl rounded-tr-sm' 
-                        : 'bg-white border border-slate-200 text-slate-700 rounded-2xl rounded-tl-sm'
-                    }`}>
-                      {msg.content}
-                    </div>
+
+                    <button
+                      onClick={handleSendMessage}
+                      disabled={!message.replace(/<[^>]+>/g, '').trim()}
+                      className={`p-2 rounded-xl flex items-center justify-center transition-all ${message.replace(/<[^>]+>/g, '').trim()
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5'
+                        : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                        }`}
+                    >
+                      <Send className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
-              );
-            })}
-            
-            <div ref={messagesEndRef} />
-          </div>
-
-          <div className="p-4 bg-white">
-            <div className="border border-slate-300 rounded-xl overflow-hidden focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all shadow-sm">
-
-              <div className="bg-blue-50/50 border-b border-slate-200 px-3 py-1.5 flex items-center gap-2 overflow-x-auto hide-scrollbar">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">AI Commands:</span>
-                <span className="text-xs text-blue-600 bg-blue-100/50 px-2 rounded cursor-pointer hover:bg-blue-100">@task</span>
-                <span className="text-xs text-blue-600 bg-blue-100/50 px-2 rounded cursor-pointer hover:bg-blue-100">@notify</span>
-                <span className="text-xs text-blue-600 bg-blue-100/50 px-2 rounded cursor-pointer hover:bg-blue-100">@remind</span>
-                <span className="text-xs text-blue-600 bg-blue-100/50 px-2 rounded cursor-pointer hover:bg-blue-100">@info</span>
-                <span className="text-xs text-blue-600 bg-blue-100/50 px-2 rounded cursor-pointer hover:bg-blue-100">@schedule</span>
-                <span className="text-xs text-blue-600 bg-blue-100/50 px-2 rounded cursor-pointer hover:bg-blue-100">@summary</span>
               </div>
-
-              <div className="bg-slate-50 border-b border-slate-200 px-3 py-2 flex items-center gap-1">
-                <button className="p-1 text-slate-500 hover:bg-slate-200 rounded transition-colors"><Bold className="w-4 h-4" /></button>
-                <button className="p-1 text-slate-500 hover:bg-slate-200 rounded transition-colors"><Italic className="w-4 h-4" /></button>
-                <button className="p-1 text-slate-500 hover:bg-slate-200 rounded transition-colors"><Code className="w-4 h-4" /></button>
-                <button className="p-1 text-slate-500 hover:bg-slate-200 rounded transition-colors"><LinkIcon className="w-4 h-4" /></button>
-                <div className="w-px h-4 bg-slate-300 mx-1"></div>
-                <button className="p-1 text-slate-500 hover:bg-slate-200 rounded transition-colors"><List className="w-4 h-4" /></button>
-              </div>
-
-              <textarea
-                value={message}
-                onChange={handleTyping}
-                onKeyDown={handleKeyDown}
-                placeholder="Message #channel (Use @task, @notify, @remind, @info, @schedule, @summary or type /fix for AI assistant)..."
-                className="w-full resize-none p-4 min-h-[80px] text-[15px] focus:outline-none text-slate-700 placeholder:text-slate-400"
-                rows={2}
-              ></textarea>
-
-              <div className="px-3 py-2 flex items-center justify-between">
-                <div className="flex items-center gap-1">
-                  <button className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"><Plus className="w-5 h-5" /></button>
-                  <button className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"><Smile className="w-5 h-5" /></button>
-                  <button className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"><AtSign className="w-5 h-5" /></button>
-                </div>
-                <button onClick={handleSendMessage} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg flex items-center gap-2 font-semibold text-sm transition-colors">
-                  Send <Send className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-          </>
+            </>
           )}
         </div>
 
@@ -835,7 +864,7 @@ export const WorkspaceChannelPage = () => {
                   .then(res => {
                     const members = res.data?.data || [];
                     setChannelMembers(members);
-                    
+
                     // Update member images map
                     const imageMap: Record<string, string> = {};
                     members.forEach((member: { userId: string; user?: { profileImage?: string } }) => {
@@ -849,7 +878,7 @@ export const WorkspaceChannelPage = () => {
               }
             }}
           />
-          
+
           <AddChannelMemberModal
             isOpen={isAddMemberModalOpen}
             onClose={() => setIsAddMemberModalOpen(false)}
@@ -869,6 +898,13 @@ export const WorkspaceChannelPage = () => {
             onChannelDeleted={() => {
               window.location.href = `/workspace/${workspaceId}`;
             }}
+          />
+
+          <CreatePollModal
+            isOpen={isCreatePollModalOpen}
+            onClose={() => setIsCreatePollModalOpen(false)}
+            workspaceId={workspaceId}
+            channelId={channelId}
           />
         </>
       )}

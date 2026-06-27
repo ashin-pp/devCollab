@@ -79,4 +79,12 @@ export const API_ENDPOINTS = {
     WORKSPACE_MEMBERS: (workspaceId: string) => `/admin/workspaces/${workspaceId}/members`,
     WORKSPACE_MEMBER_STATUS: (workspaceId: string, userId: string) => `/admin/workspaces/${workspaceId}/members/${userId}/status`,
   },
+
+  // Poll endpoints
+  POLLS: {
+    CREATE: '/polls',
+    VOTE: (pollId: string) => `/polls/${pollId}/vote`,
+    WORKSPACE: (workspaceId: string) => `/polls/workspace/${workspaceId}`,
+    CHANNEL: (channelId: string) => `/polls/channel/${channelId}`,
+  },
 };

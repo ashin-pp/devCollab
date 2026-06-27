@@ -3,6 +3,15 @@ import { Server as SocketIOServer, Socket } from 'socket.io';
 import { envConfig } from '../config/envConfig';
 import { JwtService } from '../services/JwtService';
 import { logger } from '../../container';
+import { Message } from '../../domain/entities/Message';
+import { DirectMessage } from '../../domain/entities/DirectMessage';
+
+interface AuthenticatedSocket extends Socket {
+    user?: {
+        id: string;
+        [key: string]: unknown;
+    };
+}
 
 export class SocketService {
     private static _instance: SocketService;
@@ -38,8 +47,8 @@ export class SocketService {
                 }
 
                 const decoded = this._jwtService.verifyAccessToken(token);
-                if (decoded && decoded.id) {
-                    (socket as any).user = decoded;
+                if (decoded && typeof decoded !== 'string' && 'id' in decoded) {
+                    (socket as AuthenticatedSocket).user = decoded as { id: string;[key: string]: unknown };
                     next();
                 } else {
                     next(new Error('Authentication error'));
@@ -50,7 +59,14 @@ export class SocketService {
         });
 
         this._io.on('connection', (socket: Socket) => {
-            const user = (socket as any).user;
+            const authSocket = socket as AuthenticatedSocket;
+            const user = authSocket.user;
+
+            if (!user) {
+                logger.error('Socket connected without user payload');
+                return;
+            }
+
             logger.info(`User connected to socket: ${user.id}`);
 
             socket.on('join_workspace', (workspaceId: string) => {
@@ -84,7 +100,7 @@ export class SocketService {
                 });
             });
 
-            socket.on('new_message', (message: any) => {
+            socket.on('new_message', (message: Message) => {
                 logger.info(`Received new_message for channel ${message.channelId} from user ${user.id}`);
                 this._io.to(`channel:${message.channelId}`).emit('message_received', message);
             });
@@ -115,13 +131,12 @@ export class SocketService {
                 });
             });
 
-            socket.on('new_dm', (message: any) => {
+            socket.on('new_dm', (message: DirectMessage) => {
                 logger.info(`Received new_dm for conversation ${message.conversationId} from user ${user.id}`);
                 this._io.to(`conversation:${message.conversationId}`).emit('dm_received', message);
             });
 
             socket.on('dm_seen', (data: { conversationId: string, userId: string }) => {
-                // Broadcast to the other user that messages were seen
                 socket.to(`conversation:${data.conversationId}`).emit('dm_messages_seen', {
                     conversationId: data.conversationId,
                     userId: user.id

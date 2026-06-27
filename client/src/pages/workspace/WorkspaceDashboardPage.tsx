@@ -12,26 +12,17 @@ import {
   Users, 
   MessageSquare 
 } from 'lucide-react';
-import { WorkspaceService } from '../../api/workspace/workspace.service';
+import { WorkspacePollsList } from '../../components/polls/WorkspacePollsList';
+import { useUserWorkspaces } from '../../hooks/useWorkspaces';
+import type { WorkspaceData } from '../../types/workspace.types';
 
 export const WorkspaceDashboardPage = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const user = useSelector((state: RootState) => state.auth.user);
   const navigate = useNavigate();
-  const [workspaceName, setWorkspaceName] = useState('Workspace');
-
-  useEffect(() => {
-    if (workspaceId) {
-      WorkspaceService.getUserWorkspaces()
-        .then((response: any) => {
-          const workspace = response.data?.find((w: any) => w.id === workspaceId);
-          if (workspace) {
-            setWorkspaceName(workspace.name);
-          }
-        })
-        .catch(console.error);
-    }
-  }, [workspaceId]);
+  const { workspaces, loading } = useUserWorkspaces();
+  const workspace = workspaces.find((w: WorkspaceData) => w.id === workspaceId);
+  const workspaceName = workspace?.name || 'Workspace';
 
   return (
     <WorkspaceLayout>
@@ -159,42 +150,9 @@ export const WorkspaceDashboardPage = () => {
             </div>
           </div>
 
-          {/* Recent Activity */}
-          <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm flex flex-col">
-            <div className="p-6 border-b border-slate-100">
-              <h3 className="font-extrabold text-slate-900 text-lg">Recent Activity</h3>
-            </div>
-            <div className="p-6 space-y-6 flex-1">
-              <div className="flex gap-4 relative">
-                <div className="absolute left-[11px] top-6 bottom-[-24px] w-px bg-slate-200"></div>
-                <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center shrink-0 relative z-10">
-                  <div className="w-2 h-2 rounded-full bg-blue-600"></div>
-                </div>
-                <div>
-                  <p className="text-sm text-slate-700 font-medium">New channel <span className="font-bold text-blue-600">#design-system</span> created</p>
-                  <p className="text-xs text-slate-400 mt-1">2 hours ago</p>
-                </div>
-              </div>
-              <div className="flex gap-4 relative">
-                <div className="absolute left-[11px] top-6 bottom-[-24px] w-px bg-slate-200"></div>
-                <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center shrink-0 relative z-10">
-                  <div className="w-2 h-2 rounded-full bg-emerald-600"></div>
-                </div>
-                <div>
-                  <p className="text-sm text-slate-700 font-medium"><span className="font-bold">Sarah</span> joined the workspace</p>
-                  <p className="text-xs text-slate-400 mt-1">5 hours ago</p>
-                </div>
-              </div>
-              <div className="flex gap-4 relative">
-                <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center shrink-0 relative z-10">
-                  <div className="w-2 h-2 rounded-full bg-orange-600"></div>
-                </div>
-                <div>
-                  <p className="text-sm text-slate-700 font-medium">New meeting scheduled in <span className="font-bold text-blue-600">#general</span></p>
-                  <p className="text-xs text-slate-400 mt-1">Yesterday</p>
-                </div>
-              </div>
-            </div>
+          {/* Workspace Polls */}
+          <div className="lg:col-span-3 mt-6">
+            <WorkspacePollsList workspaceId={workspaceId as string} />
           </div>
 
         </div>

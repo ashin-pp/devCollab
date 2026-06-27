@@ -93,6 +93,15 @@ import { GetChannelMessagesUseCase } from "../application/use-cases/channel/GetC
 import { ChannelController } from "../interfaces/controllers/ChannelController";
 import { MessageController } from "../interfaces/controllers/MessageController";
 
+// --- Poll Imports ---
+import { PollRepository } from "../infra/database/repositories/PollRepository";
+import { CreatePollUseCase } from "../application/use-cases/poll/CreatePollUseCase";
+import { VotePollUseCase } from "../application/use-cases/poll/VotePollUseCase";
+import { GetWorkspacePollsUseCase } from "../application/use-cases/poll/GetWorkspacePollsUseCase";
+import { GetChannelPollsUseCase } from "../application/use-cases/poll/GetChannelPollsUseCase";
+import { DeletePollUseCase } from "../application/use-cases/poll/DeletePollUseCase";
+import { PollController } from "../interfaces/controllers/PollController";
+
 // ============================================================================
 // INSTANTIATIONS
 // ============================================================================
@@ -254,6 +263,22 @@ const channelController = new ChannelController(
 );
 const messageController = new MessageController(sendMessageUseCase, getChannelMessagesUseCase);
 
+// Poll Instantiations
+const pollRepository = new PollRepository();
+const createPollUseCase = new CreatePollUseCase(pollRepository);
+const votePollUseCase = new VotePollUseCase(pollRepository);
+const getWorkspacePollsUseCase = new GetWorkspacePollsUseCase(pollRepository);
+const getChannelPollsUseCase = new GetChannelPollsUseCase(pollRepository);
+const deletePollUseCase = new DeletePollUseCase(pollRepository);
+
+const pollController = new PollController(
+    createPollUseCase,
+    votePollUseCase,
+    getWorkspacePollsUseCase,
+    getChannelPollsUseCase,
+    deletePollUseCase
+);
+
 // DM Imports
 import { ConversationRepository } from "../infra/database/repositories/ConversationRepository";
 import { DirectMessageRepository } from "../infra/database/repositories/DirectMessageRepository";
@@ -282,4 +307,4 @@ const dmController = new DMController(
     markMessageAsSeenUseCase
 );
 
-export { logger, authController, adminController, userController, workspaceController, channelController, messageController, dmController, jwtService };
+export { logger, authController, adminController, userController, workspaceController, channelController, messageController, dmController, pollController, jwtService };
