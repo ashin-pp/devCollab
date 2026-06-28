@@ -1,5 +1,6 @@
 import { IChannelMemberRepository } from "../../../application/repositories/IChannelMemberRepository";
 import { IChannelRepository } from "../../../application/repositories/IChannelRepository";
+import { IUserRepository } from "../../../application/repositories/IUserRepository";
 import { AppError } from "../../../domain/errors/AppError";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
@@ -7,7 +8,8 @@ import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 export class RemoveChannelMemberUseCase {
     constructor(
         private channelRepository: IChannelRepository,
-        private channelMemberRepository: IChannelMemberRepository
+        private channelMemberRepository: IChannelMemberRepository,
+        private userRepository: IUserRepository
     ) {}
 
     async execute(workspaceId: string, channelId: string, targetUserId: string, requestUserId: string) {
@@ -33,6 +35,15 @@ export class RemoveChannelMemberUseCase {
             throw new AppError(ErrorMessage.CHANNEL_MEMBER_NOT_FOUND, HttpStatusCode.NOT_FOUND);
         }
 
-        return true;
+        const [targetUser, requestUser] = await Promise.all([
+            this.userRepository.findById(targetUserId),
+            this.userRepository.findById(requestUserId)
+        ]);
+
+        return {
+            userId: targetUserId,
+            userName: targetUser?.name || 'Unknown User',
+            removedBy: requestUser?.name || 'Admin'
+        };
     }
 }

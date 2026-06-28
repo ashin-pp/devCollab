@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { WorkspaceLayout } from '../../layouts/WorkspaceLayout';
-import type { RootState } from '../../store';
+import { WorkspaceLayout } from '../../../layouts/WorkspaceLayout';
+import type { RootState } from '../../../store';
 import { 
   CheckCircle2, 
   Clock, 
@@ -12,9 +12,9 @@ import {
   Users, 
   MessageSquare 
 } from 'lucide-react';
-import { WorkspacePollsList } from '../../components/polls/WorkspacePollsList';
-import { useUserWorkspaces } from '../../hooks/useWorkspaces';
-import type { WorkspaceData } from '../../types/workspace.types';
+import { WorkspacePollsList } from '../../../components/polls/WorkspacePollsList';
+import { useUserWorkspaces } from '../../../hooks/useWorkspaces';
+import type { WorkspaceData } from '../../../types/workspace.types';
 
 export const WorkspaceDashboardPage = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>();

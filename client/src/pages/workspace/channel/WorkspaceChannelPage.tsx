@@ -1,23 +1,23 @@
 import { useState, useEffect, useRef } from 'react';
 import EmojiPicker from 'emoji-picker-react';
-import { WorkspaceLayout } from '../../layouts/WorkspaceLayout';
-import { Hash, Star, Bold, Italic, Code, Link as LinkIcon, List, Send, X, Smile, Plus, AtSign, ChevronDown, Users, Settings, LogOut, Lock, BarChart2 } from 'lucide-react';
+import { WorkspaceLayout } from '../../../layouts/WorkspaceLayout';
+import { Hash, Star, Bold, Italic, Code, Link as LinkIcon, List, Send, X, Smile, Plus, AtSign, ChevronDown, Users, Settings, LogOut, Lock, BarChart2, Image as ImageIcon } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useParams, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import type { RootState } from '../../store/index';
-import { addPoll, updatePoll, removePoll } from '../../store/slices/pollSlice';
-import { useSocket } from '../../hooks/useSocket';
-import { MessageService } from '../../api/workspace/message.service';
+import type { RootState } from '../../../store/index';
+import { addPoll, updatePoll, removePoll } from '../../../store/slices/pollSlice';
+import { useSocket } from '../../../hooks/useSocket';
+import { MessageService } from '../../../api/workspace/message.service';
 import { format } from 'date-fns';
 
-import { ChannelService } from '../../api/workspace/channel.service';
-import { useWorkspaceChannels, useChannelMembers } from '../../hooks/useChannels';
-import { useChannelMessages } from '../../hooks/useMessages';
-import { ChannelMembersModal } from '../../components/workspace/ChannelMembersModal';
-import { AddChannelMemberModal } from '../../components/workspace/AddChannelMemberModal';
-import { ChannelSettingsModal } from '../../components/workspace/ChannelSettingsModal';
-import type { MessageData, ChannelData } from '../../types/channel.types';
+import { ChannelService } from '../../../api/workspace/channel.service';
+import { useWorkspaceChannels, useChannelMembers } from '../../../hooks/useChannels';
+import { useChannelMessages } from '../../../hooks/useMessages';
+import { ChannelMembersSidebar } from '../../../components/workspace/ChannelMembersSidebar';
+import { AddChannelMemberModal } from '../../../components/workspace/AddChannelMemberModal';
+import { ChannelSettingsModal } from '../../../components/workspace/ChannelSettingsModal';
+import type { MessageData, ChannelData } from '../../../types/channel.types';
 import DOMPurify from 'dompurify';
 
 const renderMessageContent = (content: string) => {
@@ -28,8 +28,8 @@ const renderMessageContent = (content: string) => {
   const cleanHtml = DOMPurify.sanitize(html, { ALLOWED_TAGS: ['b', 'i', 'strong', 'em', 'br', 'div', 'span'] });
   return <div dangerouslySetInnerHTML={{ __html: cleanHtml }} />;
 };
-import { ChannelPollsList } from '../../components/polls/ChannelPollsList';
-import { CreatePollModal } from '../../components/polls/CreatePollModal';
+import { ChannelPollsList } from '../../../components/polls/ChannelPollsList';
+import { CreatePollModal } from '../../../components/polls/CreatePollModal';
 
 export const WorkspaceChannelPage = () => {
   const { workspaceId, channelId } = useParams<{ workspaceId: string, channelId: string }>();
@@ -54,14 +54,19 @@ export const WorkspaceChannelPage = () => {
   } = useChannelMessages(workspaceId, channelId);
 
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
-  const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
+  const [showMembersSidebar, setShowMembersSidebar] = useState(false);
   const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isCreatePollModalOpen, setIsCreatePollModalOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   const [isBoldActive, setIsBoldActive] = useState(false);
   const [isItalicActive, setIsItalicActive] = useState(false);
+
+  const [isUploading, setIsUploading] = useState(false);
+  const [attachedImageUrl, setAttachedImageUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (channels.length > 0 && channelId) {
@@ -194,19 +199,6 @@ export const WorkspaceChannelPage = () => {
           navigate(`/workspace/${workspaceId}/channels`);
         }, 2000);
       } else {
-        // Add system message for other members
-        const systemMessage: MessageData = {
-          id: `system-${Date.now()}`,
-          channelId: channelId,
-          senderId: 'system',
-          senderName: 'System',
-          content: `${data.userName} was removed from the channel by ${data.removedBy}`,
-          messageType: 'text',
-          createdAt: new Date().toISOString()
-        };
-
-        setMessages(prev => [...prev, systemMessage]);
-
         // Update channel members list
         refetchMembers();
 
@@ -265,11 +257,34 @@ export const WorkspaceChannelPage = () => {
     }
   };
 
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const { UploadService } = await import('../../../services/UploadService');
+      const res = await UploadService.uploadChatImage(file);
+      if (res.data?.data?.imageUrl) {
+        setAttachedImageUrl(res.data.data.imageUrl);
+      }
+    } catch (err) {
+      console.error('Failed to upload image', err);
+      import('react-hot-toast').then(m => m.default.error('Failed to upload image'));
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   const handleSendMessage = async () => {
-    if (!message.replace(/<[^>]+>/g, '').trim() || !workspaceId || !channelId || !user) return;
+    const isTextEmpty = !message.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim();
+    if ((isTextEmpty && !attachedImageUrl) || !workspaceId || !channelId || !user) return;
 
     try {
-      const res = await MessageService.sendMessage(workspaceId, channelId, message);
+      const msgType = attachedImageUrl ? 'image' : 'text';
+      const cleanMessage = isTextEmpty ? '' : message;
+      const res = await MessageService.sendMessage(workspaceId, channelId, cleanMessage, msgType, attachedImageUrl || undefined);
       const newMsg = res.data?.data;
 
       const newMsgObj = {
@@ -286,6 +301,7 @@ export const WorkspaceChannelPage = () => {
       if (textareaRef.current) {
         textareaRef.current.innerHTML = '';
       }
+      setAttachedImageUrl(null);
       setTypingUsers(prev => prev.filter(id => id !== user?.id));
 
       // Emit socket event
@@ -327,7 +343,21 @@ export const WorkspaceChannelPage = () => {
     setIsItalicActive(document.queryCommandState('italic'));
   };
 
-  if (!channelId) return <div className="p-8 text-center text-slate-500">Select a channel to start messaging</div>;
+  if (!channelId) {
+    return (
+      <WorkspaceLayout>
+        <div className="flex-1 flex items-center justify-center bg-slate-50 h-full">
+          <div className="text-center p-8 bg-white rounded-2xl shadow-sm border border-slate-100 max-w-md w-full mx-4">
+            <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Hash className="w-8 h-8" />
+            </div>
+            <h2 className="text-xl font-bold text-slate-800 mb-2">Welcome to Channels</h2>
+            <p className="text-sm text-slate-500">Select a channel from the sidebar to start messaging with your team.</p>
+          </div>
+        </div>
+      </WorkspaceLayout>
+    );
+  }
 
   return (
     <WorkspaceLayout>
@@ -396,7 +426,7 @@ export const WorkspaceChannelPage = () => {
                     </div>
                     <div className="py-1">
                       <button
-                        onClick={() => { setIsMembersModalOpen(true); setIsChannelDropdownOpen(false); }}
+                        onClick={() => { setShowMembersSidebar(true); setShowThread(false); setIsChannelDropdownOpen(false); }}
                         className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-2 transition-colors"
                       >
                         <Users className="w-4 h-4" /> View Members
@@ -478,10 +508,10 @@ export const WorkspaceChannelPage = () => {
               </div>
 
               <div className="flex items-center">
-                <button
-                  onClick={() => setIsMembersModalOpen(true)}
-                  className="flex -space-x-2 hover:opacity-80 transition-opacity cursor-pointer"
-                  title="View channel members"
+                <div
+                  onClick={() => { setShowMembersSidebar(true); setShowThread(false); }}
+                  className="flex items-center cursor-pointer hover:bg-slate-50 p-1.5 rounded-lg transition-colors border border-transparent hover:border-slate-200"
+                  title="View Channel Members"
                 >
                   {channelMembers.slice(0, 3).map((member, index) => {
                     const bgColors = ['bg-blue-100 text-blue-700', 'bg-indigo-100 text-indigo-700', 'bg-orange-100 text-orange-700'];
@@ -509,7 +539,7 @@ export const WorkspaceChannelPage = () => {
                       0
                     </div>
                   )}
-                </button>
+                </div>
               </div>
             </div>
           </header>
@@ -601,7 +631,7 @@ export const WorkspaceChannelPage = () => {
                 {messages.map((msg) => {
                   const isMe = msg.senderId === user?.id;
                   const senderInitial = msg.senderName?.[0]?.toUpperCase() || 'U';
-                  const isSystemMessage = msg.senderId === 'system';
+                  const isSystemMessage = msg.messageType === 'system';
 
                   // Get profile image from member map or use current user's image
                   const senderImage = isMe
@@ -611,8 +641,8 @@ export const WorkspaceChannelPage = () => {
                   // System message (member removed, etc.)
                   if (isSystemMessage) {
                     return (
-                      <div key={msg.id || msg._id as string} className="flex justify-center">
-                        <div className="bg-orange-50 border border-orange-200 text-orange-800 text-sm px-4 py-2 rounded-full max-w-[80%] text-center">
+                      <div key={msg.id || msg._id as string} className="flex justify-center my-3">
+                        <div className="text-slate-400 text-xs text-center px-3 py-1 font-medium bg-slate-50/80 rounded-full border border-slate-100">
                           {msg.content}
                         </div>
                       </div>
@@ -639,11 +669,21 @@ export const WorkspaceChannelPage = () => {
                             {msg.createdAt ? format(new Date(msg.createdAt), 'h:mm a') : 'Now'}
                           </span>
                         </div>
-                        <div className={`text-[15px] leading-relaxed whitespace-pre-wrap px-4 py-2.5 max-w-[85%] shadow-sm ${isMe
-                          ? 'bg-indigo-500 text-white rounded-2xl rounded-tr-sm shadow-indigo-500/20'
-                          : 'bg-white border border-slate-200 text-slate-700 rounded-2xl rounded-tl-sm'
+                        <div className={`text-[15px] leading-relaxed whitespace-pre-wrap max-w-[85%] ${msg.messageType === 'image' && !msg.content?.trim()
+                          ? 'bg-transparent shadow-none'
+                          : isMe
+                            ? 'bg-indigo-500 text-white rounded-2xl rounded-tr-sm shadow-indigo-500/20 shadow-sm px-4 py-2.5'
+                            : 'bg-white border border-slate-200 text-slate-700 rounded-2xl rounded-tl-sm shadow-sm px-4 py-2.5'
                           }`}>
-                          {renderMessageContent(msg.content)}
+                          {msg.messageType === 'image' && msg.imageUrl ? (
+                            <img
+                              src={msg.imageUrl}
+                              alt="Message attachment"
+                              className={`rounded-lg max-w-full max-h-[300px] object-contain cursor-pointer hover:opacity-90 transition-opacity border border-slate-200/50 ${msg.content?.trim() ? 'mb-2' : ''}`}
+                              onClick={() => setSelectedImage(msg.imageUrl!)}
+                            />
+                          ) : null}
+                          {msg.content && renderMessageContent(msg.content)}
                         </div>
                       </div>
                     </div>
@@ -666,6 +706,24 @@ export const WorkspaceChannelPage = () => {
                     <button className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full hover:bg-indigo-100 transition-colors shadow-sm">@schedule</button>
                     <button className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full hover:bg-indigo-100 transition-colors shadow-sm">@summary</button>
                   </div>
+
+                  <input type="file" ref={fileInputRef} hidden onChange={handleFileSelect} accept="image/*" />
+
+                  {isUploading && (
+                    <div className="px-4 py-3 text-sm text-slate-500">Uploading image...</div>
+                  )}
+
+                  {attachedImageUrl && (
+                    <div className="px-4 py-3 relative inline-block">
+                      <img src={attachedImageUrl} alt="Attachment preview" className="h-32 rounded-lg object-cover border border-slate-200" />
+                      <button
+                        onClick={() => setAttachedImageUrl(null)}
+                        className="absolute top-4 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-sm"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
 
                   <div
                     ref={textareaRef}
@@ -703,6 +761,9 @@ export const WorkspaceChannelPage = () => {
                             <EmojiPicker
                               onEmojiClick={(emojiData) => {
                                 setMessage(prev => prev + emojiData.emoji);
+                                if (textareaRef.current) {
+                                  textareaRef.current.innerHTML += emojiData.emoji;
+                                }
                                 setShowEmojiPicker(false);
                               }}
                               width={320}
@@ -722,13 +783,13 @@ export const WorkspaceChannelPage = () => {
                       >
                         <BarChart2 className="w-4 h-4" />
                       </button>
-                      <button className="p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-700 rounded-lg transition-colors" title="Add Attachment"><Plus className="w-4 h-4" /></button>
+                      <button onClick={() => fileInputRef.current?.click()} className="p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-700 rounded-lg transition-colors" title="Add Image"><ImageIcon className="w-4 h-4" /></button>
                     </div>
 
                     <button
                       onClick={handleSendMessage}
-                      disabled={!message.replace(/<[^>]+>/g, '').trim()}
-                      className={`p-2 rounded-xl flex items-center justify-center transition-all ${message.replace(/<[^>]+>/g, '').trim()
+                      disabled={(!message.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim() && !attachedImageUrl) || isUploading}
+                      className={`p-2 rounded-xl flex items-center justify-center transition-all ${message.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim() || attachedImageUrl
                         ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5'
                         : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                         }`}
@@ -741,6 +802,36 @@ export const WorkspaceChannelPage = () => {
             </>
           )}
         </div>
+
+        {showMembersSidebar && (
+          <ChannelMembersSidebar
+            isOpen={showMembersSidebar}
+            onClose={() => setShowMembersSidebar(false)}
+            workspaceId={workspaceId}
+            channelId={channelId}
+            channelName={currentChannel?.name || 'channel'}
+            channelCreatorId={currentChannel?.createdBy}
+            channelPrivacy={currentChannel?.privacy}
+            onOpenAddMember={() => setIsAddMemberModalOpen(true)}
+            onMemberRemoved={() => {
+              if (workspaceId && channelId) {
+                ChannelService.getMembers(workspaceId, channelId)
+                  .then(res => {
+                    const members = res.data?.data || [];
+                    setChannelMembers(members);
+                    const imageMap: Record<string, string> = {};
+                    members.forEach((member: { userId: string; user?: { profileImage?: string } }) => {
+                      if (member.user?.profileImage) {
+                        imageMap[member.userId] = member.user.profileImage;
+                      }
+                    });
+                    setMemberImagesMap(imageMap);
+                  })
+                  .catch(err => console.error('Failed to refresh channel members', err));
+              }
+            }}
+          />
+        )}
 
         {showThread && (
           <div className="w-[320px] md:w-[380px] bg-white flex flex-col shrink-0 border-l border-slate-200 shadow-[-10px_0_15px_-10px_rgba(0,0,0,0.05)] relative z-10">
@@ -847,37 +938,6 @@ export const WorkspaceChannelPage = () => {
       {/* Modals */}
       {workspaceId && channelId && (
         <>
-          <ChannelMembersModal
-            isOpen={isMembersModalOpen}
-            onClose={() => {
-              setIsMembersModalOpen(false);
-            }}
-            workspaceId={workspaceId}
-            channelId={channelId}
-            channelCreatorId={currentChannel?.createdBy}
-            channelPrivacy={currentChannel?.privacy}
-            onOpenAddMember={() => setIsAddMemberModalOpen(true)}
-            onMemberRemoved={() => {
-              // Refresh channel members when someone is removed
-              if (workspaceId && channelId) {
-                ChannelService.getMembers(workspaceId, channelId)
-                  .then(res => {
-                    const members = res.data?.data || [];
-                    setChannelMembers(members);
-
-                    // Update member images map
-                    const imageMap: Record<string, string> = {};
-                    members.forEach((member: { userId: string; user?: { profileImage?: string } }) => {
-                      if (member.user?.profileImage) {
-                        imageMap[member.userId] = member.user.profileImage;
-                      }
-                    });
-                    setMemberImagesMap(imageMap);
-                  })
-                  .catch(err => console.error('Failed to refresh channel members', err));
-              }
-            }}
-          />
 
           <AddChannelMemberModal
             isOpen={isAddMemberModalOpen}
@@ -908,6 +968,29 @@ export const WorkspaceChannelPage = () => {
           />
         </>
       )}
+      {/* Image Viewer Modal */}
+      {selectedImage && (
+        <div
+          className="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-4 cursor-zoom-out"
+          onClick={() => setSelectedImage(null)}
+        >
+          <div className="relative max-w-5xl max-h-screen w-full h-full flex items-center justify-center">
+            <button
+              onClick={() => setSelectedImage(null)}
+              className="absolute top-4 right-4 p-2 bg-slate-800/50 hover:bg-slate-800 text-white rounded-full transition-colors cursor-pointer"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <img
+              src={selectedImage}
+              alt="Full size attachment"
+              className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl cursor-default"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
+
     </WorkspaceLayout>
   );
 };

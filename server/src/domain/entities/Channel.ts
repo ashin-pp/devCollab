@@ -11,7 +11,7 @@ export class Channel {
         public id?: string,
         public isMember?: boolean,
         public hasPendingRequest?: boolean
-    ) {}
+    ) { }
 
     public archive(): void {
         this.isActive = false;

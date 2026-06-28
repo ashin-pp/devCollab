@@ -18,6 +18,7 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClos
   const [question, setQuestion] = useState('');
   const [options, setOptions] = useState(['', '']);
   const [expiresAt, setExpiresAt] = useState('');
+  const [startsAt, setStartsAt] = useState('');
   const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
@@ -58,6 +59,11 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClos
       return;
     }
 
+    if (startsAt && expiresAt && new Date(startsAt).getTime() >= new Date(expiresAt).getTime()) {
+      toast.error('Expiry time must be after start time');
+      return;
+    }
+
     try {
       setLoading(true);
       const poll = await pollApi.create({
@@ -65,6 +71,7 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClos
         channelId,
         question: question.trim(),
         options: validOptions,
+        startsAt: startsAt ? new Date(startsAt).toISOString() : undefined,
         expiresAt: expiresAt ? new Date(expiresAt).toISOString() : undefined,
       });
       
@@ -72,6 +79,7 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClos
       toast.success('Poll created successfully');
       setQuestion('');
       setOptions(['', '']);
+      setStartsAt('');
       setExpiresAt('');
       onClose();
     } catch (error: unknown) {
@@ -83,20 +91,27 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClos
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Create {channelId ? 'Channel ' : ''}Poll
-          </h2>
-          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-500 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-slate-200/60 relative">
+        {/* Subtle background glow */}
+        <div className="absolute top-0 right-0 w-48 h-48 bg-blue-50 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2"></div>
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-50 rounded-full blur-3xl pointer-events-none translate-y-1/2 -translate-x-1/2"></div>
+
+        <div className="flex items-center justify-between p-6 border-b border-slate-100 relative z-10 bg-white/80 backdrop-blur-sm">
+          <div>
+            <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
+              Create {channelId ? 'Channel ' : ''}Poll
+            </h2>
+            <p className="text-xs text-slate-500 font-medium mt-1">Ask a question and gather feedback</p>
+          </div>
+          <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 transition-colors rounded-full hover:bg-slate-50 border border-transparent hover:border-slate-100">
             <X className="w-5 h-5" />
           </button>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-6 relative z-10">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-bold text-slate-800 mb-2">
               Question
             </label>
             <input
@@ -104,72 +119,91 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClos
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               placeholder="What would you like to ask?"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white sm:text-sm transition-colors"
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl shadow-sm focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm font-medium text-slate-900 transition-all outline-none placeholder:text-slate-400"
             />
           </div>
 
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <div className="space-y-3">
+            <label className="block text-sm font-bold text-slate-800 mb-1">
               Options
             </label>
-            {options.map((option, index) => (
-              <div key={index} className="flex gap-2">
-                <input
-                  type="text"
-                  value={option}
-                  onChange={(e) => handleOptionChange(index, e.target.value)}
-                  placeholder={`Option ${index + 1}`}
-                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white sm:text-sm transition-colors"
-                />
-                {options.length > 2 && (
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveOption(index)}
-                    className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
-                )}
-              </div>
-            ))}
+            <div className="space-y-2">
+              {options.map((option, index) => (
+                <div key={index} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={option}
+                    onChange={(e) => handleOptionChange(index, e.target.value)}
+                    placeholder={`Option ${index + 1}`}
+                    className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl shadow-sm focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm font-medium text-slate-900 transition-all outline-none placeholder:text-slate-400"
+                  />
+                  {options.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveOption(index)}
+                      className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors border border-transparent hover:border-red-100"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
             
             {options.length < 10 && (
               <button
                 type="button"
                 onClick={handleAddOption}
-                className="flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"
+                className="flex items-center text-sm font-bold text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors mt-2"
               >
-                <Plus className="w-4 h-4 mr-1" />
+                <Plus className="w-4 h-4 mr-1.5" />
                 Add another option
               </button>
             )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Expiry Time (Optional)
-            </label>
-            <input
-              type="datetime-local"
-              value={expiresAt}
-              min={new Date().toISOString().slice(0, 16)}
-              onChange={(e) => setExpiresAt(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white sm:text-sm transition-colors"
-            />
+          <div className={`grid gap-4 ${!channelId ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            {!channelId && (
+              <div>
+                <label className="block text-sm font-bold text-slate-800 mb-2">
+                  Start Time <span className="text-slate-400 font-medium">(Optional)</span>
+                </label>
+                <input
+                  type="datetime-local"
+                  value={startsAt}
+                  min={new Date().toISOString().slice(0, 16)}
+                  onChange={(e) => setStartsAt(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl shadow-sm focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm font-medium text-slate-900 transition-all outline-none"
+                />
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-bold text-slate-800 mb-2">
+                Expiry Time <span className="text-slate-400 font-medium">(Optional)</span>
+              </label>
+              <input
+                type="datetime-local"
+                value={expiresAt}
+                min={startsAt || new Date().toISOString().slice(0, 16)}
+                onChange={(e) => setExpiresAt(e.target.value)}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl shadow-sm focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm font-medium text-slate-900 transition-all outline-none"
+              />
+            </div>
           </div>
 
-          <div className="pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
+          <div className="pt-6 border-t border-slate-100 flex justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600 transition-colors"
+              className="px-5 py-2.5 text-sm font-bold text-slate-600 bg-white border border-slate-200 rounded-xl shadow-sm hover:bg-slate-50 hover:text-slate-800 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-lg shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-6 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 border border-transparent rounded-xl shadow-md hover:shadow-lg hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               {loading ? 'Creating...' : 'Create Poll'}
             </button>

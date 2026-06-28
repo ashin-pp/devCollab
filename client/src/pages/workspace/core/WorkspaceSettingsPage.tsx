@@ -1,15 +1,15 @@
-import { WorkspaceLayout } from '../../layouts/WorkspaceLayout';
+import { WorkspaceLayout } from '../../../layouts/WorkspaceLayout';
 import { Settings, Users, Hash, BarChart3, AlertCircle, Download, Copy, RefreshCw, Trash2, ArrowRight } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import type { RootState } from '../../store';
-import { WorkspaceService } from '../../api/workspace/workspace.service';
-import { ChannelService } from '../../api/workspace/channel.service';
+import type { RootState } from '../../../store';
+import { WorkspaceService } from '../../../api/workspace/workspace.service';
+import { ChannelService } from '../../../api/workspace/channel.service';
 import Swal from 'sweetalert2';
 import toast from 'react-hot-toast';
 
-import type { WorkspaceData, MemberData } from '../../types/workspace.types';
+import type { WorkspaceData, MemberData } from '../../../types/workspace.types';
 
 export const WorkspaceSettingsPage = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>();

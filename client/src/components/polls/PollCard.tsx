@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { VotedMembersModal } from './VotedMembersModal';
 import type { Poll } from '../../types/poll';
 import { useDispatch, useSelector } from 'react-redux';
 import type { AppDispatch, RootState } from '../../store';
@@ -16,6 +17,7 @@ export const PollCard: React.FC<PollCardProps> = ({ poll, compact = false }) => 
   const dispatch = useDispatch<AppDispatch>();
   const user = useSelector((state: RootState) => state.auth.user);
   const userId = user?.id;
+  const [showVotersModal, setShowVotersModal] = useState(false);
 
   const totalVotes = poll.options.reduce((acc, curr) => acc + curr.votes.length, 0);
   const userVotedOption = poll.options.find(opt => opt.votes.includes(userId || ''));
@@ -137,6 +139,24 @@ export const PollCard: React.FC<PollCardProps> = ({ poll, compact = false }) => 
             Poll closed
           </p>
         )}
+
+        {totalVotes > 0 && (
+          <div className="mt-3 flex justify-center border-t border-gray-100 dark:border-gray-700 pt-3">
+            <button 
+              onClick={(e) => { e.stopPropagation(); setShowVotersModal(true); }}
+              className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"
+            >
+              View Voted Members
+            </button>
+          </div>
+        )}
+
+        {showVotersModal && (
+          <VotedMembersModal 
+            poll={poll} 
+            onClose={() => setShowVotersModal(false)} 
+          />
+        )}
       </div>
     );
   }
@@ -220,6 +240,24 @@ export const PollCard: React.FC<PollCardProps> = ({ poll, compact = false }) => 
           );
         })}
       </div>
+
+      {totalVotes > 0 && (
+        <div className="mt-6 flex justify-end">
+          <button 
+            onClick={(e) => { e.stopPropagation(); setShowVotersModal(true); }}
+            className="text-sm font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors bg-indigo-50 dark:bg-indigo-900/30 px-4 py-2 rounded-lg"
+          >
+            View Voted Members
+          </button>
+        </div>
+      )}
+
+      {showVotersModal && (
+        <VotedMembersModal 
+          poll={poll} 
+          onClose={() => setShowVotersModal(false)} 
+        />
+      )}
     </div>
   );
 };

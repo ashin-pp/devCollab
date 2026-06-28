@@ -18,6 +18,7 @@ import { SuccessMessage } from "../../domain/enums/SuccessMessage";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 import { AppError } from "../../domain/errors/AppError";
 import { ErrorMessage } from "../../domain/enums/ErrorMessage";
+import { SocketService } from "../../infra/socket/SocketService";
 
 import { SendWorkspaceInviteUseCase } from "../../application/use-cases/workspace/SendWorkspaceInviteUseCase";
 
@@ -175,6 +176,15 @@ export class WorkspaceController {
             }
 
             await this.removeWorkspaceMemberUseCase.execute(workspaceId, userId, targetUserId);
+            
+            const io = SocketService.getInstance()?.getIO();
+            if (io) {
+                io.to(`workspace:${workspaceId}`).emit('workspace_member_removed', {
+                    userId: targetUserId,
+                    workspaceId: workspaceId
+                });
+            }
+
             const response = ApiResponse.success("Member removed successfully");
             
             res.status(HttpStatusCode.OK).json(response);

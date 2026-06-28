@@ -25,5 +25,10 @@ export const pollApi = {
 
   delete: async (pollId: string): Promise<void> => {
     await api.delete(`${API_ENDPOINTS.POLLS.CREATE}/${pollId}`);
+  },
+
+  close: async (pollId: string): Promise<Poll> => {
+    const response = await api.patch(`${API_ENDPOINTS.POLLS.CREATE}/${pollId}/close`);
+    return response.data.data;
   }
 };

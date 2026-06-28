@@ -14,6 +14,9 @@ router.delete('/:workspaceId/channels/:channelId', authMiddleware, channelContro
 router.get('/:workspaceId/channels/:channelId/members', authMiddleware, channelController.getChannelMembers);
 router.post('/:workspaceId/channels/:channelId/members', authMiddleware, channelController.addChannelMembers);
 router.delete('/:workspaceId/channels/:channelId/members/:memberId', authMiddleware, channelController.removeChannelMember);
+router.patch('/:workspaceId/channels/:channelId/members/:memberId/block', authMiddleware, channelController.blockChannelMember);
+router.patch('/:workspaceId/channels/:channelId/members/:memberId/unblock', authMiddleware, channelController.unblockChannelMember);
+router.get('/:workspaceId/channels/:channelId/blocked', authMiddleware, channelController.getBlockedChannelMembers);
 router.post('/:workspaceId/channels/:channelId/leave', authMiddleware, channelController.leaveChannel);
 router.post('/:workspaceId/channels/:channelId/join', authMiddleware, channelController.joinChannel);
 router.get('/:workspaceId/channels/:channelId/requests', authMiddleware, channelController.getChannelRequests);

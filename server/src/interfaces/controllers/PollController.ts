@@ -4,6 +4,7 @@ import { VotePollUseCase } from "../../application/use-cases/poll/VotePollUseCas
 import { GetWorkspacePollsUseCase } from "../../application/use-cases/poll/GetWorkspacePollsUseCase";
 import { GetChannelPollsUseCase } from "../../application/use-cases/poll/GetChannelPollsUseCase";
 import { DeletePollUseCase } from "../../application/use-cases/poll/DeletePollUseCase";
+import { ClosePollUseCase } from "../../application/use-cases/poll/ClosePollUseCase";
 import { ApiResponse } from "../http/helpers/implementation/apiResponse";
 import { HttpStatusCode } from "../../domain/enums/HttpStatusCode";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
@@ -17,7 +18,8 @@ export class PollController {
         private readonly votePollUseCase: VotePollUseCase,
         private readonly getWorkspacePollsUseCase: GetWorkspacePollsUseCase,
         private readonly getChannelPollsUseCase: GetChannelPollsUseCase,
-        private readonly deletePollUseCase: DeletePollUseCase
+        private readonly deletePollUseCase: DeletePollUseCase,
+        private readonly closePollUseCase: ClosePollUseCase
     ) {}
 
     public create = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
@@ -27,7 +29,7 @@ export class PollController {
                 throw new AppError(ErrorMessage.UNAUTHORIZED, HttpStatusCode.UNAUTHORIZED);
             }
 
-            const { workspaceId, channelId, question, options, expiresAt } = req.body;
+            const { workspaceId, channelId, question, options, expiresAt, startsAt } = req.body;
             
             const pollData = {
                 workspaceId,
@@ -35,7 +37,8 @@ export class PollController {
                 question,
                 options,
                 createdBy: userId,
-                expiresAt
+                expiresAt,
+                startsAt
             };
             
             const poll = await this.createPollUseCase.execute(pollData);
@@ -132,6 +135,34 @@ export class PollController {
             }
 
             const response = ApiResponse.success("Poll deleted successfully", null);
+            res.status(HttpStatusCode.OK).json(response);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    public close = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const userId = req.user?.id;
+            if (!userId) {
+                throw new AppError(ErrorMessage.UNAUTHORIZED, HttpStatusCode.UNAUTHORIZED);
+            }
+
+            const pollId = req.params.id as string;
+
+            const poll = await this.closePollUseCase.execute(pollId, userId);
+            
+            // Emit socket event 
+            const io = SocketService.getInstance()?.getIO();
+            if (io) {
+                if (poll.channelId) {
+                    io.to(`channel:${poll.channelId}`).emit('poll_updated', poll);
+                } else {
+                    io.to(`workspace:${poll.workspaceId}`).emit('poll_updated', poll);
+                }
+            }
+
+            const response = ApiResponse.success("Poll closed successfully", poll);
             res.status(HttpStatusCode.OK).json(response);
         } catch (error) {
             next(error);

@@ -1,19 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { WorkspaceLayout } from '../../layouts/WorkspaceLayout';
+import { WorkspaceLayout } from '../../../layouts/WorkspaceLayout';
 import { 
   ArrowLeft, Mail, Calendar, Shield, User, MapPin, Phone, Globe, 
   MessageCircle, MoreHorizontal,
   Activity, Loader2, Code, Briefcase, ExternalLink
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
-import type { RootState } from '../../store/index';
-import { WorkspaceService } from '../../api/workspace/workspace.service';
+import type { RootState } from '../../../store/index';
+import { WorkspaceService } from '../../../api/workspace/workspace.service';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 
-import type { MemberData } from '../../types/workspace.types';
+import type { MemberData } from '../../../types/workspace.types';
 
 export const MemberProfilePage = () => {
   const { workspaceId, userId } = useParams<{ workspaceId: string; userId: string }>();
@@ -135,7 +135,7 @@ export const MemberProfilePage = () => {
   const handleStartDM = async () => {
     if (!workspaceId || !userId) return;
     try {
-      const { DMService } = await import('../../api/dm/dm.service');
+      const { DMService } = await import('../../../api/dm/dm.service');
       const res = await DMService.startConversation(workspaceId, userId);
       const conversation = res.data?.data;
       navigate(`/workspace/${workspaceId}/dm/${conversation.id}`);

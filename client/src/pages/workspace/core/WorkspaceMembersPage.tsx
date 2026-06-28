@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { WorkspaceService } from '../../api/workspace/workspace.service';
-import { WorkspaceLayout } from '../../layouts/WorkspaceLayout';
+import { WorkspaceService } from '../../../api/workspace/workspace.service';
+import { WorkspaceLayout } from '../../../layouts/WorkspaceLayout';
 import { Users, UserCheck, UserX, Clock, Loader2, Search } from 'lucide-react';
 import { useSelector } from 'react-redux';
-import type { RootState } from '../../store/index';
+import type { RootState } from '../../../store/index';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 
-import type { MemberData } from '../../types/workspace.types';
+import type { MemberData } from '../../../types/workspace.types';
 
 export const WorkspaceMembersPage = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>();

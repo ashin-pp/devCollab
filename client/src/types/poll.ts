@@ -13,6 +13,7 @@ export interface Poll {
   createdBy: string;
   isActive: boolean;
   expiresAt?: string;
+  startsAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -23,4 +24,5 @@ export interface CreatePollData {
   question: string;
   options: string[];
   expiresAt?: string;
+  startsAt?: string;
 }

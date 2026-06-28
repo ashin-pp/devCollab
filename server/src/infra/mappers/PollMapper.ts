@@ -17,6 +17,7 @@ export class PollMapper implements IMapper<Poll, IPollDocument> {
             persistence.is_active,
             persistence.channel_id?.toString(),
             persistence.expires_at,
+            persistence.starts_at,
             persistence._id ? persistence._id.toString() : undefined,
             persistence.created_at,
             persistence.updated_at
@@ -36,6 +37,7 @@ export class PollMapper implements IMapper<Poll, IPollDocument> {
             created_by: domain.createdBy ? new mongoose.Types.ObjectId(domain.createdBy) : undefined,
             is_active: domain.isActive,
             expires_at: domain.expiresAt,
+            starts_at: domain.startsAt,
         };
 
         return Object.fromEntries(

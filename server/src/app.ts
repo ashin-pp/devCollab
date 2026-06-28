@@ -7,6 +7,7 @@ import workspaceRoutes from "./interfaces/routes/workspace.routes";
 import channelRoutes from "./interfaces/routes/channel.routes";
 import dmRoutes from "./interfaces/routes/dm.routes";
 import pollRoutes from "./interfaces/routes/poll.routes";
+import uploadRoutes from "./interfaces/routes/upload.routes";
 import { errorHandler } from "./interfaces/middlewares/errorHandler";
 import { SuccessMessage } from "./domain/enums/SuccessMessage";
 import { envConfig } from "./infra/config/envConfig";
@@ -35,6 +36,7 @@ app.use("/api/workspaces", workspaceRoutes);
 app.use("/api/workspaces", channelRoutes);
 app.use("/api", dmRoutes);
 app.use("/api/polls", pollRoutes);
+app.use("/api/upload", uploadRoutes);
 
 app.get("/", (req, res) => {
     const responsePayload = ApiResponse.success(SuccessMessage.API_RUNNING);

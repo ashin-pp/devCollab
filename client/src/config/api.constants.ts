@@ -46,13 +46,17 @@ export const API_ENDPOINTS = {
     LIST: (workspaceId: string) => `/workspaces/${workspaceId}/channels`,
     DETAIL: (workspaceId: string, channelId: string) => `/workspaces/${workspaceId}/channels/${channelId}`,
     MEMBERS: (workspaceId: string, channelId: string) => `/workspaces/${workspaceId}/channels/${channelId}/members`,
+    BLOCKED_MEMBERS: (workspaceId: string, channelId: string) => `/workspaces/${workspaceId}/channels/${channelId}/blocked`,
     MEMBER: (workspaceId: string, channelId: string, memberId: string) => `/workspaces/${workspaceId}/channels/${channelId}/members/${memberId}`,
+    BLOCK_MEMBER: (workspaceId: string, channelId: string, memberId: string) => `/workspaces/${workspaceId}/channels/${channelId}/members/${memberId}/block`,
+    UNBLOCK_MEMBER: (workspaceId: string, channelId: string, memberId: string) => `/workspaces/${workspaceId}/channels/${channelId}/members/${memberId}/unblock`,
     LEAVE: (workspaceId: string, channelId: string) => `/workspaces/${workspaceId}/channels/${channelId}/leave`,
     JOIN: (workspaceId: string, channelId: string) => `/workspaces/${workspaceId}/channels/${channelId}/join`,
     REQUESTS: (workspaceId: string, channelId: string) => `/workspaces/${workspaceId}/channels/${channelId}/requests`,
     REQUEST: (workspaceId: string, channelId: string, userId: string) => `/workspaces/${workspaceId}/channels/${channelId}/requests/${userId}`,
     READ: (workspaceId: string, channelId: string) => `/workspaces/${workspaceId}/channels/${channelId}/read`,
     UNREAD_COUNTS: (workspaceId: string) => `/workspaces/${workspaceId}/channels/unread-counts`,
+    DM_UNREAD_COUNTS: (workspaceId: string) => `/workspaces/${workspaceId}/dm/unread-counts`,
     MESSAGES: (workspaceId: string, channelId: string) => `/workspaces/${workspaceId}/channels/${channelId}/messages`,
   },
 
@@ -86,5 +90,10 @@ export const API_ENDPOINTS = {
     VOTE: (pollId: string) => `/polls/${pollId}/vote`,
     WORKSPACE: (workspaceId: string) => `/polls/workspace/${workspaceId}`,
     CHANNEL: (channelId: string) => `/polls/channel/${channelId}`,
+  },
+
+  // Upload endpoints
+  UPLOAD: {
+    IMAGE: '/upload/image',
   },
 };

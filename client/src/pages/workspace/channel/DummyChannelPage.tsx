@@ -1,4 +1,4 @@
-import { WorkspaceLayout } from '../../layouts/WorkspaceLayout';
+import { WorkspaceLayout } from '../../../layouts/WorkspaceLayout';
 import { MessageSquare } from "lucide-react";
 
 export const DummyChannelPage = () => {

@@ -5,7 +5,8 @@ export interface MessageData {
   senderName?: string;
   senderImage?: string;
   content: string;
-  messageType: 'text' | 'image';
+  messageType: 'text' | 'image' | 'system';
+  imageUrl?: string;
   createdAt: string;
   [key: string]: unknown;
 }

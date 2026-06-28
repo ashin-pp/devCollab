@@ -14,6 +14,7 @@ export interface IPollDocument extends Document {
     created_by: mongoose.Types.ObjectId;
     is_active: boolean;
     expires_at?: Date;
+    starts_at?: Date;
     created_at: Date;
     updated_at: Date;
 }
@@ -30,7 +31,8 @@ const pollSchema = new Schema({
     options: [pollOptionSchema],
     created_by: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     is_active: { type: Boolean, default: true },
-    expires_at: { type: Date }
+    expires_at: { type: Date },
+    starts_at: { type: Date }
 }, {
     timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
 });

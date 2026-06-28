@@ -23,6 +23,15 @@ export const ChannelService = {
     removeMember: (workspaceId: string, channelId: string, memberId: string) => {
         return api.delete(API_ENDPOINTS.CHANNELS.MEMBER(workspaceId, channelId, memberId));
     },
+    blockMember: (workspaceId: string, channelId: string, memberId: string) => {
+        return api.patch(API_ENDPOINTS.CHANNELS.BLOCK_MEMBER(workspaceId, channelId, memberId));
+    },
+    unblockMember: (workspaceId: string, channelId: string, memberId: string) => {
+        return api.patch(API_ENDPOINTS.CHANNELS.UNBLOCK_MEMBER(workspaceId, channelId, memberId));
+    },
+    getBlockedMembers: (workspaceId: string, channelId: string) => {
+        return api.get(API_ENDPOINTS.CHANNELS.BLOCKED_MEMBERS(workspaceId, channelId));
+    },
     leaveChannel: (workspaceId: string, channelId: string) => {
         return api.post(API_ENDPOINTS.CHANNELS.LEAVE(workspaceId, channelId));
     },

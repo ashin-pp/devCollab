@@ -40,6 +40,8 @@ import { ChangePasswordUseCase } from "../application/use-cases/user/ChangePassw
 import { RequestEmailChangeUseCase } from "../application/use-cases/user/RequestEmailChangeUseCase";
 import { VerifyEmailChangeUseCase } from "../application/use-cases/user/VerifyEmailChangeUseCase";
 import { UploadProfileImageUseCase } from "../application/use-cases/user/UploadProfileImageUseCase";
+import { UploadChatImageUseCase } from "../application/use-cases/chat/UploadChatImageUseCase";
+import { UploadController } from "../interfaces/controllers/UploadController";
 import { DeleteProfileImageUseCase } from "../application/use-cases/user/DeleteProfileImageUseCase";
 import { SearchUserByEmailUseCase } from "../application/use-cases/user/SearchUserByEmailUseCase";
 import { UserController } from "../interfaces/controllers/UserController";
@@ -79,8 +81,11 @@ import { CreateChannelUseCase } from "../application/use-cases/channel/CreateCha
 import { GetWorkspaceChannelsUseCase } from "../application/use-cases/channel/GetWorkspaceChannelsUseCase";
 import { GetChannelMembersUseCase } from "../application/use-cases/channel/GetChannelMembersUseCase";
 import { AddChannelMemberUseCase } from "../application/use-cases/channel/AddChannelMemberUseCase";
-import { RemoveChannelMemberUseCase } from "../application/use-cases/channel/RemoveChannelMemberUseCase";
-import { UpdateChannelUseCase } from "../application/use-cases/channel/UpdateChannelUseCase";
+import { RemoveChannelMemberUseCase } from '../application/use-cases/channel/RemoveChannelMemberUseCase';
+import { BlockChannelMemberUseCase } from '../application/use-cases/channel/BlockChannelMemberUseCase';
+import { GetBlockedChannelMembersUseCase } from '../application/use-cases/channel/GetBlockedChannelMembersUseCase';
+import { UnblockChannelMemberUseCase } from '../application/use-cases/channel/UnblockChannelMemberUseCase';
+import { UpdateChannelUseCase } from '../application/use-cases/channel/UpdateChannelUseCase';
 import { LeaveChannelUseCase } from "../application/use-cases/channel/LeaveChannelUseCase";
 import { DeleteChannelUseCase } from "../application/use-cases/channel/DeleteChannelUseCase";
 import { JoinChannelUseCase } from "../application/use-cases/channel/JoinChannelUseCase";
@@ -100,6 +105,7 @@ import { VotePollUseCase } from "../application/use-cases/poll/VotePollUseCase";
 import { GetWorkspacePollsUseCase } from "../application/use-cases/poll/GetWorkspacePollsUseCase";
 import { GetChannelPollsUseCase } from "../application/use-cases/poll/GetChannelPollsUseCase";
 import { DeletePollUseCase } from "../application/use-cases/poll/DeletePollUseCase";
+import { ClosePollUseCase } from "../application/use-cases/poll/ClosePollUseCase";
 import { PollController } from "../interfaces/controllers/PollController";
 
 // ============================================================================
@@ -177,8 +183,9 @@ const changePasswordUseCase = new ChangePasswordUseCase(userRepository, hashServ
 const requestEmailChangeUseCase = new RequestEmailChangeUseCase(userRepository, otpRepository, emailService);
 const verifyEmailChangeUseCase = new VerifyEmailChangeUseCase(userRepository, otpRepository);
 const uploadProfileImageUseCase = new UploadProfileImageUseCase(userRepository, cloudinaryStorageService);
+const uploadChatImageUseCase = new UploadChatImageUseCase(cloudinaryStorageService);
 const deleteProfileImageUseCase = new DeleteProfileImageUseCase(userRepository, cloudinaryStorageService);
-const searchUserByEmailUseCase = new SearchUserByEmailUseCase(userRepository);
+const searchUsersByEmailUseCase = new SearchUserByEmailUseCase(userRepository);
 
 const userController = new UserController(
     getUserProfileUseCase,
@@ -188,8 +195,10 @@ const userController = new UserController(
     verifyEmailChangeUseCase,
     uploadProfileImageUseCase,
     deleteProfileImageUseCase,
-    searchUserByEmailUseCase
+    searchUsersByEmailUseCase
 );
+
+const uploadController = new UploadController(uploadChatImageUseCase);
 
 // Workspace Use Cases
 const createWorkspaceUseCase = new CreateWorkspaceUseCase(workspaceRepository, workspaceMemberRepository);
@@ -199,7 +208,18 @@ const getPublicWorkspacesUseCase = new GetPublicWorkspacesUseCase(workspaceRepos
 const verifyInviteCodeUseCase = new VerifyInviteCodeUseCase(workspaceRepository);
 const getWorkspaceMembersUseCase = new GetWorkspaceMembersUseCase(workspaceRepository, workspaceMemberRepository, userRepository);
 const handleJoinRequestUseCase = new HandleJoinRequestUseCase(workspaceRepository, workspaceMemberRepository);
-const removeWorkspaceMemberUseCase = new RemoveWorkspaceMemberUseCase(workspaceRepository, workspaceMemberRepository);
+
+// Initialize Channel Repositories early so Workspace Use Cases can use them for cascade deletes
+const channelRepository = new ChannelRepository();
+const channelMemberRepository = new ChannelMemberRepository();
+const messageRepository = new MessageRepository();
+
+const removeWorkspaceMemberUseCase = new RemoveWorkspaceMemberUseCase(
+    workspaceRepository, 
+    workspaceMemberRepository,
+    channelRepository,
+    channelMemberRepository
+);
 const blockWorkspaceMemberUseCase = new BlockWorkspaceMemberUseCase(workspaceRepository, workspaceMemberRepository);
 const unblockWorkspaceMemberUseCase = new UnblockWorkspaceMemberUseCase(workspaceRepository, workspaceMemberRepository);
 const updateWorkspaceUseCase = new UpdateWorkspaceUseCase(workspaceRepository, workspaceMemberRepository);
@@ -225,25 +245,24 @@ const workspaceController = new WorkspaceController(
 );
 
 // Channel & Message Instantiations
-const channelRepository = new ChannelRepository();
-const channelMemberRepository = new ChannelMemberRepository();
-const messageRepository = new MessageRepository();
-
 const createChannelUseCase = new CreateChannelUseCase(channelRepository, channelMemberRepository);
 const getWorkspaceChannelsUseCase = new GetWorkspaceChannelsUseCase(channelRepository, channelMemberRepository);
 const getChannelMembersUseCase = new GetChannelMembersUseCase(channelRepository, channelMemberRepository, userRepository);
-const addChannelMemberUseCase = new AddChannelMemberUseCase(channelRepository, channelMemberRepository, workspaceMemberRepository);
-const removeChannelMemberUseCase = new RemoveChannelMemberUseCase(channelRepository, channelMemberRepository);
+const addChannelMemberUseCase = new AddChannelMemberUseCase(channelRepository, channelMemberRepository, workspaceMemberRepository, userRepository);
+const removeChannelMemberUseCase = new RemoveChannelMemberUseCase(channelRepository, channelMemberRepository, userRepository);
+const blockChannelMemberUseCase = new BlockChannelMemberUseCase(channelRepository, channelMemberRepository, userRepository);
+const getBlockedChannelMembersUseCase = new GetBlockedChannelMembersUseCase(channelRepository, channelMemberRepository, userRepository);
+const unblockChannelMemberUseCase = new UnblockChannelMemberUseCase(channelRepository, channelMemberRepository);
 const updateChannelUseCase = new UpdateChannelUseCase(channelRepository);
 const leaveChannelUseCase = new LeaveChannelUseCase(channelRepository, channelMemberRepository);
 const deleteChannelUseCase = new DeleteChannelUseCase(channelRepository);
-const joinChannelUseCase = new JoinChannelUseCase(channelRepository, channelMemberRepository);
+const joinChannelUseCase = new JoinChannelUseCase(channelRepository, channelMemberRepository, workspaceRepository, userRepository);
 const getChannelRequestsUseCase = new GetChannelRequestsUseCase(channelMemberRepository, userRepository);
 const updateChannelRequestUseCase = new UpdateChannelRequestUseCase(channelMemberRepository, channelRepository);
 const markChannelAsReadUseCase = new MarkChannelAsReadUseCase(channelMemberRepository);
 const getUnreadCountsUseCase = new GetUnreadCountsUseCase(channelRepository, channelMemberRepository, messageRepository);
 
-const sendMessageUseCase = new SendMessageUseCase(messageRepository);
+const sendMessageUseCase = new SendMessageUseCase(messageRepository, channelMemberRepository);
 const getChannelMessagesUseCase = new GetChannelMessagesUseCase(messageRepository);
 
 const channelController = new ChannelController(
@@ -252,6 +271,9 @@ const channelController = new ChannelController(
     getChannelMembersUseCase,
     addChannelMemberUseCase,
     removeChannelMemberUseCase,
+    blockChannelMemberUseCase,
+    getBlockedChannelMembersUseCase,
+    unblockChannelMemberUseCase,
     updateChannelUseCase,
     leaveChannelUseCase,
     deleteChannelUseCase,
@@ -259,7 +281,8 @@ const channelController = new ChannelController(
     getChannelRequestsUseCase,
     updateChannelRequestUseCase,
     markChannelAsReadUseCase,
-    getUnreadCountsUseCase
+    getUnreadCountsUseCase,
+    messageRepository
 );
 const messageController = new MessageController(sendMessageUseCase, getChannelMessagesUseCase);
 
@@ -270,13 +293,15 @@ const votePollUseCase = new VotePollUseCase(pollRepository);
 const getWorkspacePollsUseCase = new GetWorkspacePollsUseCase(pollRepository);
 const getChannelPollsUseCase = new GetChannelPollsUseCase(pollRepository);
 const deletePollUseCase = new DeletePollUseCase(pollRepository);
+const closePollUseCase = new ClosePollUseCase(pollRepository);
 
 const pollController = new PollController(
     createPollUseCase,
     votePollUseCase,
     getWorkspacePollsUseCase,
     getChannelPollsUseCase,
-    deletePollUseCase
+    deletePollUseCase,
+    closePollUseCase
 );
 
 // DM Imports
@@ -307,4 +332,4 @@ const dmController = new DMController(
     markMessageAsSeenUseCase
 );
 
-export { logger, authController, adminController, userController, workspaceController, channelController, messageController, dmController, pollController, jwtService };
+export { logger, authController, adminController, userController, workspaceController, channelController, messageController, dmController, pollController, uploadController, jwtService };

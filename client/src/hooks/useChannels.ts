@@ -65,3 +65,30 @@ export const useChannelMembers = (workspaceId?: string, channelId?: string) => {
 
   return { members, setMembers, imageMap, setImageMap, loading, error, refetch: fetchMembers };
 };
+
+export const useBlockedMembers = (workspaceId?: string, channelId?: string) => {
+  const [blockedMembers, setBlockedMembers] = useState<ChannelMemberData[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchBlockedMembers = useCallback(async () => {
+    if (!workspaceId || !channelId) return;
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await ChannelService.getBlockedMembers(workspaceId, channelId);
+      setBlockedMembers(res.data?.data || []);
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { message?: string } } };
+      setError(errorObj.response?.data?.message || 'Failed to fetch blocked members');
+    } finally {
+      setLoading(false);
+    }
+  }, [workspaceId, channelId]);
+
+  useEffect(() => {
+    fetchBlockedMembers();
+  }, [fetchBlockedMembers]);
+
+  return { blockedMembers, setBlockedMembers, loading, error, refetch: fetchBlockedMembers };
+};

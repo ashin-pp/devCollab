@@ -46,7 +46,14 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
   const fetchChannels = () => {
     if (workspaceId) {
       ChannelService.getWorkspaceChannels(workspaceId)
-        .then(res => setChannels(res.data?.data || []))
+        .then(res => {
+          const fetchedChannels = res.data?.data || [];
+          setChannels(fetchedChannels);
+          // Join all channels to receive real-time unread messages
+          if (socket) {
+            fetchedChannels.forEach((c: any) => socket.emit('join_channel', c.id));
+          }
+        })
         .catch(err => console.error('Failed to fetch channels', err));
 
       // Fetch unread counts
@@ -78,8 +85,10 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
   };
 
   useEffect(() => {
-    fetchChannels();
-  }, [workspaceId]);
+    if (socket) {
+      fetchChannels();
+    }
+  }, [workspaceId, socket]);
 
   useEffect(() => {
     if (workspaceId && user) {
@@ -133,6 +142,17 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
   useEffect(() => {
     if (!socket) return;
 
+    socket?.on('user_presence_updated', (data: { userId: string, isOnline: boolean, lastSeen?: string }) => {
+      // Could dispatch to Redux to update global user presence state
+    });
+
+    socket?.on('workspace_member_removed', (data: { userId: string, workspaceId: string }) => {
+      if (data.userId === user?.id && data.workspaceId === workspaceId) {
+        toast.error('You have been removed from this workspace');
+        navigate('/home');
+      }
+    });
+
     const handleNewMessage = (message: { channelId: string; senderId: string }) => {
       // Don't increment count for messages sent by current user
       if (message.senderId !== user?.id) {
@@ -176,8 +196,10 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
     return () => {
       socket.off('message_received', handleNewMessage);
       socket.off('dm_received', handleDMReceived);
+      socket.off('workspace_member_removed');
+      socket.off('user_presence_updated');
     };
-  }, [socket, user, location, workspaceId]);
+  }, [socket, user, location.pathname, workspaceId, navigate]);
 
   // Listen for channel-read events to clear unread count
   useEffect(() => {

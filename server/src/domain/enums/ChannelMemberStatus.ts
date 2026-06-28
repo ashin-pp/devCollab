@@ -7,4 +7,5 @@ export enum ChannelMemberStatus {
     PENDING = 'pending',
     APPROVED = 'approved',
     REJECTED = 'rejected',
+    BLOCKED = 'blocked',
 }

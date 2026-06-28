@@ -9,13 +9,14 @@ import { UserPublicRoute } from './guards/UserPublicRoute';
 
 import { DashboardPage } from '../pages/user/DashboardPage';
 import { UserProtectedRoute } from './guards/UserProtectedRoute';
-import { WorkspaceDashboardPage } from '../pages/workspace/WorkspaceDashboardPage';
-import { DMChatPage } from '../pages/workspace/DMChatPage';
-import { DummyChannelPage } from '../pages/workspace/DummyChannelPage';
-import { WorkspaceMembersPage } from '../pages/workspace/WorkspaceMembersPage';
-import { WorkspaceSettingsPage } from '../pages/workspace/WorkspaceSettingsPage';
-import { WorkspaceChannelPage } from '../pages/workspace/WorkspaceChannelPage';
-import { MemberProfilePage } from '../pages/workspace/MemberProfilePage';
+import { WorkspaceDashboardPage } from '../pages/workspace/core/WorkspaceDashboardPage';
+import { DMChatPage } from '../pages/workspace/dm/DMChatPage';
+import { DummyChannelPage } from '../pages/workspace/channel/DummyChannelPage';
+import { WorkspaceMembersPage } from '../pages/workspace/core/WorkspaceMembersPage';
+import { WorkspaceSettingsPage } from '../pages/workspace/core/WorkspaceSettingsPage';
+import { WorkspaceChannelPage } from '../pages/workspace/channel/WorkspaceChannelPage';
+import { MemberProfilePage } from '../pages/workspace/core/MemberProfilePage';
+import { WorkspacePollsPage } from '../pages/workspace/polls/WorkspacePollsPage';
 import { ProfilePage } from '../pages/profile/ProfilePage';
 import { EditProfilePage } from '../pages/profile/EditProfilePage';
 
@@ -41,7 +42,7 @@ export const ClientRoutes = () => {
         <Route path="workspace/:workspaceId/channels" element={<WorkspaceChannelPage />} />
         <Route path="workspace/:workspaceId/dm" element={<DMChatPage />} />
         <Route path="workspace/:workspaceId/dm/:conversationId" element={<DMChatPage />} />
-        <Route path="workspace/:workspaceId/polls" element={<DummyChannelPage />} />
+        <Route path="workspace/:workspaceId/polls" element={<WorkspacePollsPage />} />
         <Route path="workspace/:workspaceId/members" element={<WorkspaceMembersPage />} />
         <Route path="workspace/:workspaceId/members/:userId/profile" element={<MemberProfilePage />} />
         <Route path="workspace/:workspaceId/settings" element={<WorkspaceSettingsPage />} />

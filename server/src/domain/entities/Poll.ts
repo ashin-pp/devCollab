@@ -13,6 +13,7 @@ export class Poll {
         public isActive: boolean = true,
         public channelId?: string,
         public expiresAt?: Date,
+        public startsAt?: Date,
         public id?: string,
         public createdAt?: Date,
         public updatedAt?: Date

@@ -63,6 +63,18 @@ export const deletePollThunk = createAsyncThunk(
   }
 );
 
+export const closePollThunk = createAsyncThunk(
+  'polls/close',
+  async (pollId: string, { rejectWithValue }) => {
+    try {
+      return await pollApi.close(pollId);
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      return rejectWithValue(err.response?.data?.message || 'Failed to close poll');
+    }
+  }
+);
+
 const pollSlice = createSlice({
   name: 'polls',
   initialState,
@@ -115,6 +127,12 @@ const pollSlice = createSlice({
         state.error = action.payload as string;
       })
       .addCase(votePoll.fulfilled, (state, action) => {
+        const index = state.polls.findIndex(p => p.id === action.payload.id);
+        if (index !== -1) {
+          state.polls[index] = action.payload;
+        }
+      })
+      .addCase(closePollThunk.fulfilled, (state, action) => {
         const index = state.polls.findIndex(p => p.id === action.payload.id);
         if (index !== -1) {
           state.polls[index] = action.payload;

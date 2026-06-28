@@ -1,5 +1,6 @@
 import { IChannelMemberRepository } from "../../../application/repositories/IChannelMemberRepository";
 import { IWorkspaceMemberRepository } from "../../../application/repositories/IWorkspaceMemberRepository";
+import { IUserRepository } from "../../../application/repositories/IUserRepository";
 import { IChannelRepository } from "../../../application/repositories/IChannelRepository";
 import { ChannelMember } from "../../../domain/entities/ChannelMember";
 import { AppError } from "../../../domain/errors/AppError";
@@ -7,13 +8,15 @@ import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { MemberStatus } from "../../../domain/enums/MemberStatus";
 import { ChannelMemberRole, ChannelMemberStatus } from "../../../domain/enums/ChannelMemberStatus";
+import { UserRepository } from "../../../infra/database/repositories/UserRepository";
 
 export class AddChannelMemberUseCase {
     constructor(
         private channelRepository: IChannelRepository,
         private channelMemberRepository: IChannelMemberRepository,
-        private workspaceMemberRepository: IWorkspaceMemberRepository
-    ) {}
+        private workspaceMemberRepository: IWorkspaceMemberRepository,
+        private userRepository: IUserRepository
+    ) { }
 
     async execute(workspaceId: string, channelId: string, userIds: string[], requestUserId: string) {
         if (!workspaceId || !channelId || !userIds || userIds.length === 0) {
@@ -61,7 +64,12 @@ export class AddChannelMemberUseCase {
             );
 
             const added = await this.channelMemberRepository.create(newMember);
-            addedMembers.push(added);
+            const user = await this.userRepository.findById(targetUserId);
+
+            addedMembers.push({
+                member: newMember,
+                userName: user?.name || 'A user'
+            });
         }
 
         return addedMembers;
