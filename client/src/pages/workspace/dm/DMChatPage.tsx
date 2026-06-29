@@ -5,34 +5,22 @@ import { WorkspaceLayout } from '../../../layouts/WorkspaceLayout';
 import { WorkspaceService } from '../../../api/workspace/workspace.service';
 import { DMService } from '../../../api/dm/dm.service';
 
-
 import type { RootState } from '../../../store';
-import EmojiPicker from 'emoji-picker-react';
 import {
-  Send, Search, MessageSquarePlus, ArrowLeft,
-  Check, CheckCheck, PenSquare, Info, X, Loader2,
-  Smile, Bold, Italic, Plus, Image as ImageIcon
+  Search, MessageSquarePlus, ArrowLeft,
+  PenSquare, X, Loader2
 } from 'lucide-react';
 import { useSocket } from '../../../hooks/useSocket';
 import { format, isToday, isYesterday } from 'date-fns';
 import type { Conversation, DirectMessage } from '../../../types/dm.types';
 import type { MemberData } from '../../../types/workspace.types';
 
+import { DMAvatar } from '../../../components/workspace/dm/DMAvatar';
+import { DMHeader } from '../../../components/workspace/dm/DMHeader';
+import { DMMessageList } from '../../../components/workspace/dm/DMMessageList';
+import { DMMessageInput } from '../../../components/workspace/dm/DMMessageInput';
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-const getInitials = (name?: string) =>
-  name ? name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'U';
-
-const avatarColors = [
-  'bg-blue-500', 'bg-violet-500', 'bg-rose-500',
-  'bg-emerald-500', 'bg-amber-500', 'bg-indigo-500', 'bg-pink-500',
-];
-
-const renderMessageContent = (content: string) => {
-  return <span dangerouslySetInnerHTML={{ __html: content }} />;
-};
-
-const getAvatarColor = (id: string) => avatarColors[id.charCodeAt(0) % avatarColors.length];
 
 const formatConvTime = (dateStr: string) => {
   const d = new Date(dateStr);
@@ -41,24 +29,7 @@ const formatConvTime = (dateStr: string) => {
   return format(d, 'MMM d');
 };
 
-// ─── Avatar ───────────────────────────────────────────────────────────────────
-
-const Avatar = ({
-  user, size = 'md',
-}: {
-  user?: { name?: string; profileImage?: string; id?: string };
-  size?: 'sm' | 'md' | 'lg';
-}) => {
-  const sizeClass = { sm: 'w-8 h-8 text-xs', md: 'w-10 h-10 text-sm', lg: 'w-14 h-14 text-base' }[size];
-  const color = getAvatarColor(user?.id || '0');
-  return user?.profileImage ? (
-    <img src={user.profileImage} alt={user.name} className={`${sizeClass} rounded-full object-cover shrink-0`} />
-  ) : (
-    <div className={`${sizeClass} rounded-full ${color} text-white font-bold flex items-center justify-center shrink-0 select-none`}>
-      {getInitials(user?.name)}
-    </div>
-  );
-};
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 // ─── New Message Modal ────────────────────────────────────────────────────────
 
@@ -112,7 +83,7 @@ const NewMessageModal = ({
                 key={m.userId}
                 className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors group"
               >
-                <Avatar user={{ ...m.user, id: m.userId }} size="md" />
+                <DMAvatar user={{ ...m.user, id: m.userId }} size="md" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-slate-900 truncate">{m.user?.name}</p>
                   <p className="text-xs text-slate-500 truncate">{m.user?.email}</p>
@@ -217,7 +188,7 @@ const ConversationList = ({
                   }`}
                 >
                   <div className="relative shrink-0">
-                    <Avatar user={{ ...conv.otherUser, id: conv.otherUser?.id }} size="md" />
+                    <DMAvatar user={{ ...conv.otherUser, id: conv.otherUser?.id }} size="md" />
                     <span className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full ${isActive ? 'bg-blue-500' : 'bg-emerald-400'}`} />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -254,284 +225,7 @@ const ConversationList = ({
 
 // ─── Chat Panel ───────────────────────────────────────────────────────────────
 
-const ChatPanel = ({
-  conversation, messages, newMessage, isLoading, otherUserTyping, currentUser,
-  onChangeMessage, onSendMessage, messagesEndRef,
-  attachedImageUrl, isUploading, onFileSelect, onClearAttachment, fileInputRef
-}: {
-  conversation: Conversation; messages: DirectMessage[]; newMessage: string; isLoading: boolean;
-  otherUserTyping: boolean; currentUser: { id?: string; name?: string; profileImage?: string } | null;
-  onChangeMessage: (msg: string) => void;
-  onSendMessage: (e: React.FormEvent) => void;
-  messagesEndRef: React.RefObject<HTMLDivElement | null>;
-  attachedImageUrl?: string | null;
-  isUploading?: boolean;
-  onFileSelect?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onClearAttachment?: () => void;
-  fileInputRef?: React.RefObject<HTMLInputElement | null>;
-}) => {
-  const otherUser = conversation?.otherUser;
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [isBoldActive, setIsBoldActive] = useState(false);
-  const [isItalicActive, setIsItalicActive] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const textareaRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (newMessage === '' && textareaRef.current) {
-      textareaRef.current.innerHTML = '';
-    }
-  }, [newMessage]);
-
-  const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
-    onChangeMessage(e.currentTarget.innerHTML);
-  };
-
-  const handleFormat = (command: string) => {
-    document.execCommand(command, false, undefined);
-    if (textareaRef.current) {
-      onChangeMessage(textareaRef.current.innerHTML);
-      textareaRef.current.focus();
-    }
-    checkFormatting();
-  };
-
-  const checkFormatting = () => {
-    setIsBoldActive(document.queryCommandState('bold'));
-    setIsItalicActive(document.queryCommandState('italic'));
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      onSendMessage(e as unknown as React.FormEvent);
-    }
-  };
-
-  return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-white">
-      {/* Header */}
-      <div className="h-14 border-b border-slate-200 flex items-center justify-between px-5 shrink-0 bg-white z-10">
-        <div className="flex items-center gap-3">
-          <Avatar user={{ ...otherUser, id: otherUser?.id }} size="sm" />
-          <div>
-            <p className="text-sm font-bold text-slate-900 leading-tight">{otherUser?.name || 'Direct Message'}</p>
-            {otherUserTyping ? (
-              <p className="text-xs text-blue-500 font-medium animate-pulse">Typing...</p>
-            ) : (
-              <p className="text-xs text-emerald-500 font-medium">● Online</p>
-            )}
-          </div>
-        </div>
-        <button className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors" title="View Profile">
-          <Info className="w-5 h-5" />
-        </button>
-      </div>
-
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-5 py-4">
-        {isLoading ? (
-          <div className="flex justify-center py-10">
-            <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-          </div>
-        ) : messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <Avatar user={{ ...otherUser }} size="lg" />
-            <h3 className="mt-4 text-base font-bold text-slate-900">{otherUser?.name}</h3>
-            <p className="text-sm text-slate-500 mt-1">This is the beginning of your conversation.</p>
-          </div>
-        ) : (
-          <div className="space-y-0.5">
-            {messages.map((msg, index) => {
-              const isMine = msg.senderId === currentUser?.id;
-              const prevMsg = messages[index - 1];
-              const isGrouped = prevMsg?.senderId === msg.senderId;
-              const msgDate = msg.createdAt ? new Date(msg.createdAt) : new Date();
-              const prevDate = prevMsg?.createdAt ? new Date(prevMsg.createdAt) : new Date(0);
-              const showTimestamp =
-                !prevMsg ||
-                msgDate.getTime() - prevDate.getTime() > 5 * 60 * 1000;
-
-              return (
-                <div key={msg.id || index}>
-                  {/* Date divider */}
-                  {showTimestamp && (
-                    <div className="flex items-center gap-3 my-4">
-                      <div className="flex-1 h-px bg-slate-200" />
-                      <span className="text-[11px] text-slate-400 font-medium shrink-0">
-                        {isToday(msgDate)
-                          ? `Today at ${format(msgDate, 'h:mm a')}`
-                          : format(msgDate, 'MMM d, h:mm a')}
-                      </span>
-                      <div className="flex-1 h-px bg-slate-200" />
-                    </div>
-                  )}
-
-                  <div
-                    className={`flex items-end gap-2.5 group ${isMine ? 'flex-row-reverse' : 'flex-row'} ${
-                      isGrouped && !showTimestamp ? 'mt-0.5' : 'mt-3'
-                    }`}
-                  >
-                    {!isGrouped || showTimestamp ? (
-                      <Avatar user={isMine ? currentUser : { ...otherUser, id: otherUser?.id }} size="sm" />
-                    ) : (
-                      <div className="w-8 shrink-0" />
-                    )}
-
-                    <div className={`flex flex-col gap-0.5 max-w-[65%] ${isMine ? 'items-end' : 'items-start'}`}>
-                      {(!isGrouped || showTimestamp) && (
-                        <span className="text-[11px] font-semibold text-slate-500 px-1">
-                          {isMine ? 'You' : otherUser?.name}
-                        </span>
-                      )}
-                      <div
-                        className={`text-sm leading-relaxed ${
-                          msg.messageType === 'image' && !msg.content?.trim()
-                            ? 'bg-transparent shadow-none'
-                            : isMine
-                              ? 'bg-blue-600 text-white rounded-2xl rounded-br-sm shadow-sm px-3.5 py-2'
-                              : 'bg-white text-slate-800 border border-slate-200 shadow-sm rounded-2xl rounded-bl-sm px-3.5 py-2'
-                        }`}
-                      >
-                        {msg.messageType === 'image' && msg.imageUrl ? (
-                          <img
-                            src={msg.imageUrl}
-                            alt="Message attachment"
-                            className={`rounded-lg max-w-full max-h-[300px] object-contain cursor-pointer hover:opacity-90 transition-opacity border border-slate-200/50 ${msg.content?.trim() ? 'mb-2' : ''}`}
-                            onClick={() => setSelectedImage(msg.imageUrl!)}
-                          />
-                        ) : null}
-                        {msg.content && renderMessageContent(msg.content)}
-                      </div>
-                      <div
-                        className={`flex items-center gap-1 px-1 text-[10px] text-slate-400 transition-opacity ${
-                          isMine ? 'flex-row-reverse' : ''
-                        }`}
-                      >
-                        <span>{msg.createdAt ? format(msgDate, 'h:mm a') : ''}</span>
-                        {isMine &&
-                          (msg.isSeen ? (
-                            <CheckCheck className="w-3 h-3 text-blue-500" />
-                          ) : (
-                            <Check className="w-3 h-3" />
-                          ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-            <div ref={messagesEndRef} />
-          </div>
-        )}
-      </div>
-
-      {/* Input */}
-      <div className="p-4 bg-white shrink-0 border-t border-slate-100">
-        <form onSubmit={onSendMessage} className="border border-slate-300 rounded-2xl overflow-visible focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all shadow-sm bg-slate-50 relative">
-          <input type="file" ref={fileInputRef} hidden onChange={onFileSelect} accept="image/*" />
-          
-          {isUploading && (
-            <div className="px-4 py-3 text-sm text-slate-500">Uploading image...</div>
-          )}
-
-          {attachedImageUrl && (
-            <div className="px-4 py-3 relative inline-block">
-              <img src={attachedImageUrl} alt="Attachment preview" className="h-32 rounded-lg object-cover border border-slate-200" />
-              <button
-                type="button"
-                onClick={onClearAttachment}
-                className="absolute top-4 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-sm"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          )}
-
-          <div
-            ref={textareaRef}
-            contentEditable
-            onInput={handleInput}
-            onKeyDown={handleKeyDown}
-            onKeyUp={checkFormatting}
-            onMouseUp={checkFormatting}
-            className="w-full resize-none px-4 py-3 min-h-[60px] max-h-[150px] text-[15px] focus:outline-none text-slate-800 bg-transparent overflow-y-auto cursor-text empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400"
-            data-placeholder={`Message ${otherUser?.name || ''}...`}
-          />
-
-          <div className="px-3 pb-3 flex items-center justify-between">
-            <div className="flex items-center gap-0.5 relative">
-              <button
-                type="button"
-                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                className={`p-1.5 rounded-lg transition-colors ${showEmojiPicker ? 'bg-blue-200 text-blue-700' : 'text-slate-500 hover:bg-slate-200 hover:text-slate-700'}`}
-                title="Add Emoji"
-              >
-                <Smile className="w-5 h-5" />
-              </button>
-              {showEmojiPicker && (
-                <div className="absolute bottom-full mb-2 left-0 z-50 shadow-2xl rounded-xl bg-white border border-slate-200 overflow-hidden">
-                  <div className="flex justify-between items-center p-2 border-b border-slate-100 bg-slate-50">
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Emojis</span>
-                    <button type="button" onClick={() => setShowEmojiPicker(false)} className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-full transition-colors">
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <EmojiPicker
-                    onEmojiClick={(emojiData) => {
-                      onChangeMessage(newMessage + emojiData.emoji);
-                      if (textareaRef.current) {
-                        textareaRef.current.innerHTML += emojiData.emoji;
-                      }
-                      setShowEmojiPicker(false);
-                    }}
-                    width={300}
-                    height={350}
-                  />
-                </div>
-              )}
-
-              <button type="button" onClick={() => fileInputRef?.current?.click()} className="p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-700 rounded-lg transition-colors" title="Add Image"><ImageIcon className="w-4 h-4" /></button>
-              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => handleFormat('bold')} className={`p-1.5 rounded-lg transition-colors ${isBoldActive ? 'bg-blue-200 text-blue-700' : 'text-slate-500 hover:bg-slate-200 hover:text-slate-700'}`} title="Format Bold"><Bold className="w-4 h-4" /></button>
-              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => handleFormat('italic')} className={`p-1.5 rounded-lg transition-colors ${isItalicActive ? 'bg-blue-200 text-blue-700' : 'text-slate-500 hover:bg-slate-200 hover:text-slate-700'}`} title="Format Italic"><Italic className="w-4 h-4" /></button>
-            </div>
-
-            <button
-              type="submit"
-              disabled={(!newMessage.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim() && !attachedImageUrl) || isUploading}
-              className={`p-2 rounded-xl flex items-center justify-center transition-all ${newMessage.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim() || attachedImageUrl ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-slate-200 text-slate-400'} disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm flex items-center justify-center`}
-            >
-              <Send className="w-4 h-4" />
-            </button>
-          </div>
-        </form>
-      </div>
-
-      {/* Image Viewer Modal */}
-      {selectedImage && (
-        <div
-          className="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-4 cursor-zoom-out"
-          onClick={() => setSelectedImage(null)}
-        >
-          <div className="relative max-w-5xl max-h-screen w-full h-full flex items-center justify-center">
-            <button
-              onClick={() => setSelectedImage(null)}
-              className="absolute top-4 right-4 p-2 bg-slate-800/50 hover:bg-slate-800 text-white rounded-full transition-colors cursor-pointer"
-            >
-              <X className="w-6 h-6" />
-            </button>
-            <img
-              src={selectedImage}
-              alt="Full size attachment"
-              className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl cursor-default"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
+// ─── ChatPanel Removed ────────────────────────────────────────────────────────
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
@@ -580,9 +274,10 @@ export const DMChatPage = () => {
   const [showNewMsg, setShowNewMsg] = useState(false);
   const [workspaceMembers, setWorkspaceMembers] = useState<MemberData[]>([]);
 
-  // Image Upload
+  // Image Upload & Viewer
   const [isUploading, setIsUploading] = useState(false);
   const [attachedImageUrl, setAttachedImageUrl] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -851,22 +546,56 @@ export const DMChatPage = () => {
         />
 
         {activeConversation ? (
-          <ChatPanel
-            conversation={activeConversation}
-            messages={messages}
-            newMessage={newMessage}
-            isLoading={loadingMsgs}
-            otherUserTyping={otherUserTyping}
-            currentUser={currentUser}
-            onChangeMessage={handleChangeMessage}
-            onSendMessage={handleSendMessage}
-            messagesEndRef={messagesEndRef}
-            attachedImageUrl={attachedImageUrl}
-            isUploading={isUploading}
-            onFileSelect={handleFileSelect}
-            onClearAttachment={() => setAttachedImageUrl(null)}
-            fileInputRef={fileInputRef}
-          />
+          <>
+            <div className="flex-1 flex flex-col overflow-hidden bg-white">
+              <DMHeader
+                otherUser={activeConversation.otherUser}
+                otherUserTyping={otherUserTyping}
+              />
+              <DMMessageList
+                messages={messages}
+                isLoading={loadingMsgs}
+                currentUser={currentUser}
+                otherUser={activeConversation.otherUser}
+                messagesEndRef={messagesEndRef}
+                setSelectedImage={setSelectedImage}
+              />
+              <DMMessageInput
+                newMessage={newMessage}
+                onChangeMessage={handleChangeMessage}
+                onSendMessage={handleSendMessage}
+                attachedImageUrl={attachedImageUrl}
+                isUploading={isUploading}
+                onFileSelect={handleFileSelect}
+                onClearAttachment={() => setAttachedImageUrl(null)}
+                fileInputRef={fileInputRef}
+                otherUserName={activeConversation.otherUser?.name}
+              />
+            </div>
+            
+            {/* Image Viewer Modal */}
+            {selectedImage && (
+              <div
+                className="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-4 cursor-zoom-out"
+                onClick={() => setSelectedImage(null)}
+              >
+                <div className="relative max-w-5xl max-h-screen w-full h-full flex items-center justify-center">
+                  <button
+                    onClick={() => setSelectedImage(null)}
+                    className="absolute top-4 right-4 p-2 bg-slate-800/50 hover:bg-slate-800 text-white rounded-full transition-colors cursor-pointer"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                  <img
+                    src={selectedImage}
+                    alt="Full size attachment"
+                    className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl cursor-default"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+              </div>
+            )}
+          </>
         ) : (
           <NoChatSelected onNewDM={() => setShowNewMsg(true)} />
         )}

@@ -3,33 +3,44 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { WorkspaceLayout } from '../../../layouts/WorkspaceLayout';
 import type { RootState } from '../../../store';
-import { 
-  CheckCircle2, 
-  Clock, 
-  Activity, 
-  Sparkles, 
-  TrendingUp, 
-  Users, 
-  MessageSquare 
-} from 'lucide-react';
+import { MessageSquare, Users, Hash, Info, ShieldCheck, Lock } from 'lucide-react';
 import { WorkspacePollsList } from '../../../components/polls/WorkspacePollsList';
 import { useUserWorkspaces } from '../../../hooks/useWorkspaces';
-import type { WorkspaceData } from '../../../types/workspace.types';
+import { useWorkspaceChannels } from '../../../hooks/useChannels';
+import { WorkspaceService } from '../../../api/workspace/workspace.service';
+import type { WorkspaceData, MemberData } from '../../../types/workspace.types';
 
 export const WorkspaceDashboardPage = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const user = useSelector((state: RootState) => state.auth.user);
   const navigate = useNavigate();
-  const { workspaces, loading } = useUserWorkspaces();
+  const { workspaces } = useUserWorkspaces();
   const workspace = workspaces.find((w: WorkspaceData) => w.id === workspaceId);
   const workspaceName = workspace?.name || 'Workspace';
+
+  const { channels, loading: loadingChannels } = useWorkspaceChannels(workspaceId);
+  const [members, setMembers] = useState<MemberData[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(true);
+
+  useEffect(() => {
+    if (workspaceId) {
+      WorkspaceService.getWorkspaceMembers(workspaceId, true)
+        .then((res) => {
+          setMembers(res.data || []);
+          setLoadingMembers(false);
+        })
+        .catch(() => {
+          setLoadingMembers(false);
+        });
+    }
+  }, [workspaceId]);
 
   return (
     <WorkspaceLayout>
       <div className="flex-1 h-full overflow-y-auto bg-[#F8FAFC] p-8">
         
         {/* Header Section */}
-        <div className="mb-10 flex items-end justify-between">
+        <div className="mb-8 flex items-end justify-between">
           <div>
             <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">
               Welcome back, {user?.name?.split(' ')[0] || 'User'}! 👋
@@ -47,111 +58,123 @@ export const WorkspaceDashboardPage = () => {
           </button>
         </div>
 
-        {/* AI Insight Banner */}
-        <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl p-[2px] mb-8 shadow-lg shadow-purple-500/10">
-          <div className="bg-white rounded-[14px] p-6 flex gap-6 items-center">
-            <div className="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center shrink-0">
-              <Sparkles className="w-6 h-6 text-purple-600" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-bold text-slate-900 text-lg mb-1">AI Workspace Summary</h3>
-              <p className="text-slate-600 text-sm leading-relaxed">
-                Your team has been highly active in the <strong>#general</strong> channel today. There are <strong>3 new polls</strong> waiting for your vote, and <strong>2 pending member requests</strong> to review.
-              </p>
-            </div>
-            <button className="px-4 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg font-bold text-sm transition-colors">
-              View Insights
-            </button>
-          </div>
-        </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
-          {/* Quick Stats */}
-          <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6 mb-2">
-            <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm flex items-center gap-5">
-              <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
-                <Activity className="w-6 h-6" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Weekly Activity</p>
-                <div className="flex items-end gap-2">
-                  <h4 className="text-2xl font-extrabold text-slate-900">84%</h4>
-                  <span className="text-xs font-bold text-emerald-500 mb-1 flex items-center gap-0.5">
-                    <TrendingUp className="w-3 h-3" /> +12%
-                  </span>
-                </div>
-              </div>
-            </div>
+          {/* Main Content (Left) */}
+          <div className="lg:col-span-2 space-y-6">
             
-            <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm flex items-center gap-5">
-              <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600">
-                <Clock className="w-6 h-6" />
+            {/* Workspace Info Card */}
+            <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                  <Info className="w-5 h-5" />
+                </div>
+                <h3 className="font-extrabold text-slate-900 text-lg">Workspace Info</h3>
               </div>
-              <div>
-                <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Time Saved</p>
-                <div className="flex items-end gap-2">
-                  <h4 className="text-2xl font-extrabold text-slate-900">12.5h</h4>
-                  <span className="text-xs font-bold text-slate-500 mb-1">this month</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Name</p>
+                  <p className="text-sm font-semibold text-slate-800">{workspace?.name}</p>
+                </div>
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Privacy</p>
+                  <p className="text-sm font-semibold text-slate-800 capitalize flex items-center gap-1.5">
+                    {workspace?.privacy === 'public' ? null : <ShieldCheck className="w-4 h-4 text-emerald-500" />}
+                    {workspace?.privacy}
+                  </p>
+                </div>
+                <div className="md:col-span-2 p-4 rounded-xl bg-slate-50 border border-slate-100">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Description</p>
+                  <p className="text-sm text-slate-700 leading-relaxed">{workspace?.description || 'No description provided.'}</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm flex items-center gap-5">
-              <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
-                <Users className="w-6 h-6" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Active Members</p>
-                <div className="flex items-end gap-2">
-                  <h4 className="text-2xl font-extrabold text-slate-900">24</h4>
-                  <span className="text-xs font-bold text-emerald-500 mb-1 flex items-center gap-0.5">
-                    <TrendingUp className="w-3 h-3" /> +3
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Pending Tasks / To-Do */}
-          <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/60 shadow-sm flex flex-col">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="font-extrabold text-slate-900 text-lg">Your Pending Tasks</h3>
-              <button className="text-sm font-bold text-blue-600 hover:text-blue-700">View All</button>
-            </div>
-            <div className="p-2 flex-1">
-              <div className="flex items-center gap-4 p-4 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer group border-b border-slate-50 last:border-0">
-                <div className="w-6 h-6 rounded-full border-2 border-slate-300 group-hover:border-blue-500 flex items-center justify-center transition-colors"></div>
-                <div className="flex-1">
-                  <h4 className="font-semibold text-slate-800">Review Frontend Pull Request</h4>
-                  <p className="text-xs text-slate-500 mt-0.5">Due today at 5:00 PM • assigned by Alex</p>
-                </div>
-                <span className="px-2.5 py-1 rounded bg-orange-100 text-orange-700 text-xs font-bold">High Priority</span>
-              </div>
+            {/* Channels & Members Split */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               
-              <div className="flex items-center gap-4 p-4 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer group border-b border-slate-50 last:border-0">
-                <div className="w-6 h-6 rounded-full border-2 border-slate-300 group-hover:border-blue-500 flex items-center justify-center transition-colors"></div>
-                <div className="flex-1">
-                  <h4 className="font-semibold text-slate-800">Vote on New Architecture Poll</h4>
-                  <p className="text-xs text-slate-500 mt-0.5">Closes tomorrow • in #architecture</p>
+              {/* Channels List */}
+              <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm flex flex-col h-[400px]">
+                <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Hash className="w-5 h-5 text-slate-400" />
+                    <h3 className="font-extrabold text-slate-900">Channels ({channels.length})</h3>
+                  </div>
                 </div>
-                <span className="px-2.5 py-1 rounded bg-blue-100 text-blue-700 text-xs font-bold">Polls</span>
+                <div className="p-2 flex-1 overflow-y-auto">
+                  {loadingChannels ? (
+                    <div className="p-4 text-sm text-slate-500 text-center">Loading channels...</div>
+                  ) : channels.length > 0 ? (
+                    channels.map(channel => (
+                      <div 
+                        key={channel.id} 
+                        onClick={() => navigate(`/workspace/${workspaceId}/channels/${channel.id}`)}
+                        className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors">
+                            {channel.privacy === 'private' ? (
+                              <Lock className="w-4 h-4" />
+                            ) : (
+                              <Hash className="w-4 h-4" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-slate-800">{channel.name}</p>
+                            <p className="text-xs text-slate-500">{channel.privacy === 'private' ? 'Private' : 'Public'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-4 text-sm text-slate-500 text-center">No channels found.</div>
+                  )}
+                </div>
               </div>
 
-              <div className="flex items-center gap-4 p-4 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer group border-b border-slate-50 last:border-0">
-                <div className="w-6 h-6 rounded-full border-2 border-emerald-500 bg-emerald-500 flex items-center justify-center transition-colors">
-                  <CheckCircle2 className="w-4 h-4 text-white" />
+              {/* Members List */}
+              <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm flex flex-col h-[400px]">
+                <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-5 h-5 text-slate-400" />
+                    <h3 className="font-extrabold text-slate-900">Members ({members.length})</h3>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <h4 className="font-semibold text-slate-500 line-through">Welcome new team members</h4>
-                  <p className="text-xs text-slate-400 mt-0.5">Completed 2 hours ago</p>
+                <div className="p-2 flex-1 overflow-y-auto">
+                  {loadingMembers ? (
+                    <div className="p-4 text-sm text-slate-500 text-center">Loading members...</div>
+                  ) : members.length > 0 ? (
+                    members.map(member => (
+                      <div 
+                        key={member.id} 
+                        className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors cursor-default"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          {member.user?.profileImage ? (
+                            <img src={member.user.profileImage} alt={member.user.name} className="w-8 h-8 rounded-full object-cover shrink-0" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-xs shrink-0">
+                              {member.user?.name?.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold text-slate-800 truncate">{member.user?.name}</p>
+                            <p className="text-[11px] font-medium text-slate-500 capitalize">{member.role}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-4 text-sm text-slate-500 text-center">No members found.</div>
+                  )}
                 </div>
               </div>
+
             </div>
           </div>
 
-          {/* Workspace Polls */}
-          <div className="lg:col-span-3 mt-6">
+          {/* Right Sidebar (Polls) */}
+          <div className="lg:col-span-1">
             <WorkspacePollsList workspaceId={workspaceId as string} />
           </div>
 

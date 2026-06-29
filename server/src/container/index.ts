@@ -108,6 +108,13 @@ import { DeletePollUseCase } from "../application/use-cases/poll/DeletePollUseCa
 import { ClosePollUseCase } from "../application/use-cases/poll/ClosePollUseCase";
 import { PollController } from "../interfaces/controllers/PollController";
 
+// --- Notification Imports ---
+import { NotificationRepository } from "../infra/database/repositories/NotificationRepository";
+import { CreateNotificationUseCase } from "../application/use-cases/notification/CreateNotificationUseCase";
+import { GetUserNotificationsUseCase } from "../application/use-cases/notification/GetUserNotificationsUseCase";
+import { MarkNotificationReadUseCase } from "../application/use-cases/notification/MarkNotificationReadUseCase";
+import { NotificationController } from "../interfaces/controllers/NotificationController";
+
 // ============================================================================
 // INSTANTIATIONS
 // ============================================================================
@@ -200,6 +207,17 @@ const userController = new UserController(
 
 const uploadController = new UploadController(uploadChatImageUseCase);
 
+// Notification Instantiations (Initialize early to inject into Workspace Use Cases)
+const notificationRepository = new NotificationRepository();
+const createNotificationUseCase = new CreateNotificationUseCase(notificationRepository);
+const getUserNotificationsUseCase = new GetUserNotificationsUseCase(notificationRepository);
+const markNotificationReadUseCase = new MarkNotificationReadUseCase(notificationRepository);
+
+const notificationController = new NotificationController(
+    getUserNotificationsUseCase,
+    markNotificationReadUseCase
+);
+
 // Workspace Use Cases
 const createWorkspaceUseCase = new CreateWorkspaceUseCase(workspaceRepository, workspaceMemberRepository);
 const joinWorkspaceUseCase = new JoinWorkspaceUseCase(workspaceRepository, workspaceMemberRepository);
@@ -207,7 +225,7 @@ const getUserWorkspacesUseCase = new GetUserWorkspacesUseCase(workspaceRepositor
 const getPublicWorkspacesUseCase = new GetPublicWorkspacesUseCase(workspaceRepository);
 const verifyInviteCodeUseCase = new VerifyInviteCodeUseCase(workspaceRepository);
 const getWorkspaceMembersUseCase = new GetWorkspaceMembersUseCase(workspaceRepository, workspaceMemberRepository, userRepository);
-const handleJoinRequestUseCase = new HandleJoinRequestUseCase(workspaceRepository, workspaceMemberRepository);
+const handleJoinRequestUseCase = new HandleJoinRequestUseCase(workspaceRepository, workspaceMemberRepository, createNotificationUseCase);
 
 // Initialize Channel Repositories early so Workspace Use Cases can use them for cascade deletes
 const channelRepository = new ChannelRepository();
@@ -225,7 +243,7 @@ const unblockWorkspaceMemberUseCase = new UnblockWorkspaceMemberUseCase(workspac
 const updateWorkspaceUseCase = new UpdateWorkspaceUseCase(workspaceRepository, workspaceMemberRepository);
 const regenerateInviteCodeUseCase = new RegenerateInviteCodeUseCase(workspaceRepository, workspaceMemberRepository);
 const deleteWorkspaceUseCase = new DeleteWorkspaceUseCase(workspaceRepository, workspaceMemberRepository);
-const sendWorkspaceInviteUseCase = new SendWorkspaceInviteUseCase(workspaceRepository, workspaceMemberRepository, userRepository, emailService);
+const sendWorkspaceInviteUseCase = new SendWorkspaceInviteUseCase(workspaceRepository, workspaceMemberRepository, userRepository, emailService, createNotificationUseCase);
 
 const workspaceController = new WorkspaceController(
     createWorkspaceUseCase,
@@ -332,4 +350,4 @@ const dmController = new DMController(
     markMessageAsSeenUseCase
 );
 
-export { logger, authController, adminController, userController, workspaceController, channelController, messageController, dmController, pollController, uploadController, jwtService };
+export { logger, authController, adminController, userController, workspaceController, channelController, messageController, dmController, pollController, uploadController, notificationController, jwtService, createNotificationUseCase };

@@ -1,10 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { Bell, Settings, User as UserIcon } from 'lucide-react';
+import { NotificationBell } from '../components/notifications/NotificationBell';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthService } from '../api/auth/auth.service';
 import { logout } from '../store/slices/authSlice';
 import type { RootState } from '../store';
+
+import { useSocket } from '../hooks/useSocket';
+import { addNotification } from '../store/slices/notificationSlice';
+import toast from 'react-hot-toast';
 
 import Swal from 'sweetalert2';
 
@@ -16,6 +21,19 @@ export const UserLayout = ({ children }: UserLayoutProps) => {
   const user = useSelector((state: RootState) => state.auth.user);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const socket = useSocket();
+
+  useEffect(() => {
+    if (!socket) return;
+    const handleNewNotification = (notification: any) => {
+      dispatch(addNotification(notification));
+      toast.success(`New Notification: ${notification.title}`, { icon: '🔔' });
+    };
+    socket.on('new_notification', handleNewNotification);
+    return () => {
+      socket.off('new_notification', handleNewNotification);
+    };
+  }, [socket, dispatch]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -67,9 +85,7 @@ export const UserLayout = ({ children }: UserLayoutProps) => {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <button className="text-slate-400 hover:text-slate-600 transition-colors">
-            <Bell className="w-5 h-5" />
-          </button>
+          <NotificationBell />
           <button className="text-slate-400 hover:text-slate-600 transition-colors">
             <Settings className="w-5 h-5" />
           </button>

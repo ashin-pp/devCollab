@@ -18,6 +18,9 @@ import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import { CreateChannelModal } from '../components/workspace/CreateChannelModal';
 import { InviteMemberModal } from '../components/workspace/InviteMemberModal';
+import { NotificationBell } from '../components/notifications/NotificationBell';
+import { addNotification } from '../store/slices/notificationSlice';
+import { useDispatch } from 'react-redux';
 
 import type { WorkspaceLayoutProps } from '../types/component.types';
 
@@ -26,6 +29,7 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
   const location = useLocation();
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const user = useSelector((state: RootState) => state.auth.user);
+  const dispatch = useDispatch();
   const socket = useSocket(workspaceId);
 
   const [isOwner, setIsOwner] = useState(false);
@@ -164,6 +168,11 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
       }
     };
 
+    const handleNewNotification = (notification: any) => {
+      dispatch(addNotification(notification));
+      toast.success(`New Notification: ${notification.title}`, { icon: '🔔' });
+    };
+
     socket.on('message_received', handleNewMessage);
 
     const handleDMReceived = (message: DirectMessage) => {
@@ -180,6 +189,7 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
     };
 
     socket.on('dm_received', handleDMReceived);
+    socket.on('new_notification', handleNewNotification);
 
     // Join all conversations to receive their messages
     if (workspaceId) {
@@ -198,8 +208,9 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
       socket.off('dm_received', handleDMReceived);
       socket.off('workspace_member_removed');
       socket.off('user_presence_updated');
+      socket.off('new_notification', handleNewNotification);
     };
-  }, [socket, user, location.pathname, workspaceId, navigate]);
+  }, [socket, user, location.pathname, workspaceId, navigate, dispatch]);
 
   // Listen for channel-read events to clear unread count
   useEffect(() => {
@@ -284,9 +295,7 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
         </div>
 
         <div className="flex items-center gap-4 shrink-0">
-          <button className="text-slate-500 hover:text-slate-700 transition-colors">
-            <Bell className="w-5 h-5" />
-          </button>
+          <NotificationBell />
           <button className="text-slate-500 hover:text-slate-700 transition-colors">
             <HelpCircle className="w-5 h-5" />
           </button>

@@ -73,6 +73,9 @@ export class SocketService {
                 socket.join(`workspace:${workspaceId}`);
             });
 
+            // Join personal room for user-specific notifications
+            socket.join(`user:${user.id}`);
+
             socket.on('join_channel', (channelId: string) => {
                 logger.info(`User ${user.id} joining channel: ${channelId}`);
                 socket.join(`channel:${channelId}`);

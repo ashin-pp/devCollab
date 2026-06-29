@@ -18,16 +18,10 @@ import { ChannelMembersSidebar } from '../../../components/workspace/ChannelMemb
 import { AddChannelMemberModal } from '../../../components/workspace/AddChannelMemberModal';
 import { ChannelSettingsModal } from '../../../components/workspace/ChannelSettingsModal';
 import type { MessageData, ChannelData } from '../../../types/channel.types';
-import DOMPurify from 'dompurify';
-
-const renderMessageContent = (content: string) => {
-  if (!content) return null;
-  // Convert old markdown format for backwards compatibility
-  let html = content.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\*(.*?)\*/g, '<i>$1</i>');
-  // Sanitize to prevent XSS
-  const cleanHtml = DOMPurify.sanitize(html, { ALLOWED_TAGS: ['b', 'i', 'strong', 'em', 'br', 'div', 'span'] });
-  return <div dangerouslySetInnerHTML={{ __html: cleanHtml }} />;
-};
+import { ChannelHeader } from '../../../components/workspace/channel/ChannelHeader';
+import { ChannelMessageList } from '../../../components/workspace/channel/ChannelMessageList';
+import { ChannelMessageInput } from '../../../components/workspace/channel/ChannelMessageInput';
+import { ChannelNotMemberView } from '../../../components/workspace/channel/ChannelNotMemberView';
 import { ChannelPollsList } from '../../../components/polls/ChannelPollsList';
 import { CreatePollModal } from '../../../components/polls/CreatePollModal';
 
@@ -365,228 +359,26 @@ export const WorkspaceChannelPage = () => {
 
         <div className={`flex-1 flex flex-col h-full transition-all ${showThread ? 'border-r border-slate-200' : ''}`}>
 
-          <header className="h-14 border-b border-slate-200 flex items-center justify-between px-6 shrink-0 bg-white">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <button
-                  onClick={() => setIsChannelDropdownOpen(!isChannelDropdownOpen)}
-                  className="font-bold text-slate-900 text-lg flex items-center hover:bg-slate-100 px-2 py-1 rounded transition-colors"
-                >
-                  {currentChannel?.privacy === 'private' ? (
-                    <Lock className="w-5 h-5 text-orange-500 mr-1" />
-                  ) : (
-                    <Hash className="w-5 h-5 text-blue-600 mr-1" />
-                  )}
-                  {currentChannel?.name || 'channel'}
-                  {currentChannel?.privacy === 'private' ? (
-                    <span className="ml-2 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-orange-100 text-orange-700">
-                      Private
-                    </span>
-                  ) : (
-                    <span className="ml-2 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-100 text-blue-700">
-                      Public
-                    </span>
-                  )}
-                  {currentChannel?.createdBy === user?.id && currentChannel?.privacy === 'private' && pendingRequestsCount > 0 && (
-                    <span className="ml-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full" title={`${pendingRequestsCount} pending request${pendingRequestsCount > 1 ? 's' : ''}`}>
-                      {pendingRequestsCount}
-                    </span>
-                  )}
-                  <ChevronDown className="w-4 h-4 ml-1 text-slate-500" />
-                </button>
-
-                {isChannelDropdownOpen && (
-                  <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-slate-200 shadow-lg rounded-xl z-50 overflow-hidden">
-                    <div className="p-3 border-b border-slate-100">
-                      <div className="flex items-center gap-2 mb-1">
-                        {currentChannel?.privacy === 'private' ? (
-                          <Lock className="w-4 h-4 text-orange-500" />
-                        ) : (
-                          <Hash className="w-4 h-4 text-blue-600" />
-                        )}
-                        <h3 className="font-bold text-slate-900">{currentChannel?.name || 'channel'}</h3>
-                        {currentChannel?.privacy === 'private' ? (
-                          <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-orange-100 text-orange-700">
-                            Private
-                          </span>
-                        ) : (
-                          <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">
-                            Public
-                          </span>
-                        )}
-                        {/* {currentChannel?.createdBy === user?.id && currentChannel?.privacy === 'private' && pendingRequestsCount > 0 && (
-                          <span className="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
-                            {pendingRequestsCount}
-                          </span>
-                        )} */}
-                      </div>
-                      {currentChannel?.description && (
-                        <p className="text-xs text-slate-500 mt-1">{currentChannel.description}</p>
-                      )}
-                    </div>
-                    <div className="py-1">
-                      <button
-                        onClick={() => { setShowMembersSidebar(true); setShowThread(false); setIsChannelDropdownOpen(false); }}
-                        className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-2 transition-colors"
-                      >
-                        <Users className="w-4 h-4" /> View Members
-                        {currentChannel?.createdBy === user?.id && currentChannel?.privacy === 'private' && pendingRequestsCount > 0 && (
-                          <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                            {pendingRequestsCount}
-                          </span>
-                        )}
-                      </button>
-
-                      {currentChannel?.createdBy === user?.id && (
-                        <button
-                          onClick={() => { setIsSettingsModalOpen(true); setIsChannelDropdownOpen(false); }}
-                          className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-2 transition-colors"
-                        >
-                          <Settings className="w-4 h-4" /> Channel Settings
-                        </button>
-                      )}
-                    </div>
-                    {currentChannel?.createdBy !== user?.id && (
-                      <div className="py-1 border-t border-slate-100">
-                        <button
-                          onClick={async () => {
-                            setIsChannelDropdownOpen(false);
-
-                            const result = await Swal.fire({
-                              title: 'Leave Channel?',
-                              text: "Are you sure you want to leave this channel?",
-                              icon: 'warning',
-                              showCancelButton: true,
-                              confirmButtonColor: '#ef4444',
-                              cancelButtonColor: '#64748b',
-                              confirmButtonText: 'Yes, leave channel'
-                            });
-
-                            if (!result.isConfirmed) return;
-
-                            try {
-                              await ChannelService.leaveChannel(workspaceId as string, channelId as string);
-                              navigate(`/workspace/${workspaceId}/channels`);
-                            } catch (e) {
-                              console.error(e);
-                            }
-                          }}
-                          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
-                        >
-                          <LogOut className="w-4 h-4" /> Leave Channel
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-              <button className="text-slate-400 hover:text-yellow-500 transition-colors">
-                <Star className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="flex items-center gap-6">
-              <div className="hidden md:flex items-center gap-2">
-                <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-semibold rounded-md border border-blue-100 flex items-center gap-1 cursor-pointer hover:bg-blue-100">
-                  @task <span className="w-4 h-4 rounded-full bg-red-500 text-white flex items-center justify-center text-[9px]">3</span>
-                </span>
-                <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-semibold rounded-md border border-blue-100 cursor-pointer hover:bg-blue-100">
-                  @notify
-                </span>
-                <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-semibold rounded-md border border-blue-100 flex items-center gap-1 cursor-pointer hover:bg-blue-100">
-                  @remind <span className="w-4 h-4 rounded-full bg-orange-500 text-white flex items-center justify-center text-[9px]">5</span>
-                </span>
-                <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-semibold rounded-md border border-blue-100 cursor-pointer hover:bg-blue-100">
-                  @info
-                </span>
-                <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-semibold rounded-md border border-blue-100 cursor-pointer hover:bg-blue-100">
-                  @schedule
-                </span>
-                <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-semibold rounded-md border border-blue-100 cursor-pointer hover:bg-blue-100">
-                  @summary
-                </span>
-              </div>
-
-              <div className="flex items-center">
-                <div
-                  onClick={() => { setShowMembersSidebar(true); setShowThread(false); }}
-                  className="flex items-center cursor-pointer hover:bg-slate-50 p-1.5 rounded-lg transition-colors border border-transparent hover:border-slate-200"
-                  title="View Channel Members"
-                >
-                  {channelMembers.slice(0, 3).map((member, index) => {
-                    const bgColors = ['bg-blue-100 text-blue-700', 'bg-indigo-100 text-indigo-700', 'bg-orange-100 text-orange-700'];
-                    const zIndexes = ['z-30', 'z-20', 'z-10'];
-                    return member.user?.profileImage ? (
-                      <img
-                        key={member.id}
-                        src={member.user.profileImage}
-                        alt={member.user.name}
-                        className={`w-7 h-7 rounded-full border-2 border-white object-cover ${zIndexes[index]}`}
-                      />
-                    ) : (
-                      <div key={member.id} className={`w-7 h-7 rounded-full ${bgColors[index % bgColors.length]} border-2 border-white flex items-center justify-center text-[10px] font-bold ${zIndexes[index]}`}>
-                        {member.user?.name?.[0]?.toUpperCase() || 'U'}
-                      </div>
-                    );
-                  })}
-                  {channelMembers.length > 3 && (
-                    <div className="w-7 h-7 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[10px] font-bold text-slate-600 z-0">
-                      +{channelMembers.length - 3}
-                    </div>
-                  )}
-                  {channelMembers.length === 0 && (
-                    <div className="w-7 h-7 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[10px] font-bold text-slate-600">
-                      0
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </header>
+          <ChannelHeader
+            currentChannel={currentChannel}
+            user={user}
+            pendingRequestsCount={pendingRequestsCount}
+            workspaceId={workspaceId as string}
+            channelId={channelId as string}
+            channelMembers={channelMembers}
+            isChannelDropdownOpen={isChannelDropdownOpen}
+            setIsChannelDropdownOpen={setIsChannelDropdownOpen}
+            setShowMembersSidebar={setShowMembersSidebar}
+            setShowThread={setShowThread}
+            setIsSettingsModalOpen={setIsSettingsModalOpen}
+            navigate={navigate}
+          />
 
           {currentChannel?.isMember === false ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-6 bg-slate-50">
-              <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${currentChannel?.privacy === 'private' ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'}`}>
-                {currentChannel?.privacy === 'private' ? <Lock className="w-8 h-8" /> : <Hash className="w-8 h-8" />}
-              </div>
-              <div className="flex items-center gap-2 mb-2">
-                {currentChannel?.privacy === 'private' ? (
-                  <Lock className="w-5 h-5 text-orange-500" />
-                ) : (
-                  <Hash className="w-5 h-5 text-blue-600" />
-                )}
-                <h2 className="text-2xl font-bold text-slate-900">{currentChannel?.name}</h2>
-                {currentChannel?.privacy === 'private' ? (
-                  <span className="text-xs font-bold uppercase tracking-wider px-2 py-1 rounded bg-orange-100 text-orange-700">
-                    Private
-                  </span>
-                ) : (
-                  <span className="text-xs font-bold uppercase tracking-wider px-2 py-1 rounded bg-blue-100 text-blue-700">
-                    Public
-                  </span>
-                )}
-              </div>
-              <p className="text-slate-500 text-center max-w-md mb-8">
-                {currentChannel?.description || "You are not a member of this channel. Join to see messages and participate in the conversation."}
-              </p>
-
-              {currentChannel?.hasPendingRequest ? (
-                <button
-                  disabled
-                  className="px-6 py-2.5 bg-slate-200 text-slate-500 font-semibold rounded-xl flex items-center gap-2 cursor-not-allowed"
-                >
-                  <Lock className="w-5 h-5" /> Request Pending
-                </button>
-              ) : (
-                <button
-                  onClick={handleJoinChannel}
-                  className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-sm flex items-center gap-2"
-                >
-                  <Plus className="w-5 h-5" />
-                  {currentChannel?.privacy === 'private' ? 'Request to Join' : 'Join Channel'}
-                </button>
-              )}
-            </div>
+            <ChannelNotMemberView
+              currentChannel={currentChannel}
+              handleJoinChannel={handleJoinChannel}
+            />
           ) : (
             <>
               {/* Channel Polls */}
@@ -606,199 +398,38 @@ export const WorkspaceChannelPage = () => {
                 </div>
               )}
 
-              <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#f8fafc] relative">
+              <ChannelMessageList
+                messages={messages}
+                user={user}
+                memberImagesMap={memberImagesMap}
+                hasMoreMessages={hasMoreMessages}
+                isLoadingMessages={isLoadingMessages}
+                loadMoreMessages={loadMoreMessages}
+                totalMessages={totalMessages}
+                messagesEndRef={messagesEndRef}
+                setSelectedImage={setSelectedImage}
+              />
 
-                {/* Load More Messages Button */}
-                {hasMoreMessages && (
-                  <div className="flex justify-center pb-4">
-                    <button
-                      onClick={loadMoreMessages}
-                      disabled={isLoadingMessages}
-                      className="px-4 py-2 bg-blue-50 text-blue-600 text-sm font-semibold rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                    >
-                      {isLoadingMessages ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                          Loading...
-                        </>
-                      ) : (
-                        `Load older messages (${totalMessages - messages.length} more)`
-                      )}
-                    </button>
-                  </div>
-                )}
-
-                {messages.map((msg) => {
-                  const isMe = msg.senderId === user?.id;
-                  const senderInitial = msg.senderName?.[0]?.toUpperCase() || 'U';
-                  const isSystemMessage = msg.messageType === 'system';
-
-                  // Get profile image from member map or use current user's image
-                  const senderImage = isMe
-                    ? user?.profileImage
-                    : (memberImagesMap[msg.senderId] || msg.senderImage);
-
-                  // System message (member removed, etc.)
-                  if (isSystemMessage) {
-                    return (
-                      <div key={msg.id || msg._id as string} className="flex justify-center my-3">
-                        <div className="text-slate-400 text-xs text-center px-3 py-1 font-medium bg-slate-50/80 rounded-full border border-slate-100">
-                          {msg.content}
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div key={msg.id || msg._id as string} className={`flex gap-4 group ${isMe ? 'flex-row-reverse' : ''}`}>
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold shrink-0 shadow-sm overflow-hidden ${isMe ? 'bg-indigo-500 text-white' : 'bg-slate-200 text-slate-700'}`}>
-                        {senderImage ? (
-                          <img
-                            src={senderImage}
-                            alt={msg.senderName || 'User'}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <span>{senderInitial}</span>
-                        )}
-                      </div>
-                      <div className={`flex-1 min-w-0 flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                        <div className={`flex items-baseline gap-2 mb-1 ${isMe ? 'flex-row-reverse' : ''}`}>
-                          <span className="font-bold text-slate-900 text-sm">{isMe ? 'You' : (msg.senderName || 'User')}</span>
-                          <span className="text-xs text-slate-500">
-                            {msg.createdAt ? format(new Date(msg.createdAt), 'h:mm a') : 'Now'}
-                          </span>
-                        </div>
-                        <div className={`text-[15px] leading-relaxed whitespace-pre-wrap max-w-[85%] ${msg.messageType === 'image' && !msg.content?.trim()
-                          ? 'bg-transparent shadow-none'
-                          : isMe
-                            ? 'bg-indigo-500 text-white rounded-2xl rounded-tr-sm shadow-indigo-500/20 shadow-sm px-4 py-2.5'
-                            : 'bg-white border border-slate-200 text-slate-700 rounded-2xl rounded-tl-sm shadow-sm px-4 py-2.5'
-                          }`}>
-                          {msg.messageType === 'image' && msg.imageUrl ? (
-                            <img
-                              src={msg.imageUrl}
-                              alt="Message attachment"
-                              className={`rounded-lg max-w-full max-h-[300px] object-contain cursor-pointer hover:opacity-90 transition-opacity border border-slate-200/50 ${msg.content?.trim() ? 'mb-2' : ''}`}
-                              onClick={() => setSelectedImage(msg.imageUrl!)}
-                            />
-                          ) : null}
-                          {msg.content && renderMessageContent(msg.content)}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-
-                <div ref={messagesEndRef} />
-              </div>
-
-              <div className="p-4 bg-white">
-                <div className="border border-slate-300 rounded-2xl overflow-visible focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all shadow-sm bg-slate-50 relative">
-
-                  {/* AI Commands Bar - Minimal Pill Style */}
-                  <div className="px-4 pt-3 flex items-center gap-2 overflow-x-auto hide-scrollbar">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">AI</span>
-                    <button className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full hover:bg-indigo-100 transition-colors shadow-sm">@task</button>
-                    <button className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full hover:bg-indigo-100 transition-colors shadow-sm">@notify</button>
-                    <button className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full hover:bg-indigo-100 transition-colors shadow-sm">@remind</button>
-                    <button className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full hover:bg-indigo-100 transition-colors shadow-sm">@info</button>
-                    <button className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full hover:bg-indigo-100 transition-colors shadow-sm">@schedule</button>
-                    <button className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full hover:bg-indigo-100 transition-colors shadow-sm">@summary</button>
-                  </div>
-
-                  <input type="file" ref={fileInputRef} hidden onChange={handleFileSelect} accept="image/*" />
-
-                  {isUploading && (
-                    <div className="px-4 py-3 text-sm text-slate-500">Uploading image...</div>
-                  )}
-
-                  {attachedImageUrl && (
-                    <div className="px-4 py-3 relative inline-block">
-                      <img src={attachedImageUrl} alt="Attachment preview" className="h-32 rounded-lg object-cover border border-slate-200" />
-                      <button
-                        onClick={() => setAttachedImageUrl(null)}
-                        className="absolute top-4 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-sm"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  )}
-
-                  <div
-                    ref={textareaRef}
-                    contentEditable
-                    onInput={(e) => {
-                      handleTyping(e as any);
-                      setMessage(e.currentTarget.innerHTML);
-                      checkFormatting();
-                    }}
-                    onKeyDown={handleKeyDown}
-                    onKeyUp={checkFormatting}
-                    onMouseUp={checkFormatting}
-                    className="w-full resize-none px-4 py-3 min-h-[60px] max-h-[200px] text-[15px] focus:outline-none text-slate-800 bg-transparent overflow-y-auto cursor-text empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400"
-                    data-placeholder="Message #channel..."
-                  />
-
-                  <div className="px-3 pb-3 flex items-center justify-between">
-                    <div className="flex items-center gap-0.5">
-                      <div className="relative">
-                        <button
-                          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                          className={`p-1.5 rounded-lg transition-colors ${showEmojiPicker ? 'bg-blue-100 text-blue-600' : 'text-slate-500 hover:bg-slate-200 hover:text-slate-700'}`}
-                          title="Add Emoji"
-                        >
-                          <Smile className="w-5 h-5" />
-                        </button>
-                        {showEmojiPicker && (
-                          <div className="absolute bottom-full mb-2 left-0 z-50 shadow-2xl rounded-xl bg-white border border-slate-200 overflow-hidden">
-                            <div className="flex justify-between items-center p-2 border-b border-slate-100 bg-slate-50">
-                              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Emojis</span>
-                              <button onClick={() => setShowEmojiPicker(false)} className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-full transition-colors">
-                                <X className="w-4 h-4" />
-                              </button>
-                            </div>
-                            <EmojiPicker
-                              onEmojiClick={(emojiData) => {
-                                setMessage(prev => prev + emojiData.emoji);
-                                if (textareaRef.current) {
-                                  textareaRef.current.innerHTML += emojiData.emoji;
-                                }
-                                setShowEmojiPicker(false);
-                              }}
-                              width={320}
-                              height={400}
-                            />
-                          </div>
-                        )}
-                      </div>
-                      <button onMouseDown={(e) => e.preventDefault()} onClick={() => handleFormat('bold')} className={`p-1.5 rounded-lg transition-colors ${isBoldActive ? 'bg-blue-100 text-blue-600' : 'text-slate-500 hover:bg-slate-200 hover:text-slate-700'}`} title="Format Bold"><Bold className="w-4 h-4" /></button>
-                      <button onMouseDown={(e) => e.preventDefault()} onClick={() => handleFormat('italic')} className={`p-1.5 rounded-lg transition-colors ${isItalicActive ? 'bg-blue-100 text-blue-600' : 'text-slate-500 hover:bg-slate-200 hover:text-slate-700'}`} title="Format Italic"><Italic className="w-4 h-4" /></button>
-                      <button className="p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-700 rounded-lg transition-colors" title="Mention"><AtSign className="w-4 h-4" /></button>
-                      <div className="w-px h-5 bg-slate-300 mx-1.5"></div>
-                      <button
-                        onClick={() => setIsCreatePollModalOpen(true)}
-                        className="p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-700 rounded-lg transition-colors"
-                        title="Create Poll"
-                      >
-                        <BarChart2 className="w-4 h-4" />
-                      </button>
-                      <button onClick={() => fileInputRef.current?.click()} className="p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-700 rounded-lg transition-colors" title="Add Image"><ImageIcon className="w-4 h-4" /></button>
-                    </div>
-
-                    <button
-                      onClick={handleSendMessage}
-                      disabled={(!message.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim() && !attachedImageUrl) || isUploading}
-                      className={`p-2 rounded-xl flex items-center justify-center transition-all ${message.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim() || attachedImageUrl
-                        ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5'
-                        : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                        }`}
-                    >
-                      <Send className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <ChannelMessageInput
+                fileInputRef={fileInputRef}
+                handleFileSelect={handleFileSelect}
+                isUploading={isUploading}
+                attachedImageUrl={attachedImageUrl}
+                setAttachedImageUrl={setAttachedImageUrl}
+                textareaRef={textareaRef}
+                handleTyping={handleTyping}
+                setMessage={setMessage}
+                message={message}
+                checkFormatting={checkFormatting}
+                handleKeyDown={handleKeyDown}
+                showEmojiPicker={showEmojiPicker}
+                setShowEmojiPicker={setShowEmojiPicker}
+                isBoldActive={isBoldActive}
+                isItalicActive={isItalicActive}
+                handleFormat={handleFormat}
+                setIsCreatePollModalOpen={setIsCreatePollModalOpen}
+                handleSendMessage={handleSendMessage}
+              />
             </>
           )}
         </div>
