@@ -12,7 +12,10 @@ export class CreateNotificationUseCase {
         message: string;
         relatedId?: string;
     }): Promise<Notification> {
-        const notification = await this.notificationRepository.create(data);
+        const notification = await this.notificationRepository.create({
+            ...data,
+            isRead: false
+        } as unknown as Notification);
         
         // Emit socket event to the specific user's room
         const socketService = SocketService.getInstance();

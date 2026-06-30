@@ -8,6 +8,11 @@ import { OtpRepository } from "../infra/database/repositories/OtpRepository";
 import { NodemailerEmailService } from "../infra/services/NodemailerEmailService";
 import { JwtService } from "../infra/services/JwtService";
 import { CloudinaryStorageService } from "../infra/services/CloudinaryStorageService";
+import { LangChainService } from "../infra/services/LangChainService";
+
+// --- AI Imports ---
+import { HandleAiCommandUseCase } from "../application/use-cases/ai/HandleAiCommandUseCase";
+import { AIController } from "../interfaces/controllers/AIController";
 
 // --- Auth Imports ---
 import { RegisterUserUseCase } from "../application/use-cases/auth/RegisterUserUseCase";
@@ -358,4 +363,9 @@ const dmController = new DMController(
     markMessageAsSeenUseCase
 );
 
-export { logger, authController, adminController, userController, workspaceController, channelController, messageController, dmController, pollController, uploadController, notificationController, jwtService, createNotificationUseCase };
+// AI Instantiations
+const aiService = new LangChainService(createNotificationUseCase, getChannelMessagesUseCase);
+const handleAiCommandUseCase = new HandleAiCommandUseCase(aiService);
+const aiController = new AIController(handleAiCommandUseCase);
+
+export { logger, authController, adminController, userController, workspaceController, channelController, messageController, dmController, pollController, uploadController, notificationController, jwtService, createNotificationUseCase, aiController };
