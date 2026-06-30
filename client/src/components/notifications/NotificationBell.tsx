@@ -75,7 +75,7 @@ export const NotificationBell = () => {
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-bold text-slate-800">{notification.title}</p>
-                                                <p className="text-xs text-slate-600 mt-0.5 line-clamp-2">{notification.message}</p>
+                                                <p className="text-xs text-slate-600 mt-0.5">{notification.message}</p>
                                                 <p className="text-[10px] text-slate-400 mt-1.5">
                                                     {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
                                                 </p>

@@ -15,7 +15,7 @@ export class MessageController {
     sendMessage = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
         try {
             const { workspaceId, channelId } = req.params;
-            const { content, messageType, imageUrl } = req.body;
+            const { content, messageType, imageUrl, mentionedUserIds } = req.body;
             const userId = req.user?.id;
 
             if (!userId) {
@@ -32,7 +32,8 @@ export class MessageController {
                 userId, 
                 content || '',
                 messageType,
-                imageUrl
+                imageUrl,
+                mentionedUserIds
             );
             
             res.status(HttpStatusCode.CREATED).json({

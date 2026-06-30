@@ -17,6 +17,10 @@ export class Channel {
         this.isActive = false;
     }
 
+    public reactivate(): void {
+        this.isActive = true;
+    }
+
     public makePrivate(): void {
         this.privacy = 'private';
     }

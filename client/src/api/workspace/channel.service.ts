@@ -8,7 +8,7 @@ export const ChannelService = {
     getWorkspaceChannels: (workspaceId: string) => {
         return api.get(API_ENDPOINTS.CHANNELS.LIST(workspaceId));
     },
-    updateChannel: (workspaceId: string, channelId: string, data: { name?: string, description?: string, privacy?: 'public' | 'private' }) => {
+    updateChannel: (workspaceId: string, channelId: string, data: { name?: string, description?: string, privacy?: 'public' | 'private', is_active?: boolean }) => {
         return api.patch(API_ENDPOINTS.CHANNELS.DETAIL(workspaceId, channelId), data);
     },
     deleteChannel: (workspaceId: string, channelId: string) => {

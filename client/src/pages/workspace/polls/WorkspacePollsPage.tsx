@@ -175,35 +175,10 @@ export const WorkspacePollsPage = () => {
     <WorkspaceLayout>
       <div className="flex flex-col h-full bg-slate-50 overflow-hidden font-sans">
         
-        {/* Top Navigation Bar */}
-        <header className="h-14 border-b border-slate-200 bg-white flex items-center justify-between px-6 shrink-0">
-          <div className="flex items-center gap-2 text-blue-600 font-bold text-lg">
-            Polls
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-              <input 
-                type="text" 
-                placeholder="Search polls..." 
-                className="pl-9 pr-4 py-1.5 bg-slate-100 border-none rounded-md text-sm focus:ring-2 focus:ring-blue-500 w-64 outline-none"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <button className="text-slate-400 hover:text-slate-600 relative">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
-            </button>
-            {user?.profileImage ? (
-              <img src={user.profileImage} alt="Profile" className="w-7 h-7 rounded-full object-cover border border-slate-200" />
-            ) : (
-              <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold border border-blue-200">
-                {user?.name?.[0]?.toUpperCase() || 'U'}
-              </div>
-            )}
-          </div>
-        </header>
+        {/* Page Header */}
+        <div className="flex items-center justify-between px-8 py-5 bg-white border-b border-slate-200">
+          <h1 className="text-xl font-bold text-slate-800">Polls</h1>
+        </div>
 
         {/* Main Content Scrollable */}
         <div className="flex-1 overflow-y-auto p-8 hide-scrollbar">

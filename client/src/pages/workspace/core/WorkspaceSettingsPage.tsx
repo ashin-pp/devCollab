@@ -1,5 +1,5 @@
 import { WorkspaceLayout } from '../../../layouts/WorkspaceLayout';
-import { Settings, Users, Hash, BarChart3, AlertCircle, Download, Copy, RefreshCw, Trash2, ArrowRight } from 'lucide-react';
+import { Settings, Users, Hash, BarChart3, AlertCircle, Download, Copy, RefreshCw, Trash2, ArrowRight, Upload } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -18,11 +18,14 @@ export const WorkspaceSettingsPage = () => {
   
   const [workspace, setWorkspace] = useState<WorkspaceData | null>(null);
   const [members, setMembers] = useState<MemberData[]>([]);
+  const [channels, setChannels] = useState<any[]>([]);
   const [channelCount, setChannelCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [logo, setLogo] = useState('');
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [privacy, setPrivacy] = useState<'public' | 'private'>('public');
   const [maxMembers, setMaxMembers] = useState<number | ''>(50);
 
@@ -41,6 +44,7 @@ export const WorkspaceSettingsPage = () => {
         setWorkspace(ws);
         setName(ws.name);
         setDescription(ws.description || '');
+        setLogo(ws.logo || '');
         setPrivacy(ws.privacy);
         if (ws.maxMembers) setMaxMembers(ws.maxMembers);
       }
@@ -50,6 +54,7 @@ export const WorkspaceSettingsPage = () => {
 
       // Fetch channels count for this workspace
       const channelsData = await ChannelService.getWorkspaceChannels(workspaceId);
+      setChannels(channelsData.data?.data || []);
       setChannelCount(channelsData.data?.data?.length || 0);
     } catch {
       toast.error('Failed to load workspace data');
@@ -65,7 +70,7 @@ export const WorkspaceSettingsPage = () => {
     try {
       const loadingToast = toast.loading('Updating settings...');
       const membersLimit = maxMembers === '' ? 50 : maxMembers;
-      await WorkspaceService.updateWorkspace(workspaceId, { name, description, privacy, maxMembers: membersLimit });
+      await WorkspaceService.updateWorkspace(workspaceId, { name, description, logo, privacy, maxMembers: membersLimit });
       toast.dismiss(loadingToast);
       toast.success('Settings updated successfully!');
       fetchData();
@@ -117,6 +122,59 @@ export const WorkspaceSettingsPage = () => {
         } catch (error: unknown) {
           const err = error as { response?: { data?: { message?: string } } };
           toast.error(err.response?.data?.message || 'Failed to delete workspace');
+        }
+      }
+    });
+  };
+
+  const handleToggleChannelStatus = async (channelId: string, currentStatus: boolean, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!workspaceId) return;
+
+    if (currentStatus) {
+      const result = await Swal.fire({
+        title: 'Block Channel?',
+        text: 'Are you sure you want to block this channel?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Block',
+        confirmButtonColor: '#ea580c'
+      });
+      if (!result.isConfirmed) return;
+    }
+
+    try {
+      const loadingToast = toast.loading(currentStatus ? 'Blocking channel...' : 'Unblocking channel...');
+      await ChannelService.updateChannel(workspaceId, channelId, { is_active: !currentStatus });
+      toast.dismiss(loadingToast);
+      toast.success(`Channel ${currentStatus ? 'blocked' : 'unblocked'} successfully!`);
+      fetchData();
+    } catch (error: unknown) {
+      toast.dismiss();
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || 'Failed to update channel status');
+    }
+  };
+
+  const handleDeleteChannel = async (channelId: string, channelName: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!workspaceId) return;
+    Swal.fire({
+      title: `Delete #${channelName}?`,
+      text: 'This action is irreversible and will remove all messages in this channel.',
+      icon: 'error',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, Delete',
+      confirmButtonColor: '#dc2626'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await ChannelService.deleteChannel(workspaceId, channelId);
+          toast.success('Channel deleted!');
+          fetchData();
+        } catch (error: unknown) {
+          const err = error as { response?: { data?: { message?: string } } };
+          toast.error(err.response?.data?.message || 'Failed to delete channel');
         }
       }
     });
@@ -195,6 +253,59 @@ export const WorkspaceSettingsPage = () => {
                     <p className="text-sm text-slate-500 mt-1">Update your workspace identity and privacy.</p>
                   </div>
                   <div className="p-6 space-y-5">
+                    <div className="flex items-center gap-6 mb-4">
+                      <div className="relative group">
+                        <div className="w-20 h-20 rounded-2xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center overflow-hidden shrink-0">
+                          {logo ? (
+                            <img src={logo} alt="Workspace Logo" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="text-2xl font-bold text-slate-400">{name ? name.charAt(0).toUpperCase() : 'W'}</div>
+                          )}
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <label className="cursor-pointer text-white flex flex-col items-center">
+                              <Upload className="w-5 h-5 mb-1" />
+                              <span className="text-[10px] font-bold">Change</span>
+                              <input 
+                                type="file" 
+                                className="hidden" 
+                                accept="image/*"
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    setIsUploadingLogo(true);
+                                    const formData = new FormData();
+                                    formData.append('image', file);
+                                    try {
+                                      const { api } = await import('../../../api/axios');
+                                      const res = await api.post('/upload/image', formData, {
+                                        headers: { 'Content-Type': 'multipart/form-data' }
+                                      });
+                                      setLogo(res.data.data.imageUrl);
+                                      toast.success('Logo uploaded successfully');
+                                    } catch (err) {
+                                      toast.error('Failed to upload logo');
+                                    } finally {
+                                      setIsUploadingLogo(false);
+                                    }
+                                  }
+                                }}
+                                disabled={isUploadingLogo}
+                              />
+                            </label>
+                          </div>
+                        </div>
+                        {isUploadingLogo && (
+                          <div className="absolute inset-0 bg-white/50 flex items-center justify-center">
+                            <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-slate-800">Workspace Logo</h3>
+                        <p className="text-xs text-slate-500 mt-1">Upload a square image. Recommended size is 256x256px.</p>
+                      </div>
+                    </div>
+                    
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 mb-1">Workspace Name</label>
                       <input 
@@ -261,28 +372,49 @@ export const WorkspaceSettingsPage = () => {
                   </button>
                 </div>
                 <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="border border-slate-200 rounded-xl p-4 hover:border-blue-300 transition-colors cursor-pointer group">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors"># engineering</h3>
-                      <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 text-[9px] font-bold uppercase rounded">Public</span>
+                  {channels.map(channel => (
+                    <div key={channel.id} onClick={() => navigate(`/workspace/${workspaceId}/channels/${channel.id}`)} className="border border-slate-200 rounded-xl p-4 hover:border-blue-300 transition-colors cursor-pointer group flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className={`font-bold transition-colors ${!channel.isActive ? 'text-slate-400 line-through' : 'text-slate-900 group-hover:text-blue-600'}`}># {channel.name}</h3>
+                          <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 text-[9px] font-bold uppercase rounded">
+                            {channel.privacy}
+                          </span>
+                          {!channel.isActive && (
+                            <span className="px-1.5 py-0.5 bg-red-100 text-red-600 text-[9px] font-bold uppercase rounded">
+                              Blocked
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-500 mb-4 line-clamp-2">
+                          {channel.description || 'No description provided.'}
+                        </p>
+                      </div>
+                      <div className="flex items-center justify-end text-xs text-slate-400 gap-2">
+                        {isOwner && (
+                          <>
+                            <button 
+                              onClick={(e) => handleToggleChannelStatus(channel.id, channel.isActive, e)}
+                              className={`px-2 py-1 rounded text-[10px] font-bold transition-colors ${channel.isActive ? 'bg-orange-50 text-orange-600 hover:bg-orange-100' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}`}
+                            >
+                              {channel.isActive ? 'Block' : 'Unblock'}
+                            </button>
+                            <button 
+                              onClick={(e) => handleDeleteChannel(channel.id, channel.name, e)}
+                              className="px-2 py-1 rounded text-[10px] font-bold bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                            >
+                              Delete
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <p className="text-xs text-slate-500 mb-4 line-clamp-2">The main hub for all engineering related discussions, sprint planning, and technical alignment.</p>
-                    <div className="flex items-center justify-between text-xs text-slate-400">
-                      <span>24 members</span>
-                      <Settings className="w-3.5 h-3.5" />
+                  ))}
+                  {channels.length === 0 && (
+                    <div className="col-span-1 sm:col-span-2 text-center py-6 text-slate-400 text-sm">
+                      No channels found in this workspace.
                     </div>
-                  </div>
-                  <div className="border border-slate-200 rounded-xl p-4 hover:border-blue-300 transition-colors cursor-pointer group">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors"># general</h3>
-                      <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 text-[9px] font-bold uppercase rounded">Public</span>
-                    </div>
-                    <p className="text-xs text-slate-500 mb-4 line-clamp-2">Company-wide announcements and social interactions for the entire DevCollab team.</p>
-                    <div className="flex items-center justify-between text-xs text-slate-400">
-                      <span>{members.length} members</span>
-                      <Settings className="w-3.5 h-3.5" />
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
 

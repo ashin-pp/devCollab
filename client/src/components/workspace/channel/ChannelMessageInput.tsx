@@ -1,6 +1,9 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Smile, Bold, Italic, AtSign, BarChart2, Image as ImageIcon, X, Send } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
+import type { ChannelMemberData } from '../../../types/channel.types';
+import { useSelector } from 'react-redux';
+import type { RootState } from '../../../store';
 
 interface ChannelMessageInputProps {
   fileInputRef: React.RefObject<HTMLInputElement | null>;
@@ -21,6 +24,7 @@ interface ChannelMessageInputProps {
   handleFormat: (command: string) => void;
   setIsCreatePollModalOpen: (open: boolean) => void;
   handleSendMessage: () => void;
+  channelMembers: ChannelMemberData[];
 }
 
 export const ChannelMessageInput = ({
@@ -41,8 +45,140 @@ export const ChannelMessageInput = ({
   isItalicActive,
   handleFormat,
   setIsCreatePollModalOpen,
-  handleSendMessage
+  handleSendMessage,
+  channelMembers
 }: ChannelMessageInputProps) => {
+  const [mentionSearch, setMentionSearch] = useState<string | null>(null);
+  const currentUser = useSelector((state: RootState) => state.auth.user);
+
+  const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
+    let html = e.currentTarget.innerHTML;
+
+    // Clear stuck formatting (like bold) when the user deletes the content
+    if (e.currentTarget.textContent === '') {
+      if (html !== '') {
+        e.currentTarget.innerHTML = '';
+        html = '';
+      }
+      if (document.queryCommandState('bold')) document.execCommand('bold', false, undefined);
+      if (document.queryCommandState('italic')) document.execCommand('italic', false, undefined);
+    }
+    
+    // Find if the cursor is currently typing a mention
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      const preCursorText = range.startContainer.textContent?.slice(0, range.startOffset) || '';
+      const match = preCursorText.match(/@([a-zA-Z0-9_]*)$/);
+      if (match) {
+        setMentionSearch(match[1]);
+      } else {
+        setMentionSearch(null);
+      }
+    }
+
+    handleTyping(e as any);
+    setMessage(html);
+    checkFormatting();
+  };
+
+  const insertMention = (member: ChannelMemberData) => {
+    if (!textareaRef.current || !member.user) return;
+    
+    textareaRef.current.focus();
+    const selection = window.getSelection();
+    
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      
+      if (range.startContainer.nodeType === Node.TEXT_NODE) {
+        const textContent = range.startContainer.textContent || '';
+        const offset = range.startOffset;
+        const preCursorText = textContent.slice(0, offset);
+        
+        const match = preCursorText.match(/@([a-zA-Z0-9_]*)$/);
+        
+        if (match) {
+          const matchLength = match[0].length;
+          range.setStart(range.startContainer, offset - matchLength);
+          range.deleteContents();
+          
+          const mentionEl = document.createElement('span');
+          mentionEl.className = 'text-blue-600 font-semibold bg-blue-50 px-1 rounded-md';
+          mentionEl.dataset.mentionId = member.userId;
+          mentionEl.textContent = `@${member.user.name}`;
+          mentionEl.contentEditable = 'false';
+          
+          const spaceEl = document.createTextNode('\u00A0');
+          
+          range.insertNode(spaceEl);
+          range.insertNode(mentionEl);
+          
+          range.setStartAfter(spaceEl);
+          range.setEndAfter(spaceEl);
+          
+          selection.removeAllRanges();
+          selection.addRange(range);
+          
+          setMessage(textareaRef.current.innerHTML);
+          setMentionSearch(null);
+          return;
+        }
+      }
+    }
+
+    // Fallback if selection didn't match (e.g. lost focus)
+    const html = textareaRef.current.innerHTML;
+    const searchStr = mentionSearch ? `@${mentionSearch}` : '@';
+    const lastIdx = html.lastIndexOf(searchStr);
+    
+    if (lastIdx !== -1) {
+      const mentionHtml = `<span class="text-blue-600 font-semibold bg-blue-50 px-1 rounded-md" data-mention-id="${member.userId}" contenteditable="false">@${member.user.name}</span>&nbsp;`;
+      const newHtml = html.substring(0, lastIdx) + mentionHtml + html.substring(lastIdx + searchStr.length);
+      textareaRef.current.innerHTML = newHtml;
+      setMessage(newHtml);
+      setMentionSearch(null);
+      
+      const range = document.createRange();
+      range.selectNodeContents(textareaRef.current);
+      range.collapse(false);
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    }
+  };
+
+  const handleMentionClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+      const selection = window.getSelection();
+      let range = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+      
+      if (!range || !textareaRef.current.contains(range.commonAncestorContainer)) {
+        range = document.createRange();
+        range.selectNodeContents(textareaRef.current);
+        range.collapse(false); // Move to the end
+      }
+
+      const textNode = document.createTextNode('@');
+      range.insertNode(textNode);
+      
+      // Move cursor after the inserted '@'
+      range.setStartAfter(textNode);
+      range.setEndAfter(textNode);
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+      
+      const newHtml = textareaRef.current.innerHTML;
+      setMessage(newHtml);
+      setMentionSearch(''); // Trigger popup
+    }
+  };
+
+  const filteredMembers = channelMembers?.filter(member => 
+    member.userId !== currentUser?.id && member.user?.name?.toLowerCase().includes(mentionSearch?.toLowerCase() || '')
+  ) || [];
+
   return (
     <div className="p-4 bg-white">
       <div className="border border-slate-300 rounded-2xl overflow-visible focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all shadow-sm bg-slate-50 relative">
@@ -76,14 +212,81 @@ export const ChannelMessageInput = ({
           </div>
         )}
 
+        {/* --- PREMIUM MENTION POPUP --- */}
+        {mentionSearch !== null && (
+          <div className="absolute bottom-full mb-3 left-4 w-72 bg-white/95 backdrop-blur-md border border-slate-200/60 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden z-50 transform origin-bottom-left transition-all duration-200 ease-out">
+            
+            {/* Header */}
+            <div className="px-4 py-3 bg-gradient-to-r from-slate-50/80 to-white border-b border-slate-100 flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-blue-100 rounded-lg text-blue-600">
+                  <AtSign className="w-3.5 h-3.5" />
+                </div>
+                <span className="text-xs font-bold text-slate-700 tracking-wide">Mention User</span>
+              </div>
+              <button 
+                onClick={() => setMentionSearch(null)} 
+                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            
+            {/* List */}
+            <div className="max-h-64 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+              {filteredMembers.length > 0 ? (
+                filteredMembers.map((member: ChannelMemberData) => member.user && (
+                  <button
+                    key={member.id}
+                    onMouseDown={(e) => { e.preventDefault(); insertMention(member); }}
+                    className="w-full px-3 py-2.5 text-left rounded-xl hover:bg-blue-50 focus:bg-blue-50 focus:outline-none group flex items-center gap-3 transition-all duration-200 border border-transparent hover:border-blue-100"
+                  >
+                    <div className="relative shrink-0">
+                      {member.user.profileImage ? (
+                          <img src={member.user.profileImage} alt={member.user.name} className="w-9 h-9 rounded-full object-cover shadow-sm ring-2 ring-white group-hover:ring-blue-100 transition-all" />
+                      ) : (
+                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 text-blue-700 flex items-center justify-center text-sm font-bold shadow-sm ring-2 ring-white group-hover:ring-blue-100 transition-all">
+                            {member.user.name.charAt(0).toUpperCase()}
+                          </div>
+                      )}
+                      <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full"></div>
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-baseline mb-0.5">
+                        <span className="text-sm font-semibold text-slate-800 truncate group-hover:text-blue-700 transition-colors">
+                          {member.user.name}
+                        </span>
+                        {member.role === 'admin' && (
+                          <span className="text-[9px] uppercase tracking-wider font-bold text-purple-600 bg-purple-100 px-1.5 py-0.5 rounded-md">
+                            Admin
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs text-slate-400 truncate block group-hover:text-blue-500/70 transition-colors">
+                        {member.user.email}
+                      </span>
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <div className="px-4 py-8 text-center flex flex-col items-center justify-center">
+                  <div className="w-10 h-10 bg-slate-100 text-slate-300 rounded-full flex items-center justify-center mb-2">
+                    <AtSign className="w-5 h-5" />
+                  </div>
+                  <span className="text-sm font-medium text-slate-600">No members found</span>
+                  <span className="text-xs text-slate-400 mt-1">Try a different name</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        {/* ------------------- */}
+
         <div
           ref={textareaRef}
           contentEditable
-          onInput={(e) => {
-            handleTyping(e as any);
-            setMessage(e.currentTarget.innerHTML);
-            checkFormatting();
-          }}
+          onInput={handleInput}
           onKeyDown={handleKeyDown}
           onKeyUp={checkFormatting}
           onMouseUp={checkFormatting}
@@ -125,7 +328,7 @@ export const ChannelMessageInput = ({
             </div>
             <button onMouseDown={(e) => e.preventDefault()} onClick={() => handleFormat('bold')} className={`p-1.5 rounded-lg transition-colors ${isBoldActive ? 'bg-blue-100 text-blue-600' : 'text-slate-500 hover:bg-slate-200 hover:text-slate-700'}`} title="Format Bold"><Bold className="w-4 h-4" /></button>
             <button onMouseDown={(e) => e.preventDefault()} onClick={() => handleFormat('italic')} className={`p-1.5 rounded-lg transition-colors ${isItalicActive ? 'bg-blue-100 text-blue-600' : 'text-slate-500 hover:bg-slate-200 hover:text-slate-700'}`} title="Format Italic"><Italic className="w-4 h-4" /></button>
-            <button className="p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-700 rounded-lg transition-colors" title="Mention"><AtSign className="w-4 h-4" /></button>
+            <button onMouseDown={(e) => e.preventDefault()} onClick={handleMentionClick} className="p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-700 rounded-lg transition-colors" title="Mention"><AtSign className="w-4 h-4" /></button>
             <div className="w-px h-5 bg-slate-300 mx-1.5"></div>
             <button
               onClick={() => setIsCreatePollModalOpen(true)}

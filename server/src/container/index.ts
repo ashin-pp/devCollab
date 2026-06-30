@@ -115,6 +115,16 @@ import { GetUserNotificationsUseCase } from "../application/use-cases/notificati
 import { MarkNotificationReadUseCase } from "../application/use-cases/notification/MarkNotificationReadUseCase";
 import { NotificationController } from "../interfaces/controllers/NotificationController";
 
+// --- DM Imports ---
+import { ConversationRepository } from "../infra/database/repositories/ConversationRepository";
+import { DirectMessageRepository } from "../infra/database/repositories/DirectMessageRepository";
+import { StartConversationUseCase } from "../application/use-cases/dm/StartConversationUseCase";
+import { GetConversationsUseCase } from "../application/use-cases/dm/GetConversationsUseCase";
+import { SendDirectMessageUseCase } from "../application/use-cases/dm/SendDirectMessageUseCase";
+import { GetDirectMessagesUseCase } from "../application/use-cases/dm/GetDirectMessagesUseCase";
+import { MarkMessageAsSeenUseCase } from "../application/use-cases/dm/MarkMessageAsSeenUseCase";
+import { DMController } from "../interfaces/controllers/DMController";
+
 // ============================================================================
 // INSTANTIATIONS
 // ============================================================================
@@ -267,20 +277,20 @@ const createChannelUseCase = new CreateChannelUseCase(channelRepository, channel
 const getWorkspaceChannelsUseCase = new GetWorkspaceChannelsUseCase(channelRepository, channelMemberRepository);
 const getChannelMembersUseCase = new GetChannelMembersUseCase(channelRepository, channelMemberRepository, userRepository);
 const addChannelMemberUseCase = new AddChannelMemberUseCase(channelRepository, channelMemberRepository, workspaceMemberRepository, userRepository);
-const removeChannelMemberUseCase = new RemoveChannelMemberUseCase(channelRepository, channelMemberRepository, userRepository);
-const blockChannelMemberUseCase = new BlockChannelMemberUseCase(channelRepository, channelMemberRepository, userRepository);
+const removeChannelMemberUseCase = new RemoveChannelMemberUseCase(channelRepository, channelMemberRepository, userRepository, workspaceMemberRepository);
+const blockChannelMemberUseCase = new BlockChannelMemberUseCase(channelRepository, channelMemberRepository, userRepository, workspaceMemberRepository);
 const getBlockedChannelMembersUseCase = new GetBlockedChannelMembersUseCase(channelRepository, channelMemberRepository, userRepository);
-const unblockChannelMemberUseCase = new UnblockChannelMemberUseCase(channelRepository, channelMemberRepository);
-const updateChannelUseCase = new UpdateChannelUseCase(channelRepository);
+const unblockChannelMemberUseCase = new UnblockChannelMemberUseCase(channelRepository, channelMemberRepository, workspaceMemberRepository);
+const updateChannelUseCase = new UpdateChannelUseCase(channelRepository, workspaceMemberRepository);
 const leaveChannelUseCase = new LeaveChannelUseCase(channelRepository, channelMemberRepository);
 const deleteChannelUseCase = new DeleteChannelUseCase(channelRepository);
-const joinChannelUseCase = new JoinChannelUseCase(channelRepository, channelMemberRepository, workspaceRepository, userRepository);
+const joinChannelUseCase = new JoinChannelUseCase(channelRepository, channelMemberRepository, workspaceRepository, workspaceMemberRepository, userRepository);
 const getChannelRequestsUseCase = new GetChannelRequestsUseCase(channelMemberRepository, userRepository);
 const updateChannelRequestUseCase = new UpdateChannelRequestUseCase(channelMemberRepository, channelRepository);
 const markChannelAsReadUseCase = new MarkChannelAsReadUseCase(channelMemberRepository);
 const getUnreadCountsUseCase = new GetUnreadCountsUseCase(channelRepository, channelMemberRepository, messageRepository);
 
-const sendMessageUseCase = new SendMessageUseCase(messageRepository, channelMemberRepository);
+const sendMessageUseCase = new SendMessageUseCase(messageRepository, channelMemberRepository, createNotificationUseCase, channelRepository, workspaceRepository);
 const getChannelMessagesUseCase = new GetChannelMessagesUseCase(messageRepository);
 
 const channelController = new ChannelController(
@@ -306,7 +316,14 @@ const messageController = new MessageController(sendMessageUseCase, getChannelMe
 
 // Poll Instantiations
 const pollRepository = new PollRepository();
-const createPollUseCase = new CreatePollUseCase(pollRepository);
+const createPollUseCase = new CreatePollUseCase(
+    pollRepository,
+    workspaceMemberRepository,
+    channelMemberRepository,
+    createNotificationUseCase,
+    channelRepository,
+    workspaceRepository
+);
 const votePollUseCase = new VotePollUseCase(pollRepository);
 const getWorkspacePollsUseCase = new GetWorkspacePollsUseCase(pollRepository);
 const getChannelPollsUseCase = new GetChannelPollsUseCase(pollRepository);
@@ -322,15 +339,6 @@ const pollController = new PollController(
     closePollUseCase
 );
 
-// DM Imports
-import { ConversationRepository } from "../infra/database/repositories/ConversationRepository";
-import { DirectMessageRepository } from "../infra/database/repositories/DirectMessageRepository";
-import { StartConversationUseCase } from "../application/use-cases/dm/StartConversationUseCase";
-import { GetConversationsUseCase } from "../application/use-cases/dm/GetConversationsUseCase";
-import { SendDirectMessageUseCase } from "../application/use-cases/dm/SendDirectMessageUseCase";
-import { GetDirectMessagesUseCase } from "../application/use-cases/dm/GetDirectMessagesUseCase";
-import { MarkMessageAsSeenUseCase } from "../application/use-cases/dm/MarkMessageAsSeenUseCase";
-import { DMController } from "../interfaces/controllers/DMController";
 
 // DM Instantiations
 const conversationRepository = new ConversationRepository();

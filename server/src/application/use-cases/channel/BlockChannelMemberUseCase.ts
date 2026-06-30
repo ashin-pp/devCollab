@@ -1,16 +1,19 @@
 import { IChannelRepository } from "../../../application/repositories/IChannelRepository";
 import { IChannelMemberRepository } from "../../../application/repositories/IChannelMemberRepository";
 import { IUserRepository } from "../../../application/repositories/IUserRepository";
+import { IWorkspaceMemberRepository } from "../../../application/repositories/IWorkspaceMemberRepository";
 import { AppError } from "../../../domain/errors/AppError";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { ChannelMemberStatus } from "../../../domain/enums/ChannelMemberStatus";
+import { MemberRole } from "../../../domain/enums/MemberRole";
 
 export class BlockChannelMemberUseCase {
     constructor(
         private channelRepository: IChannelRepository,
         private channelMemberRepository: IChannelMemberRepository,
-        private userRepository: IUserRepository
+        private userRepository: IUserRepository,
+        private workspaceMemberRepository: IWorkspaceMemberRepository
     ) {}
 
     async execute(workspaceId: string, channelId: string, memberId: string, requesterId: string): Promise<{ userId: string, userName: string, removedBy: string }> {
@@ -24,8 +27,15 @@ export class BlockChannelMemberUseCase {
         }
 
         const isCreator = channel.createdBy === requesterId || (channel as any).created_by?.toString() === requesterId;
+        let isWorkspaceOwner = false;
+        
         if (!isCreator) {
-            throw new AppError("Only the channel creator can block members.", HttpStatusCode.FORBIDDEN);
+            const workspaceMember = await this.workspaceMemberRepository.findByWorkspaceAndUser(workspaceId, requesterId);
+            isWorkspaceOwner = workspaceMember?.role === MemberRole.OWNER;
+        }
+
+        if (!isCreator && !isWorkspaceOwner) {
+            throw new AppError("Only the channel creator or workspace owner can block members.", HttpStatusCode.FORBIDDEN);
         }
 
         if (memberId === requesterId) {

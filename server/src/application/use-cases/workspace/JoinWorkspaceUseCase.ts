@@ -13,7 +13,7 @@ export class JoinWorkspaceUseCase {
     constructor(
         private workspaceRepository: IWorkspaceRepository,
         private workspaceMemberRepository: IWorkspaceMemberRepository
-    ) {}
+    ) { }
 
     async execute(data: JoinWorkspaceDto): Promise<WorkspaceMember> {
         if (!data.inviteCode || !data.userId) {

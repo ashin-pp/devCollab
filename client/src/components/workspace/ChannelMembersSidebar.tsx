@@ -16,12 +16,13 @@ export interface ChannelMembersSidebarProps {
   channelName: string;
   channelCreatorId?: string;
   channelPrivacy?: 'public' | 'private';
+  isWorkspaceOwner?: boolean;
   onOpenAddMember: () => void;
   onMemberRemoved?: () => void;
 }
 
 export const ChannelMembersSidebar = ({ 
-  isOpen, onClose, workspaceId, channelId, channelName, channelCreatorId, channelPrivacy, onOpenAddMember, onMemberRemoved 
+  isOpen, onClose, workspaceId, channelId, channelName, channelCreatorId, channelPrivacy, isWorkspaceOwner, onOpenAddMember, onMemberRemoved 
 }: ChannelMembersSidebarProps) => {
   const [activeTab, setActiveTab] = useState<'members' | 'requests' | 'blocked'>('members');
   const [members, setMembers] = useState<ChannelMemberData[]>([]);
@@ -34,7 +35,10 @@ export const ChannelMembersSidebar = ({
   const socket = useSocket(workspaceId);
 
   const isCreator = user?.id === channelCreatorId;
-  const canRemoveMembers = isCreator && channelPrivacy === 'private';
+  const canRemoveMembers = isWorkspaceOwner || (isCreator && channelPrivacy === 'private');
+  
+  // Expose tabs to owners or creators
+  const hasElevatedPrivileges = isCreator || isWorkspaceOwner;
 
   // Reset state when sidebar closes
   useEffect(() => {
@@ -47,7 +51,7 @@ export const ChannelMembersSidebar = ({
   useEffect(() => {
     if (isOpen && workspaceId && channelId) {
       fetchMembers();
-      if (isCreator) {
+      if (hasElevatedPrivileges) {
         if (channelPrivacy === 'private') {
           fetchRequests();
         } else if (channelPrivacy === 'public') {
@@ -238,7 +242,7 @@ export const ChannelMembersSidebar = ({
       </div>
 
       {/* Tabs */}
-      {isCreator && (
+      {hasElevatedPrivileges && (
         <div className="p-3 bg-slate-50/50 border-b border-slate-100 shrink-0">
           <div className="flex bg-slate-200/50 p-1 rounded-xl">
             <button 
@@ -336,7 +340,7 @@ export const ChannelMembersSidebar = ({
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
-                      {isCreator && channelPrivacy === 'public' && member.userId !== channelCreatorId && (
+                      {hasElevatedPrivileges && channelPrivacy === 'public' && member.userId !== channelCreatorId && (
                         <button 
                           onClick={() => handleBlockMember(member.userId, member.user?.name || 'User')}
                           className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all flex-shrink-0 opacity-0 group-hover:opacity-100"
@@ -373,7 +377,7 @@ export const ChannelMembersSidebar = ({
         )}
 
         {/* Requests Tab */}
-        {activeTab === 'requests' && isCreator && (
+        {activeTab === 'requests' && hasElevatedPrivileges && (
           <div className="space-y-1">
             {filteredRequests.map((req) => (
               <div key={req.id} className="flex items-center justify-between p-2.5 hover:bg-slate-50 rounded-xl transition-colors">

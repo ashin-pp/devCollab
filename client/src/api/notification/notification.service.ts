@@ -1,19 +1,21 @@
 import { api } from "../axios";
 import type { Notification } from '../../types/notification.types';
 
+import { API_ENDPOINTS } from '../../config/api.constants';
+
 export const NotificationService = {
     getNotifications: async (): Promise<{ success: boolean; data: Notification[] }> => {
-        const response = await api.get('/notifications');
+        const response = await api.get(API_ENDPOINTS.NOTIFICATIONS.BASE);
         return response.data;
     },
 
     markAsRead: async (id: string): Promise<{ success: boolean }> => {
-        const response = await api.put(`/notifications/${id}/read`);
+        const response = await api.put(API_ENDPOINTS.NOTIFICATIONS.MARK_READ(id));
         return response.data;
     },
 
     markAllAsRead: async (): Promise<{ success: boolean }> => {
-        const response = await api.put('/notifications/mark-all-read');
+        const response = await api.put(API_ENDPOINTS.NOTIFICATIONS.MARK_ALL_READ);
         return response.data;
     }
 };

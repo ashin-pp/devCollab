@@ -42,6 +42,20 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
   const [inviteCode, setInviteCode] = useState<string>('');
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+  const [mentions, setMentions] = useState<Record<string, string>>(() => {
+    try {
+      const saved = localStorage.getItem(`mentions_${workspaceId}`);
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    if (workspaceId) {
+      localStorage.setItem(`mentions_${workspaceId}`, JSON.stringify(mentions));
+    }
+  }, [mentions, workspaceId]);
   const [totalUnreadDMs, setTotalUnreadDMs] = useState(0);
 
   const [isMyChannelsOpen, setIsMyChannelsOpen] = useState(true);
@@ -157,13 +171,24 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
       }
     });
 
-    const handleNewMessage = (message: { channelId: string; senderId: string }) => {
+    const handleNewMessage = (message: { channelId: string; senderId: string; content?: string }) => {
       // Don't increment count for messages sent by current user
       if (message.senderId !== user?.id) {
         // Only increment if user is not currently viewing this channel
         const currentChannelId = location.pathname.split('/channels/')[1];
         if (currentChannelId !== message.channelId) {
           updateUnreadCount(message.channelId);
+          
+          // Check for mention
+          if (message.content && user?.id && message.content.includes(`data-mention-id="${user.id}"`)) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = message.content;
+            const plainText = tempDiv.textContent || tempDiv.innerText || '';
+            setMentions(prev => ({
+              ...prev,
+              [message.channelId]: plainText
+            }));
+          }
         }
       }
     };
@@ -221,6 +246,11 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
         ...prev,
         [channelId]: 0
       }));
+      setMentions(prev => {
+        const next = { ...prev };
+        delete next[channelId];
+        return next;
+      });
     };
 
     window.addEventListener('channel-read', handleChannelRead);
@@ -447,15 +477,20 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
                               ) : (
                                 <Hash className={`w-4 h-4 transition-colors shrink-0 ${isActive(`channels/${channelId}`) ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-500'}`} />
                               )}
-                              <span className="truncate">{channel.name as string}</span>
+                              <span className={`truncate ${mentions[channelId] ? 'text-blue-700 font-extrabold' : ''}`}>{channel.name as string}</span>
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
-                              {unreadCount > 0 && (
+                              {mentions[channelId] && (
+                                <span className="flex items-center justify-center min-w-[20px] h-[20px] px-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[11px] font-extrabold rounded-full shadow-md shadow-orange-500/30 shrink-0">
+                                  @
+                                </span>
+                              )}
+                              {unreadCount > 0 && !mentions[channelId] && (
                                 <span className="flex items-center justify-center min-w-[20px] h-[20px] px-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] font-extrabold rounded-full shadow-md shadow-blue-500/30 transform transition-transform animate-pulse-once shrink-0">
                                   {unreadCount > 99 ? '99+' : unreadCount}
                                 </span>
                               )}
-                              {isActive(`channels/${channelId}`) && <div className={`w-1.5 h-1.5 rounded-full ${isPrivate ? 'bg-orange-600' : 'bg-blue-600'}`}></div>}
+                              {isActive(`channels/${channelId}`) && !mentions[channelId] && <div className={`w-1.5 h-1.5 rounded-full ${isPrivate ? 'bg-orange-600' : 'bg-blue-600'}`}></div>}
                             </div>
                           </div>
                         );
@@ -499,15 +534,20 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
                               ) : (
                                 <Hash className={`w-4 h-4 transition-colors shrink-0 ${isActive(`channels/${channelId}`) ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-500'}`} />
                               )}
-                              <span className="truncate">{channel.name as string}</span>
+                              <span className={`truncate ${mentions[channelId] ? 'text-blue-700 font-extrabold' : ''}`}>{channel.name as string}</span>
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
-                              {unreadCount > 0 && (
+                              {mentions[channelId] && (
+                                <span className="flex items-center justify-center min-w-[20px] h-[20px] px-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[11px] font-extrabold rounded-full shadow-md shadow-orange-500/30 shrink-0">
+                                  @
+                                </span>
+                              )}
+                              {unreadCount > 0 && !mentions[channelId] && (
                                 <span className="flex items-center justify-center min-w-[20px] h-[20px] px-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] font-extrabold rounded-full shadow-md shadow-blue-500/30 transform transition-transform animate-pulse-once shrink-0">
                                   {unreadCount > 99 ? '99+' : unreadCount}
                                 </span>
                               )}
-                              {isActive(`channels/${channelId}`) && <div className={`w-1.5 h-1.5 rounded-full ${isPrivate ? 'bg-orange-600' : 'bg-blue-600'}`}></div>}
+                              {isActive(`channels/${channelId}`) && !mentions[channelId] && <div className={`w-1.5 h-1.5 rounded-full ${isPrivate ? 'bg-orange-600' : 'bg-blue-600'}`}></div>}
                             </div>
                           </div>
                         );

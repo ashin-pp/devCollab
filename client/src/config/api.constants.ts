@@ -96,4 +96,11 @@ export const API_ENDPOINTS = {
   UPLOAD: {
     IMAGE: '/upload/image',
   },
+
+  // Notification endpoints
+  NOTIFICATIONS: {
+    BASE: '/notifications',
+    MARK_READ: (id: string) => `/notifications/${id}/read`,
+    MARK_ALL_READ: '/notifications/mark-all-read',
+  }
 };

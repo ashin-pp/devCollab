@@ -1,18 +1,21 @@
 import { IChannelRepository } from "../../../application/repositories/IChannelRepository";
 import { IChannelMemberRepository } from "../../../application/repositories/IChannelMemberRepository";
 import { IWorkspaceRepository } from "../../../application/repositories/IWorkspaceRepository";
+import { IWorkspaceMemberRepository } from "../../../application/repositories/IWorkspaceMemberRepository";
 import { IUserRepository } from "../../../application/repositories/IUserRepository";
 import { ChannelMember } from "../../../domain/entities/ChannelMember";
 import { AppError } from "../../../domain/errors/AppError";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
-import { ChannelMemberRole, ChannelMemberStatus } from "../../../domain/enums/ChannelMemberStatus";
+import { ChannelMemberStatus, ChannelMemberRole } from "../../../domain/enums/ChannelMemberStatus";
+import { MemberRole } from "../../../domain/enums/MemberRole";
 
 export class JoinChannelUseCase {
     constructor(
         private channelRepository: IChannelRepository,
         private channelMemberRepository: IChannelMemberRepository,
         private workspaceRepository: IWorkspaceRepository,
+        private workspaceMemberRepository: IWorkspaceMemberRepository,
         private userRepository: IUserRepository
     ) { }
 
@@ -28,7 +31,11 @@ export class JoinChannelUseCase {
             throw new AppError(ErrorMessage.WORKSPACE_NOT_FOUND, HttpStatusCode.NOT_FOUND);
         }
 
-        const isWorkspaceOwner = workspace.createdBy === userId;
+        let isWorkspaceOwner = false;
+        if (channel.privacy === 'private') {
+            const workspaceMember = await this.workspaceMemberRepository.findByWorkspaceAndUser(workspaceId, userId);
+            isWorkspaceOwner = workspaceMember?.role === MemberRole.OWNER;
+        }
 
         const existingMember = await this.channelMemberRepository.findByChannelAndUser(channelId, userId);
         if (existingMember) {

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import EmojiPicker from 'emoji-picker-react';
 import { WorkspaceLayout } from '../../../layouts/WorkspaceLayout';
-import { Hash, Star, Bold, Italic, Code, Link as LinkIcon, List, Send, X, Smile, Plus, AtSign, ChevronDown, Users, Settings, LogOut, Lock, BarChart2, Image as ImageIcon } from 'lucide-react';
+import { Hash, Star, Bold, Italic, Code, Link as LinkIcon, List, Send, X, Smile, Plus, AtSign, ChevronDown, Users, Settings, LogOut, Lock, BarChart2, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useParams, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
@@ -39,6 +39,7 @@ export const WorkspaceChannelPage = () => {
 
   const { channels, refetch: refetchChannels } = useWorkspaceChannels(workspaceId);
   const [currentChannel, setCurrentChannel] = useState<ChannelData | null>(null);
+  const [isWorkspaceOwner, setIsWorkspaceOwner] = useState(false);
 
   const { members: channelMembers, setMembers: setChannelMembers, imageMap: memberImagesMap, setImageMap: setMemberImagesMap, refetch: refetchMembers } = useChannelMembers(workspaceId, channelId);
 
@@ -76,10 +77,23 @@ export const WorkspaceChannelPage = () => {
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchChannelData = () => {
+    if (currentChannel?.isActive === false) return;
+    
     if (workspaceId && channelId) {
       refetchChannels();
       fetchMessages(1, true); // Fetch first page and reset
       refetchMembers();
+
+      import('../../../api/workspace/workspace.service').then(({ WorkspaceService }) => {
+        WorkspaceService.getWorkspaceMembers(workspaceId, false)
+          .then(res => {
+            const members = res.data?.data || [];
+            const isOwner = channels.find(c => c.workspaceId === workspaceId)?.createdBy === user?.id || 
+                            members.some((m: any) => m.userId === user?.id && m.role === 'owner');
+            setIsWorkspaceOwner(isOwner);
+          })
+          .catch(err => console.error('Failed to fetch workspace members', err));
+      });
 
       // Fetch pending requests count if user is the channel creator
       ChannelService.getWorkspaceChannels(workspaceId)
@@ -128,10 +142,13 @@ export const WorkspaceChannelPage = () => {
   };
 
   useEffect(() => {
+    if (!currentChannel) return; // Wait for channel data to load
+    if (currentChannel.isActive === false) return;
+
     fetchChannelData();
 
     // Mark channel as read when user enters
-    if (workspaceId && channelId) {
+    if (workspaceId && channelId && currentChannel?.isActive !== false) {
       ChannelService.markAsRead(workspaceId, channelId)
         .then(() => {
           // Emit event to parent to clear unread count
@@ -139,10 +156,10 @@ export const WorkspaceChannelPage = () => {
         })
         .catch(err => console.error('Failed to mark channel as read', err));
     }
-  }, [workspaceId, channelId]);
+  }, [workspaceId, channelId, currentChannel?.id, currentChannel?.isActive]);
 
   useEffect(() => {
-    if (!socket || !channelId) return;
+    if (!socket || !channelId || currentChannel?.isActive === false) return;
 
     const joinChannel = () => {
       socket.emit('join_channel', channelId);
@@ -278,7 +295,17 @@ export const WorkspaceChannelPage = () => {
     try {
       const msgType = attachedImageUrl ? 'image' : 'text';
       const cleanMessage = isTextEmpty ? '' : message;
-      const res = await MessageService.sendMessage(workspaceId, channelId, cleanMessage, msgType, attachedImageUrl || undefined);
+      
+      // Extract mentioned user IDs from the HTML data attributes
+      const mentionRegex = /data-mention-id="([^"]+)"/g;
+      const mentionedUserIdsSet = new Set<string>();
+      let match;
+      while ((match = mentionRegex.exec(cleanMessage)) !== null) {
+        mentionedUserIdsSet.add(match[1]);
+      }
+      const mentionedUserIds = Array.from(mentionedUserIdsSet);
+
+      const res = await MessageService.sendMessage(workspaceId, channelId, cleanMessage, msgType, attachedImageUrl || undefined, mentionedUserIds);
       const newMsg = res.data?.data;
 
       const newMsgObj = {
@@ -305,6 +332,9 @@ export const WorkspaceChannelPage = () => {
       }
 
       setMessage('');
+      if (document.queryCommandState('bold')) document.execCommand('bold', false, undefined);
+      if (document.queryCommandState('italic')) document.execCommand('italic', false, undefined);
+      checkFormatting();
 
       // Clear typing timeout
       if (typingTimeoutRef.current) {
@@ -374,7 +404,17 @@ export const WorkspaceChannelPage = () => {
             navigate={navigate}
           />
 
-          {currentChannel?.isMember === false ? (
+          {currentChannel?.isActive === false ? (
+            <div className="flex-1 flex flex-col items-center justify-center bg-slate-50 p-8 h-full">
+              <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mb-4">
+                <AlertCircle className="w-8 h-8" />
+              </div>
+              <h2 className="text-xl font-bold text-slate-800 mb-2">Channel Blocked</h2>
+              <p className="text-slate-500 text-center max-w-md">
+                This channel has been blocked by a workspace admin or owner. You cannot view messages, send messages, or interact with this channel.
+              </p>
+            </div>
+          ) : currentChannel?.isMember === false ? (
             <ChannelNotMemberView
               currentChannel={currentChannel}
               handleJoinChannel={handleJoinChannel}
@@ -411,6 +451,7 @@ export const WorkspaceChannelPage = () => {
               />
 
               <ChannelMessageInput
+                channelMembers={channelMembers}
                 fileInputRef={fileInputRef}
                 handleFileSelect={handleFileSelect}
                 isUploading={isUploading}
@@ -443,6 +484,7 @@ export const WorkspaceChannelPage = () => {
             channelName={currentChannel?.name || 'channel'}
             channelCreatorId={currentChannel?.createdBy}
             channelPrivacy={currentChannel?.privacy}
+            isWorkspaceOwner={isWorkspaceOwner}
             onOpenAddMember={() => setIsAddMemberModalOpen(true)}
             onMemberRemoved={() => {
               if (workspaceId && channelId) {
