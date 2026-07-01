@@ -7,8 +7,13 @@ export interface ICreateReminderDependency {
 
 export const createRemindTool = (createAIReminderUseCase: ICreateReminderDependency | null) => {
     return tool(
-        async ({ userId, workspaceId, channelId, content, remindAt }) => {
+        async ({ content, remindAt }, config) => {
             if (createAIReminderUseCase) {
+                const context = config?.configurable?.context;
+                const workspaceId = context?.workspaceId || "000000000000000000000000";
+                const channelId = context?.channelId || "000000000000000000000000";
+                const userId = context?.userId || "000000000000000000000000";
+                
                 await createAIReminderUseCase.execute({ userId, workspaceId, channelId, content, remindAt });
             }
             return `Reminder set for ${remindAt}.`;
@@ -17,9 +22,6 @@ export const createRemindTool = (createAIReminderUseCase: ICreateReminderDepende
             name: "remind_tool",
             description: "Sets a future reminder for a user. Triggered by @remind.",
             schema: z.object({
-                userId: z.string(),
-                workspaceId: z.string(),
-                channelId: z.string(),
                 content: z.string().describe("What to remind the user about"),
                 remindAt: z.string().describe("ISO string of when to remind them"),
             }),

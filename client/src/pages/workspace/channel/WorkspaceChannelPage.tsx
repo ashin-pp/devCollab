@@ -14,6 +14,7 @@ import { format } from 'date-fns';
 import { ChannelService } from '../../../api/workspace/channel.service';
 import { useWorkspaceChannels, useChannelMembers } from '../../../hooks/useChannels';
 import { useChannelMessages } from '../../../hooks/useMessages';
+import { useAiCommand } from '../../../hooks/useAi';
 import { ChannelMembersSidebar } from '../../../components/workspace/ChannelMembersSidebar';
 import { AddChannelMemberModal } from '../../../components/workspace/AddChannelMemberModal';
 import { ChannelSettingsModal } from '../../../components/workspace/ChannelSettingsModal';
@@ -62,6 +63,8 @@ export const WorkspaceChannelPage = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [attachedImageUrl, setAttachedImageUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { processCommand, isLoading: isProcessingAi } = useAiCommand();
 
   useEffect(() => {
     if (channels.length > 0 && channelId) {
@@ -296,6 +299,37 @@ export const WorkspaceChannelPage = () => {
       const msgType = attachedImageUrl ? 'image' : 'text';
       const cleanMessage = isTextEmpty ? '' : message;
       
+      const plainText = cleanMessage.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim();
+      const aiCommands = ['@task', '@notify', '@remind', '@summary', '@fix', '@schedule', '@info'];
+      const isAiCommand = aiCommands.some(cmd => plainText.startsWith(cmd));
+
+      if (isAiCommand) {
+        // Clear input immediately so user knows it was intercepted
+        if (textareaRef.current) textareaRef.current.innerHTML = '';
+        setMessage('');
+        checkFormatting();
+        
+        try {
+          const aiResponse = await processCommand(plainText, workspaceId, channelId);
+          if (aiResponse) {
+             const systemMsg: MessageData = {
+               id: Date.now().toString(), // fake local ID
+               channelId,
+               senderId: 'ai-system',
+               senderName: 'Antigravity AI',
+               content: aiResponse,
+               messageType: 'text',
+               createdAt: new Date().toISOString()
+             };
+             setMessages(prev => [...prev, systemMsg]);
+             scrollToBottom();
+          }
+        } catch (err) {
+          import('react-hot-toast').then(m => m.default.error('AI command failed'));
+        }
+        return;
+      }
+
       // Extract mentioned user IDs from the HTML data attributes
       const mentionRegex = /data-mention-id="([^"]+)"/g;
       const mentionedUserIdsSet = new Set<string>();
@@ -454,7 +488,7 @@ export const WorkspaceChannelPage = () => {
                 channelMembers={channelMembers}
                 fileInputRef={fileInputRef}
                 handleFileSelect={handleFileSelect}
-                isUploading={isUploading}
+                isUploading={isUploading || isProcessingAi}
                 attachedImageUrl={attachedImageUrl}
                 setAttachedImageUrl={setAttachedImageUrl}
                 textareaRef={textareaRef}

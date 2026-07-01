@@ -11,5 +11,6 @@ export const envConfig = {
     cloudinaryApiKey: process.env.CLOUDINARY_API_KEY || "",
     cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET || "",
     
+    groqApiKey: process.env.GROQ_API_KEY || "",
     geminiApiKey: process.env.GEMINI_API_KEY || "",
 };

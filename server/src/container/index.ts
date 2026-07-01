@@ -13,6 +13,12 @@ import { LangChainService } from "../infra/services/LangChainService";
 // --- AI Imports ---
 import { HandleAiCommandUseCase } from "../application/use-cases/ai/HandleAiCommandUseCase";
 import { AIController } from "../interfaces/controllers/AIController";
+import { AITaskRepository } from "../infra/database/repositories/AITaskRepository";
+import { AIReminderRepository } from "../infra/database/repositories/AIReminderRepository";
+import { AIChatRepository } from "../infra/database/repositories/AIChatRepository";
+import { CreateAITaskUseCase } from "../application/use-cases/ai/CreateAITaskUseCase";
+import { CreateAIReminderUseCase } from "../application/use-cases/ai/CreateAIReminderUseCase";
+import { SaveAIChatUseCase } from "../application/use-cases/ai/SaveAIChatUseCase";
 
 // --- Auth Imports ---
 import { RegisterUserUseCase } from "../application/use-cases/auth/RegisterUserUseCase";
@@ -100,6 +106,7 @@ import { MarkChannelAsReadUseCase } from "../application/use-cases/channel/MarkC
 import { GetUnreadCountsUseCase } from "../application/use-cases/channel/GetUnreadCountsUseCase";
 import { SendMessageUseCase } from "../application/use-cases/channel/SendMessageUseCase";
 import { GetChannelMessagesUseCase } from "../application/use-cases/channel/GetChannelMessagesUseCase";
+import { GetUnreadMessagesUseCase } from "../application/use-cases/channel/GetUnreadMessagesUseCase";
 import { ChannelController } from "../interfaces/controllers/ChannelController";
 import { MessageController } from "../interfaces/controllers/MessageController";
 
@@ -297,6 +304,7 @@ const getUnreadCountsUseCase = new GetUnreadCountsUseCase(channelRepository, cha
 
 const sendMessageUseCase = new SendMessageUseCase(messageRepository, channelMemberRepository, createNotificationUseCase, channelRepository, workspaceRepository);
 const getChannelMessagesUseCase = new GetChannelMessagesUseCase(messageRepository);
+const getUnreadMessagesUseCase = new GetUnreadMessagesUseCase(messageRepository, channelMemberRepository);
 
 const channelController = new ChannelController(
     createChannelUseCase, 
@@ -364,8 +372,16 @@ const dmController = new DMController(
 );
 
 // AI Instantiations
-const aiService = new LangChainService(createNotificationUseCase, getChannelMessagesUseCase);
-const handleAiCommandUseCase = new HandleAiCommandUseCase(aiService);
+const aiTaskRepository = new AITaskRepository();
+const aiReminderRepository = new AIReminderRepository();
+const aiChatRepository = new AIChatRepository();
+
+const createAITaskUseCase = new CreateAITaskUseCase(aiTaskRepository);
+const createAIReminderUseCase = new CreateAIReminderUseCase(aiReminderRepository);
+const saveAIChatUseCase = new SaveAIChatUseCase(aiChatRepository);
+
+const aiService = new LangChainService(createNotificationUseCase, getUnreadMessagesUseCase, createAITaskUseCase, createAIReminderUseCase);
+const handleAiCommandUseCase = new HandleAiCommandUseCase(aiService, saveAIChatUseCase);
 const aiController = new AIController(handleAiCommandUseCase);
 
 export { logger, authController, adminController, userController, workspaceController, channelController, messageController, dmController, pollController, uploadController, notificationController, jwtService, createNotificationUseCase, aiController };

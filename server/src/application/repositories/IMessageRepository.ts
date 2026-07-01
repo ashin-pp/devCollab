@@ -7,4 +7,5 @@ export interface IMessageRepository {
     update(id: string, message: Partial<Message>): Promise<Message | null>;
     delete(id: string): Promise<boolean>;
     countUnreadMessages(channelId: string, lastReadAt: Date): Promise<number>;
+    findUnreadMessages(channelId: string, lastReadAt: Date): Promise<Message[]>;
 }

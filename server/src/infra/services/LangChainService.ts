@@ -1,5 +1,5 @@
 import { IAIService } from "../../application/services/IAIService";
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { ChatGroq } from "@langchain/groq";
 import { envConfig } from "../config/envConfig";
 import { StateGraph, START, END, CompiledStateGraph } from "@langchain/langgraph";
 
@@ -11,7 +11,7 @@ import { HumanMessage } from "@langchain/core/messages";
 
 // Dependencies
 import { CreateNotificationUseCase } from "../../application/use-cases/notification/CreateNotificationUseCase";
-import { GetChannelMessagesUseCase } from "../../application/use-cases/channel/GetChannelMessagesUseCase";
+import { GetUnreadMessagesUseCase } from "../../application/use-cases/channel/GetUnreadMessagesUseCase";
 
 // Tools
 import { createNotifyTool } from "../ai/tools/NotifyTool";
@@ -25,7 +25,7 @@ export class LangChainService implements IAIService {
 
     constructor(
         private createNotificationUseCase: CreateNotificationUseCase,
-        private getChannelMessagesUseCase: GetChannelMessagesUseCase,
+        private getUnreadMessagesUseCase: GetUnreadMessagesUseCase,
         private createAITaskUseCase: ICreateTaskDependency | null = null,
         private createAIReminderUseCase: ICreateReminderDependency | null = null
     ) {
@@ -33,9 +33,9 @@ export class LangChainService implements IAIService {
     }
 
     private buildGraph() {
-        const model = new ChatGoogleGenerativeAI({
-            apiKey: envConfig.geminiApiKey,
-            model: "gemini-2.5-flash",
+        const model = new ChatGroq({
+            apiKey: envConfig.groqApiKey,
+            model: "llama3-70b-8192",
             temperature: 0.2, 
         });
 
@@ -43,7 +43,7 @@ export class LangChainService implements IAIService {
         
         const notifyWorker = createWorkerNode(model, [createNotifyTool(this.createNotificationUseCase)], "NotifyAgent", NOTIFY_AGENT_PROMPT);
         const taskWorker = createWorkerNode(model, [createTaskTool(this.createAITaskUseCase)], "TaskAgent", TASK_AGENT_PROMPT);
-        const summaryWorker = createWorkerNode(model, [createSummaryTool(this.getChannelMessagesUseCase)], "SummaryAgent", SUMMARY_AGENT_PROMPT);
+        const summaryWorker = createWorkerNode(model, [createSummaryTool(this.getUnreadMessagesUseCase)], "SummaryAgent", SUMMARY_AGENT_PROMPT);
         const remindWorker = createWorkerNode(model, [createRemindTool(this.createAIReminderUseCase)], "RemindAgent", REMIND_AGENT_PROMPT);
         const fixWorker = createWorkerNode(model, [createFixTool()], "FixAgent", FIX_AGENT_PROMPT);
 
@@ -81,7 +81,7 @@ export class LangChainService implements IAIService {
             const finalState = await this.graph.invoke({
                 messages: [new HumanMessage(input)],
                 context: context 
-            }) as IAgentState;
+            }, { configurable: { context } }) as IAgentState;
 
             const aiMessage = finalState.messages[finalState.messages.length - 1];
             if (!aiMessage) {

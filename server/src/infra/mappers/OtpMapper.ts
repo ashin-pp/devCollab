@@ -1,5 +1,5 @@
 import { OtpVerification } from "../../domain/entities/OtpVerification";
-import { IMapper } from "./IMapper";
+import { IMapper } from "../../application/interfaces/IMapper";
 import { IOtpModel } from "../database/models/OtpModel";
 
 export class OtpMapper implements IMapper<OtpVerification, IOtpModel> {

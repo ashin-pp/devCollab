@@ -1,5 +1,5 @@
 import { Poll, PollOption } from "../../domain/entities/Poll";
-import { IMapper } from "./IMapper";
+import { IMapper } from "../../application/interfaces/IMapper";
 import { IPollDocument } from "../database/models/PollModel";
 import mongoose from "mongoose";
 

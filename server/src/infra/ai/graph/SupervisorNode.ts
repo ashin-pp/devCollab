@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { ChatGroq } from "@langchain/groq";
 import { SystemMessage } from "@langchain/core/messages";
 import { envConfig } from "../../config/envConfig";
 import { AGENT_NAMES, RouteDestination } from "../constants/AgentConstants";
@@ -7,10 +7,10 @@ import { SUPERVISOR_PROMPT } from "../constants/AgentPrompts";
 import { IAgentState } from "./AgentState";
 
 export const createSupervisorNode = () => {
-    const model = new ChatGoogleGenerativeAI({
-        apiKey: envConfig.geminiApiKey,
-        model: "gemini-2.5-flash",
-        temperature: 0, 
+    const model = new ChatGroq({
+        apiKey: envConfig.groqApiKey,
+        model: "llama3-70b-8192",
+        temperature: 0,
     });
 
     const routingSchema = z.object({
@@ -24,8 +24,9 @@ export const createSupervisorNode = () => {
             new SystemMessage(SUPERVISOR_PROMPT),
             ...state.messages,
         ];
-        
+
         const response = await structuredModel.invoke(messages);
+        console.log(`[SupervisorNode] Decided next step: ${response.next}`);
         
         return {
             next: response.next as RouteDestination

@@ -8,8 +8,8 @@ export class AIController {
         try {
             const { input, workspaceId, channelId } = req.body;
             // req.user is usually set by your auth middleware
-            // Fallback to a dummy ID if testing without auth
-            const userId = (req as Request & { user?: { id: string } }).user?.id || "test-user-id"; 
+            // Fallback to a valid 24-hex ObjectId if testing without auth
+            const userId = (req as Request & { user?: { id: string } }).user?.id || "000000000000000000000000";
 
             if (!input || !workspaceId || !channelId || !userId) {
                 res.status(400).json({ success: false, message: 'Missing required fields' });

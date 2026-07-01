@@ -1,6 +1,6 @@
 import { Notification } from "../../domain/entities/Notification";
 import { INotificationDocument } from "../database/models/NotificationModel";
-import { IMapper } from "./IMapper";
+import { IMapper } from "../../application/interfaces/IMapper";
 import { Types } from "mongoose";
 
 export class NotificationMapper implements IMapper<Notification, INotificationDocument> {
