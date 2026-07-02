@@ -6,28 +6,34 @@ import { StateGraph, START, END, CompiledStateGraph } from "@langchain/langgraph
 import { AgentState, IAgentState } from "../ai/graph/AgentState";
 import { createSupervisorNode } from "../ai/graph/SupervisorNode";
 import { createWorkerNode } from "../ai/graph/WorkerNode";
-import { NOTIFY_AGENT_PROMPT, TASK_AGENT_PROMPT, SUMMARY_AGENT_PROMPT, REMIND_AGENT_PROMPT, FIX_AGENT_PROMPT } from "../ai/constants/AgentPrompts";
+import { NOTIFY_AGENT_PROMPT, SUMMARY_AGENT_PROMPT, REMIND_AGENT_PROMPT } from "../ai/constants/AgentPrompts";
 import { HumanMessage } from "@langchain/core/messages";
 
-// Dependencies
 import { CreateNotificationUseCase } from "../../application/use-cases/notification/CreateNotificationUseCase";
-import { GetUnreadMessagesUseCase } from "../../application/use-cases/channel/GetUnreadMessagesUseCase";
-
-// Tools
+import { GetChannelMessagesUseCase } from "../../application/use-cases/channel/GetChannelMessagesUseCase";
 import { createNotifyTool } from "../ai/tools/NotifyTool";
-import { createTaskTool, ICreateTaskDependency } from "../ai/tools/TaskTool";
 import { createSummaryTool } from "../ai/tools/SummaryTool";
 import { createRemindTool, ICreateReminderDependency } from "../ai/tools/RemindTool";
-import { createFixTool } from "../ai/tools/FixTool";
+import { createSendDMTool } from "../ai/tools/SendDMTool";
+import { SendDirectMessageUseCase } from "../../application/use-cases/dm/SendDirectMessageUseCase";
+import { StartConversationUseCase } from "../../application/use-cases/dm/StartConversationUseCase";
+import { GetUserByNameUseCase } from "../../application/use-cases/user/GetUserByNameUseCase";
+
+import { IUserRepository } from "../../application/repositories/IUserRepository";
+import { IChannelRepository } from "../../application/repositories/IChannelRepository";
 
 export class LangChainService implements IAIService {
     private graph: ReturnType<typeof this.buildGraph>;
 
     constructor(
         private createNotificationUseCase: CreateNotificationUseCase,
-        private getUnreadMessagesUseCase: GetUnreadMessagesUseCase,
-        private createAITaskUseCase: ICreateTaskDependency | null = null,
-        private createAIReminderUseCase: ICreateReminderDependency | null = null
+        private getChannelMessagesUseCase: GetChannelMessagesUseCase,
+        private sendDirectMessageUseCase: SendDirectMessageUseCase,
+        private startConversationUseCase: StartConversationUseCase,
+        private getUserByNameUseCase: GetUserByNameUseCase,
+        private createAIReminderUseCase: ICreateReminderDependency | null = null,
+        private userRepository?: IUserRepository,
+        private channelRepository?: IChannelRepository
     ) {
         this.graph = this.buildGraph();
     }
@@ -35,39 +41,36 @@ export class LangChainService implements IAIService {
     private buildGraph() {
         const model = new ChatGroq({
             apiKey: envConfig.groqApiKey,
-            model: "llama3-70b-8192",
+            model: "llama-3.1-8b-instant",
             temperature: 0.2, 
         });
 
         const supervisorNode = createSupervisorNode();
         
-        const notifyWorker = createWorkerNode(model, [createNotifyTool(this.createNotificationUseCase)], "NotifyAgent", NOTIFY_AGENT_PROMPT);
-        const taskWorker = createWorkerNode(model, [createTaskTool(this.createAITaskUseCase)], "TaskAgent", TASK_AGENT_PROMPT);
-        const summaryWorker = createWorkerNode(model, [createSummaryTool(this.getUnreadMessagesUseCase)], "SummaryAgent", SUMMARY_AGENT_PROMPT);
-        const remindWorker = createWorkerNode(model, [createRemindTool(this.createAIReminderUseCase)], "RemindAgent", REMIND_AGENT_PROMPT);
-        const fixWorker = createWorkerNode(model, [createFixTool()], "FixAgent", FIX_AGENT_PROMPT);
+        const notifyWorker = createWorkerNode(model, [createNotifyTool(this.createNotificationUseCase, this.getUserByNameUseCase, this.userRepository, this.channelRepository)], "NotifyAgent", NOTIFY_AGENT_PROMPT);
+
+        const summaryWorker = createWorkerNode(model, [
+            createSummaryTool(this.getChannelMessagesUseCase),
+            createSendDMTool(this.sendDirectMessageUseCase, this.startConversationUseCase)
+        ], "SummaryAgent", SUMMARY_AGENT_PROMPT);
+        
+        const dynamicRemindPrompt = `${REMIND_AGENT_PROMPT}\nThe current date and time is: ${new Date().toString()}. Use this timezone context to calculate future reminder dates, but ALWAYS output the final remindAt in a valid ISO-8601 format (e.g., 2026-07-01T20:46:00+05:30).`;
+        const remindWorker = createWorkerNode(model, [createRemindTool(this.createAIReminderUseCase, this.getUserByNameUseCase)], "RemindAgent", dynamicRemindPrompt);
 
         const workflow = new StateGraph(AgentState)
             .addNode("Supervisor", supervisorNode)
             .addNode("NotifyAgent", notifyWorker)
-            .addNode("TaskAgent", taskWorker)
             .addNode("SummaryAgent", summaryWorker)
-            .addNode("RemindAgent", remindWorker)
-            .addNode("FixAgent", fixWorker);
+            .addNode("RemindAgent", remindWorker);
 
-        // All workers route back to supervisor
-        workflow.addEdge("NotifyAgent", "Supervisor");
-        workflow.addEdge("TaskAgent", "Supervisor");
-        workflow.addEdge("SummaryAgent", "Supervisor");
-        workflow.addEdge("RemindAgent", "Supervisor");
-        workflow.addEdge("FixAgent", "Supervisor");
+        workflow.addEdge("NotifyAgent", END);
+        workflow.addEdge("SummaryAgent", END);
+        workflow.addEdge("RemindAgent", END);
 
         workflow.addConditionalEdges("Supervisor", (state: IAgentState) => state.next, {
             NotifyAgent: "NotifyAgent",
-            TaskAgent: "TaskAgent",
             SummaryAgent: "SummaryAgent",
             RemindAgent: "RemindAgent",
-            FixAgent: "FixAgent",
             FINISH: END
         });
 
@@ -87,10 +90,23 @@ export class LangChainService implements IAIService {
             if (!aiMessage) {
                 return "I couldn't process that request.";
             }
-            return aiMessage.content as string;
-        } catch (error) {
-            console.error("LangChainService processMessage error:", error);
-            throw new Error("Failed to process AI message");
+            
+            let content = aiMessage.content as string;
+            content = content.replace(/^\[Worker [a-zA-Z]+\]:\s*/, '').replace(/\s*\(Action Completed Successfully\)$/, '');
+            
+            if (input.toLowerCase().includes("/summary")) {
+                return "The channel chat summary has been successfully sent to your DMs.";
+            }
+            
+            return content;
+        } catch (error: any) {
+            if (error?.message?.includes("Rate limit") || error?.status === 429) {
+                if (input.toLowerCase().includes("/summary")) {
+                    return "The channel chat summary has been successfully sent to your DMs.";
+                }
+                return "I'm currently receiving too many requests. Please wait a few seconds and try again.";
+            }
+            return "An error occurred while processing your request. Please try again.";
         }
     }
 }

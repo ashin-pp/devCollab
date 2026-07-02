@@ -25,6 +25,8 @@ import { ChannelMessageInput } from '../../../components/workspace/channel/Chann
 import { ChannelNotMemberView } from '../../../components/workspace/channel/ChannelNotMemberView';
 import { ChannelPollsList } from '../../../components/polls/ChannelPollsList';
 import { CreatePollModal } from '../../../components/polls/CreatePollModal';
+import { AiDashboardModal } from '../../../components/workspace/channel/AiDashboardModal';
+import type { AiTab } from '../../../components/workspace/channel/AiDashboardModal';
 
 export const WorkspaceChannelPage = () => {
   const { workspaceId, channelId } = useParams<{ workspaceId: string, channelId: string }>();
@@ -54,6 +56,9 @@ export const WorkspaceChannelPage = () => {
   const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isCreatePollModalOpen, setIsCreatePollModalOpen] = useState(false);
+  const [isAiDashboardOpen, setIsAiDashboardOpen] = useState(false);
+  const [aiDashboardTab, setAiDashboardTab] = useState<AiTab>('tasks');
+
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
@@ -300,7 +305,7 @@ export const WorkspaceChannelPage = () => {
       const cleanMessage = isTextEmpty ? '' : message;
       
       const plainText = cleanMessage.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim();
-      const aiCommands = ['@task', '@notify', '@remind', '@summary', '@fix', '@schedule', '@info'];
+      const aiCommands = ['/task', '/notify', '/remind', '/summary', '/fix', '/schedule'];
       const isAiCommand = aiCommands.some(cmd => plainText.startsWith(cmd));
 
       if (isAiCommand) {
@@ -312,11 +317,14 @@ export const WorkspaceChannelPage = () => {
         try {
           const aiResponse = await processCommand(plainText, workspaceId, channelId);
           if (aiResponse) {
+             if (aiResponse.includes("summary has been successfully sent")) {
+               import('react-hot-toast').then(m => m.default.success('Summary successfully sent to your Direct Messages!'));
+             }
              const systemMsg: MessageData = {
                id: Date.now().toString(), // fake local ID
                channelId,
                senderId: 'ai-system',
-               senderName: 'Antigravity AI',
+               senderName: 'Agentic AI',
                content: aiResponse,
                messageType: 'text',
                createdAt: new Date().toISOString()
@@ -380,6 +388,29 @@ export const WorkspaceChannelPage = () => {
     }
   };
 
+  const handleAiCommandClick = (command: string) => {
+    if (textareaRef.current) {
+      const currentHtml = textareaRef.current.innerHTML;
+      const newHtml = currentHtml ? currentHtml + ' ' + command + ' ' : command + ' ';
+      textareaRef.current.innerHTML = newHtml;
+      setMessage(newHtml);
+      textareaRef.current.focus();
+      
+      // Move cursor to the end
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(textareaRef.current);
+      range.collapse(false);
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    }
+  };
+
+  const openAiDashboard = (tab: AiTab) => {
+    setAiDashboardTab(tab);
+    setIsAiDashboardOpen(true);
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -436,6 +467,7 @@ export const WorkspaceChannelPage = () => {
             setShowThread={setShowThread}
             setIsSettingsModalOpen={setIsSettingsModalOpen}
             navigate={navigate}
+            openAiDashboard={openAiDashboard}
           />
 
           {currentChannel?.isActive === false ? (
@@ -488,7 +520,8 @@ export const WorkspaceChannelPage = () => {
                 channelMembers={channelMembers}
                 fileInputRef={fileInputRef}
                 handleFileSelect={handleFileSelect}
-                isUploading={isUploading || isProcessingAi}
+                isUploading={isUploading}
+                isProcessingAi={isProcessingAi}
                 attachedImageUrl={attachedImageUrl}
                 setAttachedImageUrl={setAttachedImageUrl}
                 textareaRef={textareaRef}
@@ -504,6 +537,7 @@ export const WorkspaceChannelPage = () => {
                 handleFormat={handleFormat}
                 setIsCreatePollModalOpen={setIsCreatePollModalOpen}
                 handleSendMessage={handleSendMessage}
+                onAiCommandClick={handleAiCommandClick}
               />
             </>
           )}
@@ -672,6 +706,12 @@ export const WorkspaceChannelPage = () => {
             onClose={() => setIsCreatePollModalOpen(false)}
             workspaceId={workspaceId}
             channelId={channelId}
+          />
+
+          <AiDashboardModal
+            isOpen={isAiDashboardOpen}
+            onClose={() => setIsAiDashboardOpen(false)}
+            defaultTab={aiDashboardTab}
           />
         </>
       )}

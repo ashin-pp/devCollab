@@ -55,6 +55,7 @@ import { UploadChatImageUseCase } from "../application/use-cases/chat/UploadChat
 import { UploadController } from "../interfaces/controllers/UploadController";
 import { DeleteProfileImageUseCase } from "../application/use-cases/user/DeleteProfileImageUseCase";
 import { SearchUserByEmailUseCase } from "../application/use-cases/user/SearchUserByEmailUseCase";
+import { GetUserByNameUseCase } from "../application/use-cases/user/GetUserByNameUseCase";
 import { UserController } from "../interfaces/controllers/UserController";
 
 // --- Workspace Imports ---
@@ -215,6 +216,7 @@ const uploadProfileImageUseCase = new UploadProfileImageUseCase(userRepository, 
 const uploadChatImageUseCase = new UploadChatImageUseCase(cloudinaryStorageService);
 const deleteProfileImageUseCase = new DeleteProfileImageUseCase(userRepository, cloudinaryStorageService);
 const searchUsersByEmailUseCase = new SearchUserByEmailUseCase(userRepository);
+const getUserByNameUseCase = new GetUserByNameUseCase(userRepository);
 
 const userController = new UserController(
     getUserProfileUseCase,
@@ -229,7 +231,7 @@ const userController = new UserController(
 
 const uploadController = new UploadController(uploadChatImageUseCase);
 
-// Notification Instantiations (Initialize early to inject into Workspace Use Cases)
+// Notification Instantiations 
 const notificationRepository = new NotificationRepository();
 const createNotificationUseCase = new CreateNotificationUseCase(notificationRepository);
 const getUserNotificationsUseCase = new GetUserNotificationsUseCase(notificationRepository);
@@ -249,13 +251,13 @@ const verifyInviteCodeUseCase = new VerifyInviteCodeUseCase(workspaceRepository)
 const getWorkspaceMembersUseCase = new GetWorkspaceMembersUseCase(workspaceRepository, workspaceMemberRepository, userRepository);
 const handleJoinRequestUseCase = new HandleJoinRequestUseCase(workspaceRepository, workspaceMemberRepository, createNotificationUseCase);
 
-// Initialize Channel Repositories early so Workspace Use Cases can use them for cascade deletes
+//  Channel Repositories 
 const channelRepository = new ChannelRepository();
 const channelMemberRepository = new ChannelMemberRepository();
 const messageRepository = new MessageRepository();
 
 const removeWorkspaceMemberUseCase = new RemoveWorkspaceMemberUseCase(
-    workspaceRepository, 
+    workspaceRepository,
     workspaceMemberRepository,
     channelRepository,
     channelMemberRepository
@@ -307,7 +309,7 @@ const getChannelMessagesUseCase = new GetChannelMessagesUseCase(messageRepositor
 const getUnreadMessagesUseCase = new GetUnreadMessagesUseCase(messageRepository, channelMemberRepository);
 
 const channelController = new ChannelController(
-    createChannelUseCase, 
+    createChannelUseCase,
     getWorkspaceChannelsUseCase,
     getChannelMembersUseCase,
     addChannelMemberUseCase,
@@ -377,10 +379,19 @@ const aiReminderRepository = new AIReminderRepository();
 const aiChatRepository = new AIChatRepository();
 
 const createAITaskUseCase = new CreateAITaskUseCase(aiTaskRepository);
-const createAIReminderUseCase = new CreateAIReminderUseCase(aiReminderRepository);
+const createAIReminderUseCase = new CreateAIReminderUseCase(aiReminderRepository, createNotificationUseCase, userRepository, channelRepository);
 const saveAIChatUseCase = new SaveAIChatUseCase(aiChatRepository);
 
-const aiService = new LangChainService(createNotificationUseCase, getUnreadMessagesUseCase, createAITaskUseCase, createAIReminderUseCase);
+const aiService = new LangChainService(
+    createNotificationUseCase,
+    getChannelMessagesUseCase,
+    sendDirectMessageUseCase,
+    startConversationUseCase,
+    getUserByNameUseCase,
+    createAIReminderUseCase,
+    userRepository,
+    channelRepository
+);
 const handleAiCommandUseCase = new HandleAiCommandUseCase(aiService, saveAIChatUseCase);
 const aiController = new AIController(handleAiCommandUseCase);
 

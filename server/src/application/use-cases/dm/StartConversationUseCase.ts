@@ -13,9 +13,10 @@ export class StartConversationUseCase {
     ) {}
 
     async execute(workspaceId: string, initiatorId: string, receiverId: string): Promise<Conversation> {
-        if (initiatorId === receiverId) {
-            throw new AppError(ErrorMessage.CANNOT_MESSAGE_YOURSELF, HttpStatusCode.BAD_REQUEST);
-        }
+        // Allow users to message themselves (Note to Self feature)
+        // if (initiatorId === receiverId) {
+        //     throw new AppError(ErrorMessage.CANNOT_MESSAGE_YOURSELF, HttpStatusCode.BAD_REQUEST);
+        // }
 
         const initiator = await this.workspaceMemberRepository.findByWorkspaceAndUser(workspaceId, initiatorId);
         if (!initiator || initiator.status !== MemberStatus.APPROVED) {

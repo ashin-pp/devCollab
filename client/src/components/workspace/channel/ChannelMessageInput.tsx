@@ -9,6 +9,7 @@ interface ChannelMessageInputProps {
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   handleFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
   isUploading: boolean;
+  isProcessingAi?: boolean;
   attachedImageUrl: string | null;
   setAttachedImageUrl: (url: string | null) => void;
   textareaRef: React.RefObject<HTMLDivElement | null>;
@@ -25,12 +26,14 @@ interface ChannelMessageInputProps {
   setIsCreatePollModalOpen: (open: boolean) => void;
   handleSendMessage: () => void;
   channelMembers: ChannelMemberData[];
+  onAiCommandClick?: (command: string) => void;
 }
 
 export const ChannelMessageInput = ({
   fileInputRef,
   handleFileSelect,
   isUploading,
+  isProcessingAi,
   attachedImageUrl,
   setAttachedImageUrl,
   textareaRef,
@@ -46,9 +49,11 @@ export const ChannelMessageInput = ({
   handleFormat,
   setIsCreatePollModalOpen,
   handleSendMessage,
-  channelMembers
+  channelMembers,
+  onAiCommandClick
 }: ChannelMessageInputProps) => {
   const [mentionSearch, setMentionSearch] = useState<string | null>(null);
+  const [aiCommandSearch, setAiCommandSearch] = useState<string | null>(null);
   const currentUser = useSelector((state: RootState) => state.auth.user);
 
   const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
@@ -72,14 +77,28 @@ export const ChannelMessageInput = ({
       const match = preCursorText.match(/@([a-zA-Z0-9_]*)$/);
       if (match) {
         setMentionSearch(match[1]);
+        setAiCommandSearch(null);
       } else {
-        setMentionSearch(null);
+        const aiCommandMatch = preCursorText.match(/\/([a-zA-Z0-9_]*)$/);
+        if (aiCommandMatch) {
+          setAiCommandSearch(aiCommandMatch[1]);
+          setMentionSearch(null);
+        } else {
+          setMentionSearch(null);
+          setAiCommandSearch(null);
+        }
       }
     }
 
     handleTyping(e as any);
     setMessage(html);
     checkFormatting();
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData('text/plain');
+    document.execCommand('insertText', false, text);
   };
 
   const insertMention = (member: ChannelMemberData) => {
@@ -147,6 +166,44 @@ export const ChannelMessageInput = ({
     }
   };
 
+  const insertAiCommand = (command: string) => {
+    if (!textareaRef.current) return;
+    
+    textareaRef.current.focus();
+    const selection = window.getSelection();
+    
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      
+      if (range.startContainer.nodeType === Node.TEXT_NODE) {
+        const textContent = range.startContainer.textContent || '';
+        const offset = range.startOffset;
+        const preCursorText = textContent.slice(0, offset);
+        
+        const match = preCursorText.match(/\/([a-zA-Z0-9_]*)$/);
+        
+        if (match) {
+          const matchLength = match[0].length;
+          range.setStart(range.startContainer, offset - matchLength);
+          range.deleteContents();
+          
+          const textNode = document.createTextNode(`/${command} `);
+          range.insertNode(textNode);
+          
+          range.setStartAfter(textNode);
+          range.setEndAfter(textNode);
+          
+          selection.removeAllRanges();
+          selection.addRange(range);
+          
+          setMessage(textareaRef.current.innerHTML);
+          setAiCommandSearch(null);
+          return;
+        }
+      }
+    }
+  };
+
   const handleMentionClick = (e: React.MouseEvent) => {
     e.preventDefault();
     if (textareaRef.current) {
@@ -179,6 +236,19 @@ export const ChannelMessageInput = ({
     member.userId !== currentUser?.id && member.user?.name?.toLowerCase().includes(mentionSearch?.toLowerCase() || '')
   ) || [];
 
+  const AI_COMMANDS = [
+    { id: 'task', label: 'Create Task', icon: '📝' },
+    { id: 'notify', label: 'Notify User', icon: '🔔' },
+    { id: 'remind', label: 'Set Reminder', icon: '⏰' },
+    { id: 'schedule', label: 'Schedule', icon: '📅' },
+    { id: 'summary', label: 'Summarize Chat', icon: '✨' },
+    { id: 'fix', label: 'Fix Code', icon: '🔧' }
+  ];
+
+  const filteredAiCommands = AI_COMMANDS.filter(cmd => 
+    cmd.id.toLowerCase().includes(aiCommandSearch?.toLowerCase() || '')
+  );
+
   return (
     <div className="p-4 bg-white">
       <div className="border border-slate-300 rounded-2xl overflow-visible focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all shadow-sm bg-slate-50 relative">
@@ -186,18 +256,24 @@ export const ChannelMessageInput = ({
         {/* AI Commands Bar - Minimal Pill Style */}
         <div className="px-4 pt-3 flex items-center gap-2 overflow-x-auto hide-scrollbar">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">AI</span>
-          <button className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full hover:bg-indigo-100 transition-colors shadow-sm">@task</button>
-          <button className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full hover:bg-indigo-100 transition-colors shadow-sm">@notify</button>
-          <button className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full hover:bg-indigo-100 transition-colors shadow-sm">@remind</button>
-          <button className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full hover:bg-indigo-100 transition-colors shadow-sm">@info</button>
-          <button className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full hover:bg-indigo-100 transition-colors shadow-sm">@schedule</button>
-          <button className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full hover:bg-indigo-100 transition-colors shadow-sm">@summary</button>
+          <button onClick={() => onAiCommandClick && onAiCommandClick('/task')} className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full hover:bg-indigo-100 transition-colors shadow-sm">/task</button>
+          <button onClick={() => onAiCommandClick && onAiCommandClick('/notify')} className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full hover:bg-indigo-100 transition-colors shadow-sm">/notify</button>
+          <button onClick={() => onAiCommandClick && onAiCommandClick('/remind')} className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full hover:bg-indigo-100 transition-colors shadow-sm">/remind</button>
+          <button onClick={() => onAiCommandClick && onAiCommandClick('/schedule')} className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full hover:bg-indigo-100 transition-colors shadow-sm">/schedule</button>
+          <button onClick={() => onAiCommandClick && onAiCommandClick('/summary')} className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full hover:bg-indigo-100 transition-colors shadow-sm">/summary</button>
         </div>
 
         <input type="file" ref={fileInputRef} hidden onChange={handleFileSelect} accept="image/*" />
         
         {isUploading && (
           <div className="px-4 py-3 text-sm text-slate-500">Uploading image...</div>
+        )}
+        
+        {isProcessingAi && (
+          <div className="px-4 py-3 text-sm text-blue-500 font-semibold flex items-center gap-2">
+            <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            AI is processing your command...
+          </div>
         )}
 
         {attachedImageUrl && (
@@ -281,12 +357,59 @@ export const ChannelMessageInput = ({
             </div>
           </div>
         )}
+        
+        {/* --- AI COMMAND POPUP --- */}
+        {aiCommandSearch !== null && (
+          <div className="absolute bottom-full mb-3 left-4 w-72 bg-white/95 backdrop-blur-md border border-slate-200/60 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden z-50 transform origin-bottom-left transition-all duration-200 ease-out">
+            <div className="px-4 py-3 bg-gradient-to-r from-indigo-50/80 to-white border-b border-slate-100 flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-indigo-100 rounded-lg text-indigo-600 flex items-center justify-center font-bold text-xs">
+                  /
+                </div>
+                <span className="text-xs font-bold text-slate-700 tracking-wide">AI Commands</span>
+              </div>
+              <button 
+                onClick={() => setAiCommandSearch(null)} 
+                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            
+            <div className="max-h-64 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+              {filteredAiCommands.length > 0 ? (
+                filteredAiCommands.map((cmd) => (
+                  <button
+                    key={cmd.id}
+                    onMouseDown={(e) => { e.preventDefault(); insertAiCommand(cmd.id); }}
+                    className="w-full px-3 py-2 text-left rounded-xl hover:bg-indigo-50 focus:bg-indigo-50 focus:outline-none group flex items-center gap-3 transition-all duration-200 border border-transparent hover:border-indigo-100"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-100 to-blue-100 flex items-center justify-center text-sm shadow-sm ring-2 ring-white group-hover:ring-indigo-100 transition-all">
+                      {cmd.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-semibold text-slate-800 block group-hover:text-indigo-700 transition-colors">
+                        /{cmd.id}
+                      </span>
+                      <span className="text-[10px] text-slate-400 block truncate group-hover:text-indigo-500/70 transition-colors">
+                        {cmd.label}
+                      </span>
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <div className="px-4 py-6 text-center text-sm font-medium text-slate-500">No AI commands found</div>
+              )}
+            </div>
+          </div>
+        )}
         {/* ------------------- */}
 
         <div
           ref={textareaRef}
           contentEditable
           onInput={handleInput}
+          onPaste={handlePaste}
           onKeyDown={handleKeyDown}
           onKeyUp={checkFormatting}
           onMouseUp={checkFormatting}
@@ -342,7 +465,7 @@ export const ChannelMessageInput = ({
 
           <button
             onClick={handleSendMessage}
-            disabled={(!message.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim() && !attachedImageUrl) || isUploading}
+            disabled={(!message.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim() && !attachedImageUrl) || isUploading || isProcessingAi}
             className={`p-2 rounded-xl flex items-center justify-center transition-all ${message.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim() || attachedImageUrl
               ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5'
               : 'bg-slate-200 text-slate-400 cursor-not-allowed'

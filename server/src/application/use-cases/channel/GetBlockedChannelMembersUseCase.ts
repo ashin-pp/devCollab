@@ -25,7 +25,7 @@ export class GetBlockedChannelMembersUseCase {
 
         const isCreator = channel.createdBy === requestUserId || (channel as any).created_by?.toString() === requestUserId;
         if (!isCreator) {
-            throw new AppError("Only the channel creator can view blocked members.", HttpStatusCode.FORBIDDEN);
+            return [];
         }
 
         const blockedMembers = await this.channelMemberRepository.findByChannelId(channelId, ChannelMemberStatus.BLOCKED);

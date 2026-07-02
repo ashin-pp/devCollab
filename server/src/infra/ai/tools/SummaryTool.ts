@@ -1,8 +1,8 @@
 import { tool } from "@langchain/core/tools";
 import { z } from "zod";
-import { GetUnreadMessagesUseCase } from "../../../application/use-cases/channel/GetUnreadMessagesUseCase";
+import { GetChannelMessagesUseCase } from "../../../application/use-cases/channel/GetChannelMessagesUseCase";
 
-export const createSummaryTool = (getUnreadMessagesUseCase: GetUnreadMessagesUseCase) => {
+export const createSummaryTool = (getChannelMessagesUseCase: GetChannelMessagesUseCase) => {
     return tool(
         async ({}, config) => {
             const context = config?.configurable?.context;
@@ -12,15 +12,25 @@ export const createSummaryTool = (getUnreadMessagesUseCase: GetUnreadMessagesUse
                 return "Error: Could not identify the user requesting the summary.";
             }
 
-            const messages = await getUnreadMessagesUseCase.execute(channelId, userId);
-            if (!messages || messages.length === 0) return "You have no unread messages in this channel to summarize.";
+            const messages = await getChannelMessagesUseCase.execute(channelId, 1, 10); // Get last 10 messages
+            if (!messages || messages.length === 0) return "There are no messages in this channel to summarize.";
             
-            const chatHistory = messages.map(m => `${m.senderId}: ${m.content}`).join("\n");
-            return `Here is the unread chat history:\n${chatHistory}\n\nPlease provide a concise summary.`;
+            let chatHistory = messages.map(m => {
+                let text = m.content || "";
+                if (text.length > 150) text = text.substring(0, 150) + "...";
+                return `${m.senderName || m.senderId}: ${text}`;
+            }).join("\n");
+            
+            // Hard cap the entire chat history block
+            if (chatHistory.length > 1000) {
+                chatHistory = chatHistory.substring(chatHistory.length - 1000);
+            }
+
+            return `Task: Write a 2 to 3 sentence summary of the chat history below.\n\nChat History:\n${chatHistory}\n\nSummary:`;
         },
         {
             name: "summary_tool",
-            description: "Generates a summary of recent channel messages. Triggered by @summary.",
+            description: "Generates a summary of recent channel messages. Triggered by /summary.",
             schema: z.object({}),
         }
     );

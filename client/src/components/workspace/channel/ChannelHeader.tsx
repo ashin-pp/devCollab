@@ -5,6 +5,7 @@ import { ChannelService } from '../../../api/workspace/channel.service';
 import type { ChannelData, ChannelMember } from '../../../types/channel.types';
 import type { UserData } from '../../../types/workspace.types';
 import type { User } from '../../../types/auth.types';
+import type { AiTab } from './AiDashboardModal';
 
 interface ChannelHeaderProps {
   currentChannel: ChannelData | null;
@@ -19,6 +20,7 @@ interface ChannelHeaderProps {
   setShowThread: (show: boolean) => void;
   setIsSettingsModalOpen: (open: boolean) => void;
   navigate: (path: string) => void;
+  openAiDashboard: (tab: AiTab) => void;
 }
 
 export const ChannelHeader = ({
@@ -33,7 +35,8 @@ export const ChannelHeader = ({
   setShowMembersSidebar,
   setShowThread,
   setIsSettingsModalOpen,
-  navigate
+  navigate,
+  openAiDashboard
 }: ChannelHeaderProps) => {
   return (
     <header className="h-14 border-b border-slate-200 flex items-center justify-between px-6 shrink-0 bg-white">
@@ -153,24 +156,18 @@ export const ChannelHeader = ({
 
       <div className="flex items-center gap-6">
         <div className="hidden md:flex items-center gap-2">
-          <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-semibold rounded-md border border-blue-100 flex items-center gap-1 cursor-pointer hover:bg-blue-100">
-            @task <span className="w-4 h-4 rounded-full bg-red-500 text-white flex items-center justify-center text-[9px]">3</span>
-          </span>
-          <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-semibold rounded-md border border-blue-100 cursor-pointer hover:bg-blue-100">
-            @notify
-          </span>
-          <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-semibold rounded-md border border-blue-100 flex items-center gap-1 cursor-pointer hover:bg-blue-100">
-            @remind <span className="w-4 h-4 rounded-full bg-orange-500 text-white flex items-center justify-center text-[9px]">5</span>
-          </span>
-          <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-semibold rounded-md border border-blue-100 cursor-pointer hover:bg-blue-100">
-            @info
-          </span>
-          <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-semibold rounded-md border border-blue-100 cursor-pointer hover:bg-blue-100">
-            @schedule
-          </span>
-          <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-semibold rounded-md border border-blue-100 cursor-pointer hover:bg-blue-100">
-            @summary
-          </span>
+          <button onClick={() => openAiDashboard('tasks')} className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-semibold rounded-md border border-blue-100 flex items-center gap-1 cursor-pointer hover:bg-blue-200 transition-colors">
+            /task <span className="w-4 h-4 rounded-full bg-red-500 text-white flex items-center justify-center text-[9px]">3</span>
+          </button>
+          <button onClick={() => openAiDashboard('notifications')} className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-semibold rounded-md border border-blue-100 cursor-pointer hover:bg-blue-200 transition-colors">
+            /notify
+          </button>
+          <button onClick={() => openAiDashboard('reminders')} className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-semibold rounded-md border border-blue-100 flex items-center gap-1 cursor-pointer hover:bg-blue-200 transition-colors">
+            /remind <span className="w-4 h-4 rounded-full bg-orange-500 text-white flex items-center justify-center text-[9px]">5</span>
+          </button>
+          <button onClick={() => openAiDashboard('schedule')} className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-semibold rounded-md border border-blue-100 cursor-pointer hover:bg-blue-200 transition-colors">
+            /schedule
+          </button>
         </div>
 
         <div className="flex items-center">

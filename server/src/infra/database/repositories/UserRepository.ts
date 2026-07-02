@@ -20,4 +20,10 @@ export class UserRepository extends MongoBaseRepository<User, IUserModel> implem
         const found = await this.model.findOne({ google_id: googleId });
         return found ? this._mapper.toDomain(found) : null;
     }
+
+    async findByName(name: string): Promise<User | null> {
+        // Case-insensitive partial match
+        const found = await this.model.findOne({ name: { $regex: new RegExp(name, 'i') } });
+        return found ? this._mapper.toDomain(found) : null;
+    }
 }

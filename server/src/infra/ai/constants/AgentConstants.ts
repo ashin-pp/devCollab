@@ -1,9 +1,7 @@
 export const AGENT_NAMES = [
-    "TaskAgent", 
     "NotifyAgent", 
     "SummaryAgent", 
-    "RemindAgent", 
-    "FixAgent"
+    "RemindAgent"
 ] as const;
 
 export type AgentName = typeof AGENT_NAMES[number];

@@ -5,11 +5,12 @@ import { envConfig } from "../../config/envConfig";
 import { AGENT_NAMES, RouteDestination } from "../constants/AgentConstants";
 import { SUPERVISOR_PROMPT } from "../constants/AgentPrompts";
 import { IAgentState } from "./AgentState";
+import { logger } from "../../../container";
 
 export const createSupervisorNode = () => {
     const model = new ChatGroq({
         apiKey: envConfig.groqApiKey,
-        model: "llama3-70b-8192",
+        model: "llama-3.1-8b-instant",
         temperature: 0,
     });
 
@@ -20,13 +21,16 @@ export const createSupervisorNode = () => {
     const structuredModel = model.withStructuredOutput(routingSchema);
 
     return async (state: IAgentState): Promise<{ next: RouteDestination }> => {
+
+        const filteredMessages = state.messages.filter(msg => msg.getType() === "human");
+
         const messages = [
             new SystemMessage(SUPERVISOR_PROMPT),
-            ...state.messages,
+            ...filteredMessages,
         ];
 
         const response = await structuredModel.invoke(messages);
-        console.log(`[SupervisorNode] Decided next step: ${response.next}`);
+        logger.info(`[SupervisorNode] Decided next step: ${response.next}`);
         
         return {
             next: response.next as RouteDestination

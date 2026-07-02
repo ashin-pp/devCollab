@@ -1,22 +1,11 @@
 import { DirectMessage } from '../../../domain/entities/DirectMessage';
 import { IDirectMessageRepository } from '../../../application/repositories/IDirectMessageRepository';
-import { DirectMessageModel } from '../models/DirectMessageModel';
+import { DirectMessageModel, IDirectMessageDocument } from '../models/DirectMessageModel';
+import { ConversationModel } from '../models/ConversationModel';
+import { DirectMessageMapper } from '../../mappers/DirectMessageMapper';
 
 export class DirectMessageRepository implements IDirectMessageRepository {
-    private toEntity(doc: any): DirectMessage {
-        return new DirectMessage(
-            doc.conversationId.toString(),
-            doc.senderId.toString(),
-            doc.content,
-            doc.isSeen,
-            doc.messageType,
-            doc.imageUrl,
-            doc.isEdited,
-            doc.createdAt,
-            doc.updatedAt,
-            doc._id.toString()
-        );
-    }
+    private _mapper = new DirectMessageMapper();
 
     async create(message: DirectMessage): Promise<DirectMessage> {
         const newMessage = new DirectMessageModel({
@@ -30,7 +19,7 @@ export class DirectMessageRepository implements IDirectMessageRepository {
         });
 
         const saved = await newMessage.save();
-        return this.toEntity(saved);
+        return this._mapper.toDomain(saved);
     }
 
     async findByConversationId(conversationId: string, limit: number = 50, skip: number = 0): Promise<DirectMessage[]> {
@@ -41,12 +30,20 @@ export class DirectMessageRepository implements IDirectMessageRepository {
             .lean();
 
         // Reverse to return in chronological order
-        return docs.map(this.toEntity).reverse();
+        return docs.map(doc => this._mapper.toDomain(doc as unknown as IDirectMessageDocument)).reverse();
     }
 
     async markAsSeen(conversationId: string, receiverId: string): Promise<void> {
+        const conversation = await ConversationModel.findById(conversationId);
+        const isNoteToSelf = conversation && conversation.participant1Id.toString() === conversation.participant2Id.toString();
+
+        const query: Record<string, unknown> = { conversationId, isSeen: false };
+        if (!isNoteToSelf) {
+            query.senderId = { $ne: receiverId };
+        }
+
         await DirectMessageModel.updateMany(
-            { conversationId, senderId: { $ne: receiverId }, isSeen: false },
+            query,
             { $set: { isSeen: true } }
         );
     }
@@ -55,14 +52,18 @@ export class DirectMessageRepository implements IDirectMessageRepository {
         const doc = await DirectMessageModel.findOne({ conversationId })
             .sort({ createdAt: -1 })
             .lean();
-        return doc ? this.toEntity(doc) : null;
+        return doc ? this._mapper.toDomain(doc as unknown as IDirectMessageDocument) : null;
     }
 
     async countUnreadMessages(conversationId: string, receiverId: string): Promise<number> {
-        return DirectMessageModel.countDocuments({
-            conversationId,
-            senderId: { $ne: receiverId },
-            isSeen: false
-        });
+        const conversation = await ConversationModel.findById(conversationId);
+        const isNoteToSelf = conversation && conversation.participant1Id.toString() === conversation.participant2Id.toString();
+
+        const query: Record<string, unknown> = { conversationId, isSeen: false };
+        if (!isNoteToSelf) {
+            query.senderId = { $ne: receiverId };
+        }
+
+        return DirectMessageModel.countDocuments(query);
     }
 }

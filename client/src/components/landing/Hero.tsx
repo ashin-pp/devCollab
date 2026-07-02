@@ -272,12 +272,11 @@ export const Hero = () => {
                   {/* AI Commands Bar */}
                   <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-100 bg-slate-50/50 rounded-t-lg overflow-x-auto">
                     <span className="text-[10px] font-bold text-slate-400 mr-1 shrink-0">AI COMMANDS:</span>
-                    <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-semibold cursor-pointer hover:bg-blue-200 shrink-0">@task</span>
-                    <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-xs font-medium cursor-pointer hover:bg-blue-100 shrink-0">@notify</span>
-                    <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-xs font-medium cursor-pointer hover:bg-blue-100 shrink-0">@remind</span>
-                    <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-xs font-medium cursor-pointer hover:bg-blue-100 shrink-0">@info</span>
-                    <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-xs font-medium cursor-pointer hover:bg-blue-100 shrink-0">@schedule</span>
-                    <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-xs font-medium cursor-pointer hover:bg-blue-100 shrink-0">@summary</span>
+                    <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-semibold cursor-pointer hover:bg-blue-200 shrink-0">/task</span>
+                    <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-xs font-medium cursor-pointer hover:bg-blue-100 shrink-0">/notify</span>
+                    <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-xs font-medium cursor-pointer hover:bg-blue-100 shrink-0">/remind</span>
+                    <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-xs font-medium cursor-pointer hover:bg-blue-100 shrink-0">/schedule</span>
+                    <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-xs font-medium cursor-pointer hover:bg-blue-100 shrink-0">/summary</span>
                   </div>
                   {/* Formatting Toolbar */}
                   <div className="flex items-center gap-3 px-3 py-2 border-b border-slate-100 text-slate-400">
@@ -290,7 +289,7 @@ export const Hero = () => {
                   {/* Textarea */}
                   <textarea 
                     className="w-full bg-transparent p-3 outline-none resize-none text-[15px] text-slate-700 placeholder:text-slate-400 min-h-[80px]" 
-                    placeholder="Message #development (Use @task, @notify, @remind, @info, @schedule, @summary or type /fix for AI assistant)..."
+                    placeholder="Message #development (Use /task, /notify, /remind, /schedule, /summary or type /fix for AI assistant)..."
                     readOnly
                   ></textarea>
                   {/* Bottom Toolbar */}
