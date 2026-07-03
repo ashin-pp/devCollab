@@ -5,7 +5,7 @@ export class ChannelMember {
         public addedBy: string,
         public role: 'admin' | 'member' = 'member',
         public isActive: boolean = true,
-        public status: 'pending' | 'approved' | 'rejected' = 'approved',
+        public status: 'pending' | 'approved' | 'rejected' | 'blocked' = 'approved',
         public joinedAt?: Date,
         public removedAt?: Date,
         public lastReadAt?: Date,

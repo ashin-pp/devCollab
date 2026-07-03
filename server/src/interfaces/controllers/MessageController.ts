@@ -15,18 +15,26 @@ export class MessageController {
     sendMessage = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
         try {
             const { workspaceId, channelId } = req.params;
-            const { content } = req.body;
+            const { content, messageType, imageUrl, mentionedUserIds } = req.body;
             const userId = req.user?.id;
 
             if (!userId) {
                 throw new AppError(ErrorMessage.UNAUTHORIZED, HttpStatusCode.UNAUTHORIZED);
             }
 
-            if (!content) {
-                throw new AppError("Message content is required", HttpStatusCode.BAD_REQUEST);
+            if (!content && !imageUrl) {
+                throw new AppError("Message content or image is required", HttpStatusCode.BAD_REQUEST);
             }
 
-            const message = await this.sendMessageUseCase.execute(workspaceId as string, channelId as string, userId, content);
+            const message = await this.sendMessageUseCase.execute(
+                workspaceId as string, 
+                channelId as string, 
+                userId, 
+                content || '',
+                messageType,
+                imageUrl,
+                mentionedUserIds
+            );
             
             res.status(HttpStatusCode.CREATED).json({
                 message: "Message sent successfully",

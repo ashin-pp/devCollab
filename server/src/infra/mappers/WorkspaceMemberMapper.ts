@@ -1,5 +1,5 @@
 import { WorkspaceMember } from "../../domain/entities/WorkspaceMember";
-import { IMapper } from "./IMapper";
+import { IMapper } from "../../application/interfaces/IMapper";
 import { IWorkspaceMemberModel } from "../database/models/WorkspaceMemberModel";
 import { MemberRole } from "../../domain/enums/MemberRole";
 import { MemberStatus } from "../../domain/enums/MemberStatus";

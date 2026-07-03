@@ -57,4 +57,12 @@ export class MessageRepository implements IMessageRepository {
         });
         return count;
     }
+
+    async findUnreadMessages(channelId: string, lastReadAt: Date): Promise<Message[]> {
+        const messages = await MessageModel.find({
+            channel_id: channelId,
+            created_at: { $gt: lastReadAt }
+        }).populate('sender_id', 'name').sort({ created_at: 1 }); // Sort ascending so oldest unread is first
+        return messages.map(m => this._mapper.toDomain(m));
+    }
 }

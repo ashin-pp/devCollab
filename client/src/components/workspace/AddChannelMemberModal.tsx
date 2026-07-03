@@ -10,6 +10,7 @@ import type { MemberData } from '../../types/workspace.types';
 export const AddChannelMemberModal = ({ isOpen, onClose, workspaceId, channelId }: AddChannelMemberModalProps) => {
   const [workspaceMembers, setWorkspaceMembers] = useState<MemberData[]>([]);
   const [channelMembers, setChannelMembers] = useState<ChannelMemberData[]>([]);
+  const [blockedMembers, setBlockedMembers] = useState<ChannelMemberData[]>([]);
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -26,16 +27,19 @@ export const AddChannelMemberModal = ({ isOpen, onClose, workspaceId, channelId 
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [wsRes, chRes] = await Promise.all([
+      const [wsRes, chRes, blockedRes] = await Promise.all([
         WorkspaceService.getWorkspaceMembers(workspaceId, false),
-        ChannelService.getMembers(workspaceId, channelId)
+        ChannelService.getMembers(workspaceId, channelId),
+        ChannelService.getBlockedMembers(workspaceId, channelId)
       ]);
       
       const wsData = wsRes.data ? (Array.isArray(wsRes.data) ? wsRes.data : wsRes.data.data || []) : [];
       const chData = chRes.data ? (chRes.data.data ? chRes.data.data : (Array.isArray(chRes.data) ? chRes.data : [])) : [];
+      const blockedData = blockedRes.data ? (blockedRes.data.data ? blockedRes.data.data : (Array.isArray(blockedRes.data) ? blockedRes.data : [])) : [];
       
       setWorkspaceMembers(wsData);
       setChannelMembers(chData);
+      setBlockedMembers(blockedData);
     } catch (error: unknown) {
       toast.error('Failed to fetch members data');
     } finally {
@@ -43,7 +47,10 @@ export const AddChannelMemberModal = ({ isOpen, onClose, workspaceId, channelId 
     }
   };
 
-  const channelMemberUserIds = new Set(channelMembers.map(m => m.userId));
+  const channelMemberUserIds = new Set([
+    ...channelMembers.map(m => m.userId),
+    ...blockedMembers.map(m => m.userId)
+  ]);
   
   const availableMembers = workspaceMembers.filter(m => 
     !channelMemberUserIds.has(m.userId) && 

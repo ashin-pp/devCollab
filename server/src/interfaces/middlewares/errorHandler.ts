@@ -12,17 +12,14 @@ export const errorHandler = (
     next: NextFunction
 ): void => {
     if (err instanceof AppError) {
-        // Log just the message for expected operational errors
         logger.error(`[AppError] ${err.message}`, { path: req.path });
         const errorPayload = ApiResponse.error(err.message);
         res.status(err.statusCode).json(errorPayload);
         return;
     }
 
-    // Log full stack trace for unexpected errors
     logger.error(err.message, { stack: err.stack, path: req.path });
 
-    // Check if the error is a known domain error message
     const isDomainError = Object.values(ErrorMessage).includes(err.message as any);
 
     const message = isDomainError ? err.message : ErrorMessage.INTERNAL_SERVER_ERROR;

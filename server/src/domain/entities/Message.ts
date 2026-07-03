@@ -4,7 +4,7 @@ export class Message {
         public channelId: string,
         public senderId: string,
         public content: string,
-        public messageType: 'text' | 'image' = 'text',
+        public messageType: 'text' | 'image' | 'system' = 'text',
         public senderName?: string,
         public imageUrl?: string,
         public parentMessageId?: string,

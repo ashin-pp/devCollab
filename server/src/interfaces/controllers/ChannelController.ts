@@ -1,10 +1,14 @@
 import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../middlewares/authMiddleware';
+import { SocketService } from '../../infra/socket/SocketService';
 import { CreateChannelUseCase } from '../../application/use-cases/channel/CreateChannelUseCase';
 import { GetWorkspaceChannelsUseCase } from '../../application/use-cases/channel/GetWorkspaceChannelsUseCase';
 import { GetChannelMembersUseCase } from '../../application/use-cases/channel/GetChannelMembersUseCase';
 import { AddChannelMemberUseCase } from '../../application/use-cases/channel/AddChannelMemberUseCase';
-import { RemoveChannelMemberUseCase } from '../../application/use-cases/channel/RemoveChannelMemberUseCase';
+import { RemoveChannelMemberUseCase } from "../../application/use-cases/channel/RemoveChannelMemberUseCase";
+import { BlockChannelMemberUseCase } from "../../application/use-cases/channel/BlockChannelMemberUseCase";
+import { GetBlockedChannelMembersUseCase } from "../../application/use-cases/channel/GetBlockedChannelMembersUseCase";
+import { UnblockChannelMemberUseCase } from "../../application/use-cases/channel/UnblockChannelMemberUseCase";
 import { UpdateChannelUseCase } from '../../application/use-cases/channel/UpdateChannelUseCase';
 import { LeaveChannelUseCase } from '../../application/use-cases/channel/LeaveChannelUseCase';
 import { DeleteChannelUseCase } from '../../application/use-cases/channel/DeleteChannelUseCase';
@@ -13,6 +17,8 @@ import { GetChannelRequestsUseCase } from '../../application/use-cases/channel/G
 import { UpdateChannelRequestUseCase } from '../../application/use-cases/channel/UpdateChannelRequestUseCase';
 import { MarkChannelAsReadUseCase } from '../../application/use-cases/channel/MarkChannelAsReadUseCase';
 import { GetUnreadCountsUseCase } from '../../application/use-cases/channel/GetUnreadCountsUseCase';
+import { IMessageRepository } from '../../application/repositories/IMessageRepository';
+import { Message } from '../../domain/entities/Message';
 import { HttpStatusCode } from '../../domain/enums/HttpStatusCode';
 import { AppError } from '../../domain/errors/AppError';
 import { ErrorMessage } from '../../domain/enums/ErrorMessage';
@@ -21,17 +27,21 @@ export class ChannelController {
     constructor(
         private readonly createChannelUseCase: CreateChannelUseCase,
         private readonly getWorkspaceChannelsUseCase: GetWorkspaceChannelsUseCase,
-        private readonly getChannelMembersUseCase: GetChannelMembersUseCase,
-        private readonly addChannelMemberUseCase: AddChannelMemberUseCase,
-        private readonly removeChannelMemberUseCase: RemoveChannelMemberUseCase,
-        private readonly updateChannelUseCase: UpdateChannelUseCase,
+        private getChannelMembersUseCase: GetChannelMembersUseCase,
+        private addChannelMemberUseCase: AddChannelMemberUseCase,
+        private removeChannelMemberUseCase: RemoveChannelMemberUseCase,
+        private blockChannelMemberUseCase: BlockChannelMemberUseCase,
+        private getBlockedChannelMembersUseCase: GetBlockedChannelMembersUseCase,
+        private unblockChannelMemberUseCase: UnblockChannelMemberUseCase,
+        private updateChannelUseCase: UpdateChannelUseCase,
         private readonly leaveChannelUseCase: LeaveChannelUseCase,
         private readonly deleteChannelUseCase: DeleteChannelUseCase,
         private readonly joinChannelUseCase: JoinChannelUseCase,
         private readonly getChannelRequestsUseCase: GetChannelRequestsUseCase,
         private readonly updateChannelRequestUseCase: UpdateChannelRequestUseCase,
         private readonly markChannelAsReadUseCase: MarkChannelAsReadUseCase,
-        private readonly getUnreadCountsUseCase: GetUnreadCountsUseCase
+        private readonly getUnreadCountsUseCase: GetUnreadCountsUseCase,
+        private readonly messageRepository: IMessageRepository
     ) {}
 
     createChannel = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
@@ -109,8 +119,22 @@ export class ChannelController {
                 throw new AppError(ErrorMessage.UNAUTHORIZED, HttpStatusCode.UNAUTHORIZED);
             }
 
-            const addedMembers = await this.addChannelMemberUseCase.execute(workspaceId as string, channelId as string, userIds, userId);
+            const addedMembersData = await this.addChannelMemberUseCase.execute(workspaceId as string, channelId as string, userIds, userId);
             
+            // For each added member, emit a system message
+            const io = SocketService.getInstance()?.getIO();
+            if (io && addedMembersData.length > 0) {
+                for (const data of addedMembersData) {
+                    const systemContent = `${data.userName} was added to the channel`;
+                    const sysMessage = new Message(workspaceId as string, channelId as string, userId, systemContent, 'system');
+                    const savedMsg = await this.messageRepository.create(sysMessage);
+                    io.to(`channel:${channelId}`).emit('message_received', savedMsg);
+                }
+            }
+
+            // Extract just the member data for the response
+            const addedMembers = addedMembersData.map(data => data.member);
+
             res.status(HttpStatusCode.CREATED).json({
                 message: "Members added successfully",
                 data: addedMembers
@@ -129,8 +153,26 @@ export class ChannelController {
                 throw new AppError(ErrorMessage.UNAUTHORIZED, HttpStatusCode.UNAUTHORIZED);
             }
 
-            await this.removeChannelMemberUseCase.execute(workspaceId as string, channelId as string, memberId as string, userId);
+            const details = await this.removeChannelMemberUseCase.execute(workspaceId as string, channelId as string, memberId as string, userId);
             
+            // Persist system message
+            const systemContent = `${details.userName} was removed from the channel by ${details.removedBy}`;
+            const sysMessage = new Message(workspaceId as string, channelId as string, userId, systemContent, 'system');
+            const savedMsg = await this.messageRepository.create(sysMessage);
+
+            // Emit socket event
+            const io = SocketService.getInstance()?.getIO();
+            if (io) {
+                // Also emit new message for system message
+                io.to(`channel:${channelId}`).emit('message_received', savedMsg);
+                
+                io.to(`channel:${channelId}`).emit('member_removed', {
+                    userId: details.userId,
+                    userName: details.userName,
+                    removedBy: details.removedBy
+                });
+            }
+
             res.status(HttpStatusCode.OK).json({
                 message: "Member removed successfully"
             });
@@ -138,6 +180,84 @@ export class ChannelController {
             next(error);
         }
     };
+
+    blockChannelMember = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const { workspaceId, channelId, memberId } = req.params;
+            const userId = req.user?.id;
+
+            if (!userId) {
+                throw new AppError(ErrorMessage.UNAUTHORIZED, HttpStatusCode.UNAUTHORIZED);
+            }
+
+            const details = await this.blockChannelMemberUseCase.execute(workspaceId as string, channelId as string, memberId as string, userId);
+            
+            // Persist system message
+            const systemContent = `${details.userName} was blocked by ${details.removedBy}`;
+            const sysMessage = new Message(workspaceId as string, channelId as string, userId, systemContent, 'system');
+            const savedMsg = await this.messageRepository.create(sysMessage);
+
+            // Emit socket event
+            const io = SocketService.getInstance()?.getIO();
+            if (io) {
+                // Also emit new message for system message
+                io.to(`channel:${channelId}`).emit('message_received', savedMsg);
+
+                io.to(`channel:${channelId}`).emit('member_removed', {
+                    userId: details.userId,
+                    userName: details.userName,
+                    removedBy: details.removedBy
+                });
+            }
+
+            res.status(HttpStatusCode.OK).json({
+                message: "Member blocked successfully"
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    getBlockedChannelMembers = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const { workspaceId, channelId } = req.params;
+            const userId = req.user?.id;
+
+            if (!userId) {
+                throw new AppError(ErrorMessage.UNAUTHORIZED, HttpStatusCode.UNAUTHORIZED);
+            }
+
+            const blockedMembers = await this.getBlockedChannelMembersUseCase.execute(workspaceId as string, channelId as string, userId);
+            
+            res.status(HttpStatusCode.OK).json({
+                success: true,
+                data: blockedMembers
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    unblockChannelMember = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const { workspaceId, channelId, memberId } = req.params;
+            const userId = req.user?.id;
+
+            if (!userId) {
+                throw new AppError(ErrorMessage.UNAUTHORIZED, HttpStatusCode.UNAUTHORIZED);
+            }
+
+            await this.unblockChannelMemberUseCase.execute(workspaceId as string, channelId as string, memberId as string, userId);
+            
+            res.status(HttpStatusCode.OK).json({
+                success: true,
+                message: "Member unblocked successfully"
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
 
     updateChannel = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
         try {
@@ -209,8 +329,20 @@ export class ChannelController {
 
             const result = await this.joinChannelUseCase.execute(workspaceId as string, channelId as string, userId);
             
+            // Emit socket event when someone joins
+            if (result.status === 'approved') {
+                const io = SocketService.getInstance()?.getIO();
+                if (io) {
+                    const systemContent = `${result.userName} joined the channel`;
+                    const sysMessage = new Message(workspaceId as string, channelId as string, userId, systemContent, 'system');
+                    const savedMsg = await this.messageRepository.create(sysMessage);
+                    io.to(`channel:${channelId}`).emit('message_received', savedMsg);
+                }
+            }
+
             res.status(HttpStatusCode.OK).json({
-                ...result
+                message: result.message,
+                status: result.status
             });
         } catch (error) {
             next(error);

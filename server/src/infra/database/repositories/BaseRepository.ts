@@ -1,6 +1,6 @@
 import { Model, ClientSession } from "mongoose";
 import { IBaseRepository } from "../../../application/repositories/IBaseRepository";
-import { IMapper } from "../../mappers/IMapper";
+import { IMapper } from "../../../application/interfaces/IMapper";
 
 export abstract class MongoBaseRepository<TDomain, TModel> implements IBaseRepository<TDomain, ClientSession> {
     protected model: Model<TModel>;

@@ -11,6 +11,7 @@ interface UpdateWorkspaceData {
     name?: string;
     description?: string;
     privacy?: WorkspacePrivacy;
+    logo?: string;
     maxMembers?: number;
 }
 

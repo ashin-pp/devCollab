@@ -1,5 +1,5 @@
 import { User } from "../../domain/entities/User";
-import { IMapper } from "./IMapper";
+import { IMapper } from "../../application/interfaces/IMapper";
 import { IUserModel } from "../database/models/UserModel";
 import { UserStatus } from "../../domain/enums/UserStatus";
 

@@ -46,13 +46,17 @@ export const API_ENDPOINTS = {
     LIST: (workspaceId: string) => `/workspaces/${workspaceId}/channels`,
     DETAIL: (workspaceId: string, channelId: string) => `/workspaces/${workspaceId}/channels/${channelId}`,
     MEMBERS: (workspaceId: string, channelId: string) => `/workspaces/${workspaceId}/channels/${channelId}/members`,
+    BLOCKED_MEMBERS: (workspaceId: string, channelId: string) => `/workspaces/${workspaceId}/channels/${channelId}/blocked`,
     MEMBER: (workspaceId: string, channelId: string, memberId: string) => `/workspaces/${workspaceId}/channels/${channelId}/members/${memberId}`,
+    BLOCK_MEMBER: (workspaceId: string, channelId: string, memberId: string) => `/workspaces/${workspaceId}/channels/${channelId}/members/${memberId}/block`,
+    UNBLOCK_MEMBER: (workspaceId: string, channelId: string, memberId: string) => `/workspaces/${workspaceId}/channels/${channelId}/members/${memberId}/unblock`,
     LEAVE: (workspaceId: string, channelId: string) => `/workspaces/${workspaceId}/channels/${channelId}/leave`,
     JOIN: (workspaceId: string, channelId: string) => `/workspaces/${workspaceId}/channels/${channelId}/join`,
     REQUESTS: (workspaceId: string, channelId: string) => `/workspaces/${workspaceId}/channels/${channelId}/requests`,
     REQUEST: (workspaceId: string, channelId: string, userId: string) => `/workspaces/${workspaceId}/channels/${channelId}/requests/${userId}`,
     READ: (workspaceId: string, channelId: string) => `/workspaces/${workspaceId}/channels/${channelId}/read`,
     UNREAD_COUNTS: (workspaceId: string) => `/workspaces/${workspaceId}/channels/unread-counts`,
+    DM_UNREAD_COUNTS: (workspaceId: string) => `/workspaces/${workspaceId}/dm/unread-counts`,
     MESSAGES: (workspaceId: string, channelId: string) => `/workspaces/${workspaceId}/channels/${channelId}/messages`,
   },
 
@@ -79,4 +83,29 @@ export const API_ENDPOINTS = {
     WORKSPACE_MEMBERS: (workspaceId: string) => `/admin/workspaces/${workspaceId}/members`,
     WORKSPACE_MEMBER_STATUS: (workspaceId: string, userId: string) => `/admin/workspaces/${workspaceId}/members/${userId}/status`,
   },
+
+  // Poll endpoints
+  POLLS: {
+    CREATE: '/polls',
+    VOTE: (pollId: string) => `/polls/${pollId}/vote`,
+    WORKSPACE: (workspaceId: string) => `/polls/workspace/${workspaceId}`,
+    CHANNEL: (channelId: string) => `/polls/channel/${channelId}`,
+  },
+
+  // Upload endpoints
+  UPLOAD: {
+    IMAGE: '/upload/image',
+  },
+
+  // Notification endpoints
+  NOTIFICATIONS: {
+    BASE: '/notifications',
+    MARK_READ: (id: string) => `/notifications/${id}/read`,
+    MARK_ALL_READ: '/notifications/mark-all-read',
+  },
+
+  // AI endpoints
+  AI: {
+    PROCESS: '/ai/process',
+  }
 };

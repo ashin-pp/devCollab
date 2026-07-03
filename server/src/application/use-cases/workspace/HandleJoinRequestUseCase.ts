@@ -5,10 +5,13 @@ import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { MemberStatus } from "../../../domain/enums/MemberStatus";
 
+import { CreateNotificationUseCase } from "../notification/CreateNotificationUseCase";
+
 export class HandleJoinRequestUseCase {
     constructor(
         private workspaceRepository: IWorkspaceRepository,
-        private workspaceMemberRepository: IWorkspaceMemberRepository
+        private workspaceMemberRepository: IWorkspaceMemberRepository,
+        private createNotificationUseCase?: CreateNotificationUseCase
     ) {}
 
     async execute(workspaceId: string, requestUserId: string, action: 'approve' | 'reject', targetUserId: string) {
@@ -43,6 +46,17 @@ export class HandleJoinRequestUseCase {
             }
 
             const updatedMember = await this.workspaceMemberRepository.updateStatus(workspaceId, targetUserId, MemberStatus.APPROVED);
+
+            if (this.createNotificationUseCase) {
+                await this.createNotificationUseCase.execute({
+                    userId: targetUserId,
+                    type: 'JOIN_REQUEST_APPROVED',
+                    title: 'Join Request Approved',
+                    message: `Your request to join the workspace "${workspace.name}" has been approved.`,
+                    relatedId: workspaceId
+                });
+            }
+
             return updatedMember;
         } else if (action === 'reject') {
             await this.workspaceMemberRepository.remove(workspaceId, targetUserId);

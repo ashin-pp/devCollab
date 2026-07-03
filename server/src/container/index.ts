@@ -8,6 +8,17 @@ import { OtpRepository } from "../infra/database/repositories/OtpRepository";
 import { NodemailerEmailService } from "../infra/services/NodemailerEmailService";
 import { JwtService } from "../infra/services/JwtService";
 import { CloudinaryStorageService } from "../infra/services/CloudinaryStorageService";
+import { LangChainService } from "../infra/services/LangChainService";
+
+// --- AI Imports ---
+import { HandleAiCommandUseCase } from "../application/use-cases/ai/HandleAiCommandUseCase";
+import { AIController } from "../interfaces/controllers/AIController";
+import { AITaskRepository } from "../infra/database/repositories/AITaskRepository";
+import { AIReminderRepository } from "../infra/database/repositories/AIReminderRepository";
+import { AIChatRepository } from "../infra/database/repositories/AIChatRepository";
+import { CreateAITaskUseCase } from "../application/use-cases/ai/CreateAITaskUseCase";
+import { CreateAIReminderUseCase } from "../application/use-cases/ai/CreateAIReminderUseCase";
+import { SaveAIChatUseCase } from "../application/use-cases/ai/SaveAIChatUseCase";
 
 // --- Auth Imports ---
 import { RegisterUserUseCase } from "../application/use-cases/auth/RegisterUserUseCase";
@@ -40,8 +51,11 @@ import { ChangePasswordUseCase } from "../application/use-cases/user/ChangePassw
 import { RequestEmailChangeUseCase } from "../application/use-cases/user/RequestEmailChangeUseCase";
 import { VerifyEmailChangeUseCase } from "../application/use-cases/user/VerifyEmailChangeUseCase";
 import { UploadProfileImageUseCase } from "../application/use-cases/user/UploadProfileImageUseCase";
+import { UploadChatImageUseCase } from "../application/use-cases/chat/UploadChatImageUseCase";
+import { UploadController } from "../interfaces/controllers/UploadController";
 import { DeleteProfileImageUseCase } from "../application/use-cases/user/DeleteProfileImageUseCase";
 import { SearchUserByEmailUseCase } from "../application/use-cases/user/SearchUserByEmailUseCase";
+import { GetUserByNameUseCase } from "../application/use-cases/user/GetUserByNameUseCase";
 import { UserController } from "../interfaces/controllers/UserController";
 
 // --- Workspace Imports ---
@@ -79,8 +93,11 @@ import { CreateChannelUseCase } from "../application/use-cases/channel/CreateCha
 import { GetWorkspaceChannelsUseCase } from "../application/use-cases/channel/GetWorkspaceChannelsUseCase";
 import { GetChannelMembersUseCase } from "../application/use-cases/channel/GetChannelMembersUseCase";
 import { AddChannelMemberUseCase } from "../application/use-cases/channel/AddChannelMemberUseCase";
-import { RemoveChannelMemberUseCase } from "../application/use-cases/channel/RemoveChannelMemberUseCase";
-import { UpdateChannelUseCase } from "../application/use-cases/channel/UpdateChannelUseCase";
+import { RemoveChannelMemberUseCase } from '../application/use-cases/channel/RemoveChannelMemberUseCase';
+import { BlockChannelMemberUseCase } from '../application/use-cases/channel/BlockChannelMemberUseCase';
+import { GetBlockedChannelMembersUseCase } from '../application/use-cases/channel/GetBlockedChannelMembersUseCase';
+import { UnblockChannelMemberUseCase } from '../application/use-cases/channel/UnblockChannelMemberUseCase';
+import { UpdateChannelUseCase } from '../application/use-cases/channel/UpdateChannelUseCase';
 import { LeaveChannelUseCase } from "../application/use-cases/channel/LeaveChannelUseCase";
 import { DeleteChannelUseCase } from "../application/use-cases/channel/DeleteChannelUseCase";
 import { JoinChannelUseCase } from "../application/use-cases/channel/JoinChannelUseCase";
@@ -90,8 +107,36 @@ import { MarkChannelAsReadUseCase } from "../application/use-cases/channel/MarkC
 import { GetUnreadCountsUseCase } from "../application/use-cases/channel/GetUnreadCountsUseCase";
 import { SendMessageUseCase } from "../application/use-cases/channel/SendMessageUseCase";
 import { GetChannelMessagesUseCase } from "../application/use-cases/channel/GetChannelMessagesUseCase";
+import { GetUnreadMessagesUseCase } from "../application/use-cases/channel/GetUnreadMessagesUseCase";
 import { ChannelController } from "../interfaces/controllers/ChannelController";
 import { MessageController } from "../interfaces/controllers/MessageController";
+
+// --- Poll Imports ---
+import { PollRepository } from "../infra/database/repositories/PollRepository";
+import { CreatePollUseCase } from "../application/use-cases/poll/CreatePollUseCase";
+import { VotePollUseCase } from "../application/use-cases/poll/VotePollUseCase";
+import { GetWorkspacePollsUseCase } from "../application/use-cases/poll/GetWorkspacePollsUseCase";
+import { GetChannelPollsUseCase } from "../application/use-cases/poll/GetChannelPollsUseCase";
+import { DeletePollUseCase } from "../application/use-cases/poll/DeletePollUseCase";
+import { ClosePollUseCase } from "../application/use-cases/poll/ClosePollUseCase";
+import { PollController } from "../interfaces/controllers/PollController";
+
+// --- Notification Imports ---
+import { NotificationRepository } from "../infra/database/repositories/NotificationRepository";
+import { CreateNotificationUseCase } from "../application/use-cases/notification/CreateNotificationUseCase";
+import { GetUserNotificationsUseCase } from "../application/use-cases/notification/GetUserNotificationsUseCase";
+import { MarkNotificationReadUseCase } from "../application/use-cases/notification/MarkNotificationReadUseCase";
+import { NotificationController } from "../interfaces/controllers/NotificationController";
+
+// --- DM Imports ---
+import { ConversationRepository } from "../infra/database/repositories/ConversationRepository";
+import { DirectMessageRepository } from "../infra/database/repositories/DirectMessageRepository";
+import { StartConversationUseCase } from "../application/use-cases/dm/StartConversationUseCase";
+import { GetConversationsUseCase } from "../application/use-cases/dm/GetConversationsUseCase";
+import { SendDirectMessageUseCase } from "../application/use-cases/dm/SendDirectMessageUseCase";
+import { GetDirectMessagesUseCase } from "../application/use-cases/dm/GetDirectMessagesUseCase";
+import { MarkMessageAsSeenUseCase } from "../application/use-cases/dm/MarkMessageAsSeenUseCase";
+import { DMController } from "../interfaces/controllers/DMController";
 
 // ============================================================================
 // INSTANTIATIONS
@@ -168,8 +213,10 @@ const changePasswordUseCase = new ChangePasswordUseCase(userRepository, hashServ
 const requestEmailChangeUseCase = new RequestEmailChangeUseCase(userRepository, otpRepository, emailService);
 const verifyEmailChangeUseCase = new VerifyEmailChangeUseCase(userRepository, otpRepository);
 const uploadProfileImageUseCase = new UploadProfileImageUseCase(userRepository, cloudinaryStorageService);
+const uploadChatImageUseCase = new UploadChatImageUseCase(cloudinaryStorageService);
 const deleteProfileImageUseCase = new DeleteProfileImageUseCase(userRepository, cloudinaryStorageService);
-const searchUserByEmailUseCase = new SearchUserByEmailUseCase(userRepository);
+const searchUsersByEmailUseCase = new SearchUserByEmailUseCase(userRepository);
+const getUserByNameUseCase = new GetUserByNameUseCase(userRepository);
 
 const userController = new UserController(
     getUserProfileUseCase,
@@ -179,7 +226,20 @@ const userController = new UserController(
     verifyEmailChangeUseCase,
     uploadProfileImageUseCase,
     deleteProfileImageUseCase,
-    searchUserByEmailUseCase
+    searchUsersByEmailUseCase
+);
+
+const uploadController = new UploadController(uploadChatImageUseCase);
+
+// Notification Instantiations 
+const notificationRepository = new NotificationRepository();
+const createNotificationUseCase = new CreateNotificationUseCase(notificationRepository);
+const getUserNotificationsUseCase = new GetUserNotificationsUseCase(notificationRepository);
+const markNotificationReadUseCase = new MarkNotificationReadUseCase(notificationRepository);
+
+const notificationController = new NotificationController(
+    getUserNotificationsUseCase,
+    markNotificationReadUseCase
 );
 
 // Workspace Use Cases
@@ -189,14 +249,25 @@ const getUserWorkspacesUseCase = new GetUserWorkspacesUseCase(workspaceRepositor
 const getPublicWorkspacesUseCase = new GetPublicWorkspacesUseCase(workspaceRepository);
 const verifyInviteCodeUseCase = new VerifyInviteCodeUseCase(workspaceRepository);
 const getWorkspaceMembersUseCase = new GetWorkspaceMembersUseCase(workspaceRepository, workspaceMemberRepository, userRepository);
-const handleJoinRequestUseCase = new HandleJoinRequestUseCase(workspaceRepository, workspaceMemberRepository);
-const removeWorkspaceMemberUseCase = new RemoveWorkspaceMemberUseCase(workspaceRepository, workspaceMemberRepository);
+const handleJoinRequestUseCase = new HandleJoinRequestUseCase(workspaceRepository, workspaceMemberRepository, createNotificationUseCase);
+
+//  Channel Repositories 
+const channelRepository = new ChannelRepository();
+const channelMemberRepository = new ChannelMemberRepository();
+const messageRepository = new MessageRepository();
+
+const removeWorkspaceMemberUseCase = new RemoveWorkspaceMemberUseCase(
+    workspaceRepository,
+    workspaceMemberRepository,
+    channelRepository,
+    channelMemberRepository
+);
 const blockWorkspaceMemberUseCase = new BlockWorkspaceMemberUseCase(workspaceRepository, workspaceMemberRepository);
 const unblockWorkspaceMemberUseCase = new UnblockWorkspaceMemberUseCase(workspaceRepository, workspaceMemberRepository);
 const updateWorkspaceUseCase = new UpdateWorkspaceUseCase(workspaceRepository, workspaceMemberRepository);
 const regenerateInviteCodeUseCase = new RegenerateInviteCodeUseCase(workspaceRepository, workspaceMemberRepository);
 const deleteWorkspaceUseCase = new DeleteWorkspaceUseCase(workspaceRepository, workspaceMemberRepository);
-const sendWorkspaceInviteUseCase = new SendWorkspaceInviteUseCase(workspaceRepository, workspaceMemberRepository, userRepository, emailService);
+const sendWorkspaceInviteUseCase = new SendWorkspaceInviteUseCase(workspaceRepository, workspaceMemberRepository, userRepository, emailService, createNotificationUseCase);
 
 const workspaceController = new WorkspaceController(
     createWorkspaceUseCase,
@@ -216,33 +287,36 @@ const workspaceController = new WorkspaceController(
 );
 
 // Channel & Message Instantiations
-const channelRepository = new ChannelRepository();
-const channelMemberRepository = new ChannelMemberRepository();
-const messageRepository = new MessageRepository();
-
 const createChannelUseCase = new CreateChannelUseCase(channelRepository, channelMemberRepository);
 const getWorkspaceChannelsUseCase = new GetWorkspaceChannelsUseCase(channelRepository, channelMemberRepository);
 const getChannelMembersUseCase = new GetChannelMembersUseCase(channelRepository, channelMemberRepository, userRepository);
-const addChannelMemberUseCase = new AddChannelMemberUseCase(channelRepository, channelMemberRepository, workspaceMemberRepository);
-const removeChannelMemberUseCase = new RemoveChannelMemberUseCase(channelRepository, channelMemberRepository);
-const updateChannelUseCase = new UpdateChannelUseCase(channelRepository);
+const addChannelMemberUseCase = new AddChannelMemberUseCase(channelRepository, channelMemberRepository, workspaceMemberRepository, userRepository);
+const removeChannelMemberUseCase = new RemoveChannelMemberUseCase(channelRepository, channelMemberRepository, userRepository, workspaceMemberRepository);
+const blockChannelMemberUseCase = new BlockChannelMemberUseCase(channelRepository, channelMemberRepository, userRepository, workspaceMemberRepository);
+const getBlockedChannelMembersUseCase = new GetBlockedChannelMembersUseCase(channelRepository, channelMemberRepository, userRepository);
+const unblockChannelMemberUseCase = new UnblockChannelMemberUseCase(channelRepository, channelMemberRepository, workspaceMemberRepository);
+const updateChannelUseCase = new UpdateChannelUseCase(channelRepository, workspaceMemberRepository);
 const leaveChannelUseCase = new LeaveChannelUseCase(channelRepository, channelMemberRepository);
 const deleteChannelUseCase = new DeleteChannelUseCase(channelRepository);
-const joinChannelUseCase = new JoinChannelUseCase(channelRepository, channelMemberRepository);
+const joinChannelUseCase = new JoinChannelUseCase(channelRepository, channelMemberRepository, workspaceRepository, workspaceMemberRepository, userRepository);
 const getChannelRequestsUseCase = new GetChannelRequestsUseCase(channelMemberRepository, userRepository);
 const updateChannelRequestUseCase = new UpdateChannelRequestUseCase(channelMemberRepository, channelRepository);
 const markChannelAsReadUseCase = new MarkChannelAsReadUseCase(channelMemberRepository);
 const getUnreadCountsUseCase = new GetUnreadCountsUseCase(channelRepository, channelMemberRepository, messageRepository);
 
-const sendMessageUseCase = new SendMessageUseCase(messageRepository);
+const sendMessageUseCase = new SendMessageUseCase(messageRepository, channelMemberRepository, createNotificationUseCase, channelRepository, workspaceRepository);
 const getChannelMessagesUseCase = new GetChannelMessagesUseCase(messageRepository);
+const getUnreadMessagesUseCase = new GetUnreadMessagesUseCase(messageRepository, channelMemberRepository);
 
 const channelController = new ChannelController(
-    createChannelUseCase, 
+    createChannelUseCase,
     getWorkspaceChannelsUseCase,
     getChannelMembersUseCase,
     addChannelMemberUseCase,
     removeChannelMemberUseCase,
+    blockChannelMemberUseCase,
+    getBlockedChannelMembersUseCase,
+    unblockChannelMemberUseCase,
     updateChannelUseCase,
     leaveChannelUseCase,
     deleteChannelUseCase,
@@ -250,19 +324,36 @@ const channelController = new ChannelController(
     getChannelRequestsUseCase,
     updateChannelRequestUseCase,
     markChannelAsReadUseCase,
-    getUnreadCountsUseCase
+    getUnreadCountsUseCase,
+    messageRepository
 );
 const messageController = new MessageController(sendMessageUseCase, getChannelMessagesUseCase);
 
-// DM Imports
-import { ConversationRepository } from "../infra/database/repositories/ConversationRepository";
-import { DirectMessageRepository } from "../infra/database/repositories/DirectMessageRepository";
-import { StartConversationUseCase } from "../application/use-cases/dm/StartConversationUseCase";
-import { GetConversationsUseCase } from "../application/use-cases/dm/GetConversationsUseCase";
-import { SendDirectMessageUseCase } from "../application/use-cases/dm/SendDirectMessageUseCase";
-import { GetDirectMessagesUseCase } from "../application/use-cases/dm/GetDirectMessagesUseCase";
-import { MarkMessageAsSeenUseCase } from "../application/use-cases/dm/MarkMessageAsSeenUseCase";
-import { DMController } from "../interfaces/controllers/DMController";
+// Poll Instantiations
+const pollRepository = new PollRepository();
+const createPollUseCase = new CreatePollUseCase(
+    pollRepository,
+    workspaceMemberRepository,
+    channelMemberRepository,
+    createNotificationUseCase,
+    channelRepository,
+    workspaceRepository
+);
+const votePollUseCase = new VotePollUseCase(pollRepository);
+const getWorkspacePollsUseCase = new GetWorkspacePollsUseCase(pollRepository);
+const getChannelPollsUseCase = new GetChannelPollsUseCase(pollRepository);
+const deletePollUseCase = new DeletePollUseCase(pollRepository);
+const closePollUseCase = new ClosePollUseCase(pollRepository);
+
+const pollController = new PollController(
+    createPollUseCase,
+    votePollUseCase,
+    getWorkspacePollsUseCase,
+    getChannelPollsUseCase,
+    deletePollUseCase,
+    closePollUseCase
+);
+
 
 // DM Instantiations
 const conversationRepository = new ConversationRepository();
@@ -282,4 +373,26 @@ const dmController = new DMController(
     markMessageAsSeenUseCase
 );
 
-export { logger, authController, adminController, userController, workspaceController, channelController, messageController, dmController, jwtService };
+// AI Instantiations
+const aiTaskRepository = new AITaskRepository();
+const aiReminderRepository = new AIReminderRepository();
+const aiChatRepository = new AIChatRepository();
+
+const createAITaskUseCase = new CreateAITaskUseCase(aiTaskRepository);
+const createAIReminderUseCase = new CreateAIReminderUseCase(aiReminderRepository, createNotificationUseCase, userRepository, channelRepository);
+const saveAIChatUseCase = new SaveAIChatUseCase(aiChatRepository);
+
+const aiService = new LangChainService(
+    createNotificationUseCase,
+    getChannelMessagesUseCase,
+    sendDirectMessageUseCase,
+    startConversationUseCase,
+    getUserByNameUseCase,
+    createAIReminderUseCase,
+    userRepository,
+    channelRepository
+);
+const handleAiCommandUseCase = new HandleAiCommandUseCase(aiService, saveAIChatUseCase);
+const aiController = new AIController(handleAiCommandUseCase);
+
+export { logger, authController, adminController, userController, workspaceController, channelController, messageController, dmController, pollController, uploadController, notificationController, jwtService, createNotificationUseCase, aiController };

@@ -18,6 +18,9 @@ import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import { CreateChannelModal } from '../components/workspace/CreateChannelModal';
 import { InviteMemberModal } from '../components/workspace/InviteMemberModal';
+import { NotificationBell } from '../components/notifications/NotificationBell';
+import { addNotification } from '../store/slices/notificationSlice';
+import { useDispatch } from 'react-redux';
 
 import type { WorkspaceLayoutProps } from '../types/component.types';
 
@@ -26,6 +29,7 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
   const location = useLocation();
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const user = useSelector((state: RootState) => state.auth.user);
+  const dispatch = useDispatch();
   const socket = useSocket(workspaceId);
 
   const [isOwner, setIsOwner] = useState(false);
@@ -38,6 +42,20 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
   const [inviteCode, setInviteCode] = useState<string>('');
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+  const [mentions, setMentions] = useState<Record<string, string>>(() => {
+    try {
+      const saved = localStorage.getItem(`mentions_${workspaceId}`);
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    if (workspaceId) {
+      localStorage.setItem(`mentions_${workspaceId}`, JSON.stringify(mentions));
+    }
+  }, [mentions, workspaceId]);
   const [totalUnreadDMs, setTotalUnreadDMs] = useState(0);
 
   const [isMyChannelsOpen, setIsMyChannelsOpen] = useState(true);
@@ -46,7 +64,14 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
   const fetchChannels = () => {
     if (workspaceId) {
       ChannelService.getWorkspaceChannels(workspaceId)
-        .then(res => setChannels(res.data?.data || []))
+        .then(res => {
+          const fetchedChannels = res.data?.data || [];
+          setChannels(fetchedChannels);
+          // Join all channels to receive real-time unread messages
+          if (socket) {
+            fetchedChannels.forEach((c: any) => socket.emit('join_channel', c.id));
+          }
+        })
         .catch(err => console.error('Failed to fetch channels', err));
 
       // Fetch unread counts
@@ -78,8 +103,10 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
   };
 
   useEffect(() => {
-    fetchChannels();
-  }, [workspaceId]);
+    if (socket) {
+      fetchChannels();
+    }
+  }, [workspaceId, socket]);
 
   useEffect(() => {
     if (workspaceId && user) {
@@ -133,15 +160,42 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
   useEffect(() => {
     if (!socket) return;
 
-    const handleNewMessage = (message: { channelId: string; senderId: string }) => {
+    socket?.on('user_presence_updated', (data: { userId: string, isOnline: boolean, lastSeen?: string }) => {
+      // Could dispatch to Redux to update global user presence state
+    });
+
+    socket?.on('workspace_member_removed', (data: { userId: string, workspaceId: string }) => {
+      if (data.userId === user?.id && data.workspaceId === workspaceId) {
+        toast.error('You have been removed from this workspace');
+        navigate('/home');
+      }
+    });
+
+    const handleNewMessage = (message: { channelId: string; senderId: string; content?: string }) => {
       // Don't increment count for messages sent by current user
       if (message.senderId !== user?.id) {
         // Only increment if user is not currently viewing this channel
         const currentChannelId = location.pathname.split('/channels/')[1];
         if (currentChannelId !== message.channelId) {
           updateUnreadCount(message.channelId);
+          
+          // Check for mention
+          if (message.content && user?.id && message.content.includes(`data-mention-id="${user.id}"`)) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = message.content;
+            const plainText = tempDiv.textContent || tempDiv.innerText || '';
+            setMentions(prev => ({
+              ...prev,
+              [message.channelId]: plainText
+            }));
+          }
         }
       }
+    };
+
+    const handleNewNotification = (notification: any) => {
+      dispatch(addNotification(notification));
+      toast.success(`New Notification: ${notification.title}`, { icon: '🔔' });
     };
 
     socket.on('message_received', handleNewMessage);
@@ -160,6 +214,7 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
     };
 
     socket.on('dm_received', handleDMReceived);
+    socket.on('new_notification', handleNewNotification);
 
     // Join all conversations to receive their messages
     if (workspaceId) {
@@ -176,8 +231,11 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
     return () => {
       socket.off('message_received', handleNewMessage);
       socket.off('dm_received', handleDMReceived);
+      socket.off('workspace_member_removed');
+      socket.off('user_presence_updated');
+      socket.off('new_notification', handleNewNotification);
     };
-  }, [socket, user, location, workspaceId]);
+  }, [socket, user, location.pathname, workspaceId, navigate, dispatch]);
 
   // Listen for channel-read events to clear unread count
   useEffect(() => {
@@ -188,6 +246,11 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
         ...prev,
         [channelId]: 0
       }));
+      setMentions(prev => {
+        const next = { ...prev };
+        delete next[channelId];
+        return next;
+      });
     };
 
     window.addEventListener('channel-read', handleChannelRead);
@@ -262,9 +325,7 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
         </div>
 
         <div className="flex items-center gap-4 shrink-0">
-          <button className="text-slate-500 hover:text-slate-700 transition-colors">
-            <Bell className="w-5 h-5" />
-          </button>
+          <NotificationBell />
           <button className="text-slate-500 hover:text-slate-700 transition-colors">
             <HelpCircle className="w-5 h-5" />
           </button>
@@ -416,15 +477,20 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
                               ) : (
                                 <Hash className={`w-4 h-4 transition-colors shrink-0 ${isActive(`channels/${channelId}`) ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-500'}`} />
                               )}
-                              <span className="truncate">{channel.name as string}</span>
+                              <span className={`truncate ${mentions[channelId] ? 'text-blue-700 font-extrabold' : ''}`}>{channel.name as string}</span>
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
-                              {unreadCount > 0 && (
+                              {mentions[channelId] && (
+                                <span className="flex items-center justify-center min-w-[20px] h-[20px] px-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[11px] font-extrabold rounded-full shadow-md shadow-orange-500/30 shrink-0">
+                                  @
+                                </span>
+                              )}
+                              {unreadCount > 0 && !mentions[channelId] && (
                                 <span className="flex items-center justify-center min-w-[20px] h-[20px] px-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] font-extrabold rounded-full shadow-md shadow-blue-500/30 transform transition-transform animate-pulse-once shrink-0">
                                   {unreadCount > 99 ? '99+' : unreadCount}
                                 </span>
                               )}
-                              {isActive(`channels/${channelId}`) && <div className={`w-1.5 h-1.5 rounded-full ${isPrivate ? 'bg-orange-600' : 'bg-blue-600'}`}></div>}
+                              {isActive(`channels/${channelId}`) && !mentions[channelId] && <div className={`w-1.5 h-1.5 rounded-full ${isPrivate ? 'bg-orange-600' : 'bg-blue-600'}`}></div>}
                             </div>
                           </div>
                         );
@@ -468,15 +534,20 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
                               ) : (
                                 <Hash className={`w-4 h-4 transition-colors shrink-0 ${isActive(`channels/${channelId}`) ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-500'}`} />
                               )}
-                              <span className="truncate">{channel.name as string}</span>
+                              <span className={`truncate ${mentions[channelId] ? 'text-blue-700 font-extrabold' : ''}`}>{channel.name as string}</span>
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
-                              {unreadCount > 0 && (
+                              {mentions[channelId] && (
+                                <span className="flex items-center justify-center min-w-[20px] h-[20px] px-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[11px] font-extrabold rounded-full shadow-md shadow-orange-500/30 shrink-0">
+                                  @
+                                </span>
+                              )}
+                              {unreadCount > 0 && !mentions[channelId] && (
                                 <span className="flex items-center justify-center min-w-[20px] h-[20px] px-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] font-extrabold rounded-full shadow-md shadow-blue-500/30 transform transition-transform animate-pulse-once shrink-0">
                                   {unreadCount > 99 ? '99+' : unreadCount}
                                 </span>
                               )}
-                              {isActive(`channels/${channelId}`) && <div className={`w-1.5 h-1.5 rounded-full ${isPrivate ? 'bg-orange-600' : 'bg-blue-600'}`}></div>}
+                              {isActive(`channels/${channelId}`) && !mentions[channelId] && <div className={`w-1.5 h-1.5 rounded-full ${isPrivate ? 'bg-orange-600' : 'bg-blue-600'}`}></div>}
                             </div>
                           </div>
                         );

@@ -1,5 +1,5 @@
 import { Workspace } from "../../domain/entities/Workspace";
-import { IMapper } from "./IMapper";
+import { IMapper } from "../../application/interfaces/IMapper";
 import { IWorkspaceModel } from "../database/models/WorkspaceModel";
 import { WorkspacePrivacy } from "../../domain/enums/WorkspacePrivacy";
 import mongoose from "mongoose";

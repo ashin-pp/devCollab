@@ -1,5 +1,5 @@
 import { Admin } from "../../domain/entities/Admin";
-import { IMapper } from "./IMapper";
+import { IMapper } from "../../application/interfaces/IMapper";
 import { IAdminModel } from "../database/models/AdminModel";
 
 export class AdminMapper implements IMapper<Admin, IAdminModel> {

@@ -5,7 +5,7 @@ export interface IMessageDocument extends Document {
     channel_id: mongoose.Types.ObjectId;
     sender_id: mongoose.Types.ObjectId;
     content: string;
-    message_type: 'text' | 'image';
+    message_type: 'text' | 'image' | 'system';
     image_url?: string;
     parent_message_id?: mongoose.Types.ObjectId;
     thread_root_id?: mongoose.Types.ObjectId;
@@ -22,7 +22,7 @@ const messageSchema = new Schema({
     channel_id: { type: Schema.Types.ObjectId, ref: 'Channel', required: true },
     sender_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     content: { type: String, required: true },
-    message_type: { type: String, enum: ['text', 'image'], default: 'text' },
+    message_type: { type: String, enum: ['text', 'image', 'system'], default: 'text' },
     image_url: { type: String },
     parent_message_id: { type: Schema.Types.ObjectId, ref: 'Message' },
     thread_root_id: { type: Schema.Types.ObjectId, ref: 'Message' },

@@ -11,10 +11,14 @@ export class Channel {
         public id?: string,
         public isMember?: boolean,
         public hasPendingRequest?: boolean
-    ) {}
+    ) { }
 
     public archive(): void {
         this.isActive = false;
+    }
+
+    public reactivate(): void {
+        this.isActive = true;
     }
 
     public makePrivate(): void {

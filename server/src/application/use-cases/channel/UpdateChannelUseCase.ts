@@ -1,12 +1,17 @@
 import { IChannelRepository } from "../../../application/repositories/IChannelRepository";
+import { IWorkspaceMemberRepository } from "../../../application/repositories/IWorkspaceMemberRepository";
 import { AppError } from "../../../domain/errors/AppError";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
+import { MemberRole } from "../../../domain/enums/MemberRole";
 
 export class UpdateChannelUseCase {
-    constructor(private channelRepository: IChannelRepository) { }
+    constructor(
+        private channelRepository: IChannelRepository,
+        private workspaceMemberRepository: IWorkspaceMemberRepository
+    ) { }
 
-    async execute(workspaceId: string, channelId: string, requestUserId: string, updateData: { name?: string, description?: string, privacy?: 'public' | 'private' }) {
+    async execute(workspaceId: string, channelId: string, requestUserId: string, updateData: { name?: string, description?: string, privacy?: 'public' | 'private', is_active?: boolean }) {
         if (!workspaceId || !channelId) {
             throw new AppError(ErrorMessage.INVALID_PARAMS, HttpStatusCode.BAD_REQUEST);
         }
@@ -17,7 +22,12 @@ export class UpdateChannelUseCase {
         }
 
         if (channel.createdBy !== requestUserId) {
-            throw new AppError(ErrorMessage.CHANNEL_CREATOR_ONLY, HttpStatusCode.FORBIDDEN);
+            const workspaceMember = await this.workspaceMemberRepository.findByWorkspaceAndUser(workspaceId, requestUserId);
+            const isWorkspaceOwner = workspaceMember?.role === MemberRole.OWNER;
+
+            if (!isWorkspaceOwner) {
+                throw new AppError(ErrorMessage.CHANNEL_CREATOR_ONLY, HttpStatusCode.FORBIDDEN);
+            }
         }
 
         if (updateData.name?.trim() === '') {
@@ -36,6 +46,14 @@ export class UpdateChannelUseCase {
             channel.makePrivate();
         } else if (updateData.privacy === 'public') {
             channel.makePublic();
+        }
+
+        if (updateData.is_active !== undefined) {
+            if (updateData.is_active) {
+                channel.reactivate();
+            } else {
+                channel.archive();
+            }
         }
 
         const updated = await this.channelRepository.update(channelId, channel);

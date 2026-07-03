@@ -9,13 +9,15 @@ import { WorkspaceMember } from "../../../domain/entities/WorkspaceMember";
 import { MemberRole } from "../../../domain/enums/MemberRole";
 import { MemberStatus } from "../../../domain/enums/MemberStatus";
 import { WorkspacePrivacy } from "../../../domain/enums/WorkspacePrivacy";
+import { CreateNotificationUseCase } from "../notification/CreateNotificationUseCase";
 
 export class SendWorkspaceInviteUseCase {
     constructor(
         private workspaceRepository: IWorkspaceRepository,
         private workspaceMemberRepository: IWorkspaceMemberRepository,
         private userRepository: IUserRepository,
-        private emailService: IEmailService
+        private emailService: IEmailService,
+        private createNotificationUseCase?: CreateNotificationUseCase
     ) {}
 
     async execute(workspaceId: string, requesterId: string, targetEmail: string) {
@@ -71,6 +73,16 @@ export class SendWorkspaceInviteUseCase {
             workspace.name,
             inviteLink
         );
+
+        if (this.createNotificationUseCase && targetUser.id) {
+            await this.createNotificationUseCase.execute({
+                userId: targetUser.id,
+                type: 'WORKSPACE_INVITE',
+                title: 'Workspace Invitation',
+                message: `You have been invited to join the workspace "${workspace.name}".`,
+                relatedId: workspace.id
+            });
+        }
 
         return { success: true, message: "Invitation sent successfully" };
     }
