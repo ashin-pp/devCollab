@@ -27,24 +27,24 @@ export const AdminService = {
         const response = await api.post(API_ENDPOINTS.ADMIN.RESET_PASSWORD, data);
         return response.data;
     },
-    getUsers: async () => {
-        const response = await api.get(API_ENDPOINTS.ADMIN.USERS);
+    getUsers: async (params?: { page: number; limit: number; search?: string; filter?: string; sortBy?: string; sortOrder?: string }) => {
+        const response = await api.get(API_ENDPOINTS.ADMIN.USERS, { params });
         return response.data;
     },
     toggleUserStatus: async (id: string, isBlocked: boolean) => {
         const response = await api.patch(API_ENDPOINTS.ADMIN.USER_STATUS(id), { isBlocked });
         return response.data;
     },
-    getWorkspaces: async () => {
-        const response = await api.get(API_ENDPOINTS.ADMIN.WORKSPACES);
+    getWorkspaces: async (params?: { page: number; limit: number; search?: string; filter?: string; sortBy?: string; sortOrder?: string }) => {
+        const response = await api.get(API_ENDPOINTS.ADMIN.WORKSPACES, { params });
         return response.data;
     },
     toggleWorkspaceStatus: async (id: string, isActive: boolean) => {
         const response = await api.patch(API_ENDPOINTS.ADMIN.WORKSPACE_STATUS(id), { isActive });
         return response.data;
     },
-    getWorkspaceMembers: async (id: string) => {
-        const response = await api.get(API_ENDPOINTS.ADMIN.WORKSPACE_MEMBERS(id));
+    getWorkspaceMembers: async (id: string, params?: { page: number; limit: number; search?: string; filter?: string; sortBy?: string; sortOrder?: string }) => {
+        const response = await api.get(API_ENDPOINTS.ADMIN.WORKSPACE_MEMBERS(id), { params });
         return response.data;
     },
     updateWorkspaceMemberStatus: async (workspaceId: string, userId: string, status: string) => {

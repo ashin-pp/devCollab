@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { AdminService } from '../../api/admin/admin.service';
 import toast from 'react-hot-toast';
 import { isAxiosError } from 'axios';
+import { OTP_RESEND_COOLDOWN_MS } from '../../utils/constants';
 
 export const AdminVerifyOtpPage = () => {
   const [otp, setOtp] = useState(['', '', '', '']);
@@ -79,8 +80,8 @@ export const AdminVerifyOtpPage = () => {
     try {
       await AdminService.forgotPassword(email);
       toast.success("A new code has been dispatched");
-      localStorage.setItem('adminOtpEndTime', (Date.now() + 60000).toString());
-      setTimeLeft(60);
+      localStorage.setItem('adminOtpEndTime', (Date.now() + OTP_RESEND_COOLDOWN_MS).toString());
+      setTimeLeft(OTP_RESEND_COOLDOWN_MS / 1000);
     } catch (err: unknown) {
       toast.error("Failed to re-transmit code");
     }

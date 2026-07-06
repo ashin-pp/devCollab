@@ -51,7 +51,7 @@ export const WorkspacePollsPage = () => {
       
       // Fetch members locally since there is no workspaceSlice
       WorkspaceService.getWorkspaceMembers(workspaceId, false)
-        .then(res => setMembers(res.data || []))
+        .then(res => setMembers(Array.isArray(res.data) ? res.data : res.data?.data || []))
         .catch(err => console.error('Failed to fetch members', err));
     }
     

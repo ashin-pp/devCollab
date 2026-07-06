@@ -1,7 +1,7 @@
 import { AdminLayout } from '../../layouts/AdminLayout';
-import { Search, ChevronDown, SlidersHorizontal, ChevronLeft, ChevronRight, Server, Activity, Ban, Loader2, Lock, Unlock, Eye } from 'lucide-react';
+import { Search, ChevronDown, SlidersHorizontal, ChevronLeft, ChevronRight, Server, Activity, Ban, Loader2, Lock, Unlock, Eye, ArrowUp, ArrowDown } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AdminService } from '../../api/admin/admin.service';
 import toast from 'react-hot-toast';
 import { isAxiosError } from 'axios';
@@ -12,21 +12,53 @@ import type { Workspace } from '../../types/workspace.types';
 
 
 export const AdminWorkspaceManagementPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('ALL'); // ALL, ACTIVE, DEACTIVATED
-  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchParams.get('search') || '');
+  const [filterStatus, setFilterStatus] = useState(searchParams.get('filter') || 'ALL'); // ALL, ACTIVE, DEACTIVATED
+  
+  const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1'));
+  const [sortBy, setSortBy] = useState(searchParams.get('sortBy') || 'createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>((searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc');
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalWorkspaces, setTotalWorkspaces] = useState(0);
   const itemsPerPage = 5;
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
 
   const fetchWorkspaces = async () => {
     setIsLoading(true);
     try {
-      const response = await AdminService.getWorkspaces();
-      setWorkspaces(response.data || []);
+      let filterQuery = undefined;
+      if (filterStatus === 'ACTIVE') filterQuery = 'active';
+      if (filterStatus === 'DEACTIVATED') filterQuery = 'deactivated';
+
+      const response = await AdminService.getWorkspaces({
+        page: currentPage,
+        limit: itemsPerPage,
+        search: debouncedSearchTerm || undefined,
+        filter: filterQuery,
+        sortBy,
+        sortOrder
+      });
+      
+      const responseData = response.data.data || response.data;
+      const mappedWorkspaces = Array.isArray(responseData) ? responseData : [];
+
+      setWorkspaces(mappedWorkspaces);
+      setTotalPages(response.data.totalPages || 1);
+      setTotalWorkspaces(response.data.total || mappedWorkspaces.length);
     } catch (err: unknown) {
       let errMsg = 'Failed to fetch workspaces';
       if (isAxiosError(err)) {
@@ -43,7 +75,35 @@ export const AdminWorkspaceManagementPage = () => {
 
   useEffect(() => {
     fetchWorkspaces();
-  }, []);
+  }, [currentPage, debouncedSearchTerm, filterStatus, sortBy, sortOrder]);
+
+  // Sync state to URL
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (currentPage > 1) params.set('page', currentPage.toString());
+    if (debouncedSearchTerm) params.set('search', debouncedSearchTerm);
+    if (filterStatus !== 'ALL') params.set('filter', filterStatus);
+    if (sortBy !== 'createdAt') params.set('sortBy', sortBy);
+    if (sortOrder !== 'desc') params.set('sortOrder', sortOrder);
+    setSearchParams(params, { replace: true });
+  }, [currentPage, debouncedSearchTerm, filterStatus, sortBy, sortOrder, setSearchParams]);
+
+  const handleSort = (column: string) => {
+    if (sortBy === column) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(column);
+      setSortOrder('desc');
+    }
+    setCurrentPage(1);
+  };
+
+  const SortIcon = ({ column }: { column: string }) => {
+    if (sortBy !== column) return null;
+    return sortOrder === 'asc' 
+      ? <ArrowUp className="w-3 h-3 inline ml-1 text-amber-500" /> 
+      : <ArrowDown className="w-3 h-3 inline ml-1 text-amber-500" />;
+  };
 
   const handleToggleStatus = async (workspaceId: string, currentStatus: boolean) => {
     try {
@@ -74,28 +134,12 @@ export const AdminWorkspaceManagementPage = () => {
     }
   };
 
-  const totalWorkspaces = workspaces.length;
   const deactivatedWorkspaces = workspaces.filter(w => !w.isActive).length;
-  const activeWorkspaces = totalWorkspaces - deactivatedWorkspaces;
-
-  const filteredWorkspaces = workspaces.filter(workspace => {
-    const matchesSearch = workspace.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      workspace.ownerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      workspace.id.toLowerCase().includes(searchTerm.toLowerCase());
-
-    let matchesFilter = true;
-    if (filterStatus === 'ACTIVE') matchesFilter = workspace.isActive;
-    if (filterStatus === 'DEACTIVATED') matchesFilter = !workspace.isActive;
-
-    return matchesSearch && matchesFilter;
-  });
-
-  const totalPages = Math.ceil(filteredWorkspaces.length / itemsPerPage);
-  const paginatedWorkspaces = filteredWorkspaces.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const activeWorkspaces = workspaces.length - deactivatedWorkspaces;
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterStatus]);
+  }, [debouncedSearchTerm, filterStatus]);
 
   return (
     <AdminLayout>
@@ -144,11 +188,11 @@ export const AdminWorkspaceManagementPage = () => {
           <table className="w-full text-left text-sm">
             <thead className="text-[10px] text-slate-500 font-bold tracking-widest uppercase border-b border-[#30363d] bg-[#0d1117]">
               <tr>
-                <th className="px-6 py-4">WORKSPACE</th>
-                <th className="px-6 py-4">PRIVACY</th>
+                <th className="px-6 py-4 cursor-pointer hover:text-amber-500 transition-colors" onClick={() => handleSort('name')}>WORKSPACE <SortIcon column="name" /></th>
+                <th className="px-6 py-4 cursor-pointer hover:text-amber-500 transition-colors" onClick={() => handleSort('privacy')}>PRIVACY <SortIcon column="privacy" /></th>
                 <th className="px-6 py-4">MEMBERS</th>
-                <th className="px-6 py-4">CREATED</th>
-                <th className="px-6 py-4">STATUS</th>
+                <th className="px-6 py-4 cursor-pointer hover:text-amber-500 transition-colors" onClick={() => handleSort('createdAt')}>CREATED <SortIcon column="createdAt" /></th>
+                <th className="px-6 py-4 cursor-pointer hover:text-amber-500 transition-colors" onClick={() => handleSort('isActive')}>STATUS <SortIcon column="isActive" /></th>
                 <th className="px-6 py-4 text-right">ACTIONS</th>
               </tr>
             </thead>
@@ -166,14 +210,14 @@ export const AdminWorkspaceManagementPage = () => {
                     {error}
                   </td>
                 </tr>
-              ) : paginatedWorkspaces.length === 0 ? (
+              ) : workspaces.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-slate-500 font-mono text-xs tracking-widest uppercase">
                     NO_WORKSPACES_FOUND
                   </td>
                 </tr>
               ) : (
-                paginatedWorkspaces.map(workspace => (
+                workspaces.map(workspace => (
                   <tr key={workspace.id} className={`hover:bg-[#0d1117]/50 transition-colors group ${!workspace.isActive ? 'bg-red-500/5' : ''}`}>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -241,7 +285,7 @@ export const AdminWorkspaceManagementPage = () => {
 
         <div className="bg-[#0d1117] border-t border-[#30363d] p-4 flex items-center justify-between">
           <div className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
-            DISPLAYING: [ {Math.min((currentPage - 1) * itemsPerPage + 1, filteredWorkspaces.length)} - {Math.min(currentPage * itemsPerPage, filteredWorkspaces.length)} ] OF {filteredWorkspaces.length} ENTRIES
+            DISPLAYING: [ {totalWorkspaces === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, totalWorkspaces)} ] OF {totalWorkspaces} ENTRIES
           </div>
           <div className="flex gap-1">
             <button
@@ -297,7 +341,7 @@ export const AdminWorkspaceManagementPage = () => {
           <div className="absolute top-4 right-4 text-[#30363d] group-hover:text-red-500/30 transition-colors">
             <Ban className="w-8 h-8" />
           </div>
-          <div className="text-[10px] font-bold text-slate-400 group-hover:text-red-400 transition-colors tracking-widest uppercase mb-4">DEACTIVATED</div>
+          <div className="text-[10px] font-bold text-slate-400 group-hover:text-red-400 transition-colors tracking-widest uppercase mb-4">DEACTIVATED (PAGE)</div>
           <div className="text-3xl font-bold text-white tracking-wider">{deactivatedWorkspaces}</div>
         </div>
       </div>

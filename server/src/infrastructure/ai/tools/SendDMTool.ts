@@ -1,0 +1,41 @@
+import { tool } from "@langchain/core/tools";
+import { z } from "zod";
+import { SendDirectMessageUseCase } from "../../../application/use-cases/dm/send-direct-message.usecase";
+import { StartConversationUseCase } from "../../../application/use-cases/dm/start-conversation.usecase";
+
+export const createSendDMTool = (
+    sendDirectMessageUseCase: SendDirectMessageUseCase,
+    startConversationUseCase: StartConversationUseCase
+) => {
+    return tool(
+        async ({ content }, config) => {
+            try {
+                const context = config?.configurable?.context;
+                if (!context || !context.userId || !context.workspaceId) {
+                    return "Error: Missing context required to send a DM.";
+                }
+
+                const userId = context.userId;
+                const workspaceId = context.workspaceId;
+
+                // Ensure "note to self" conversation exists
+                const conversation = await startConversationUseCase.execute(workspaceId, userId, userId);
+                
+                // Send DM
+                await sendDirectMessageUseCase.execute(conversation.id as string, userId, content);
+                
+                return "Successfully sent the summary to the user's DM.";
+            } catch (error) {
+                console.error("Error in send_dm_tool:", error);
+                return "Error: Failed to send the DM.";
+            }
+        },
+        {
+            name: "send_dm_tool",
+            description: "Sends a direct message to the user. Use this to deliver the generated summary to the user's private messages.",
+            schema: z.object({
+                content: z.string().describe("The content of the message to send, which should be the generated summary."),
+            }),
+        }
+    );
+};

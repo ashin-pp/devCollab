@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { WorkspaceService } from '../../../api/workspace/workspace.service';
 import { WorkspaceLayout } from '../../../layouts/WorkspaceLayout';
-import { Users, UserCheck, UserX, Clock, Loader2, Search } from 'lucide-react';
+import { Users, UserCheck, UserX, Clock, Loader2, Search, UserPlus } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../../store/index';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 
 import type { MemberData } from '../../../types/workspace.types';
+import { InviteMemberModal } from '../../../components/workspace/InviteMemberModal';
 
 export const WorkspaceMembersPage = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>();
@@ -19,6 +20,7 @@ export const WorkspaceMembersPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'approved' | 'pending'>('approved');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -30,7 +32,7 @@ export const WorkspaceMembersPage = () => {
     try {
       setIsLoading(true);
       const data = await WorkspaceService.getWorkspaceMembers(workspaceId, false);
-      setMembers(data.data);
+      setMembers(Array.isArray(data.data) ? data.data : data.data?.data || []);
     } catch {
       toast.error('Failed to load members');
     } finally {
@@ -166,16 +168,27 @@ export const WorkspaceMembersPage = () => {
               </p>
             </div>
             
-            {/* Search Input */}
-            <div className="relative">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Search members..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-64 bg-slate-50 border border-slate-200 text-sm rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400"
-              />
+            {/* Search Input and Add Member */}
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search members..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-64 bg-slate-50 border border-slate-200 text-sm rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400"
+                />
+              </div>
+              {isOwner && (
+                <button 
+                  onClick={() => setIsInviteModalOpen(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-sm hover:bg-blue-700 transition-colors"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Invite Member
+                </button>
+              )}
             </div>
           </div>
 
@@ -355,6 +368,14 @@ export const WorkspaceMembersPage = () => {
 
         </div>
       </div>
+      
+      {workspaceId && (
+        <InviteMemberModal
+          isOpen={isInviteModalOpen}
+          onClose={() => setIsInviteModalOpen(false)}
+          workspaceId={workspaceId}
+        />
+      )}
     </WorkspaceLayout>
   );
 };

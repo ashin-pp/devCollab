@@ -9,6 +9,7 @@ import type { RootState } from '../store';
 
 import { useSocket } from '../hooks/useSocket';
 import { addNotification } from '../store/slices/notificationSlice';
+import { playNotificationSound } from '../utils/audio';
 import toast from 'react-hot-toast';
 
 import Swal from 'sweetalert2';
@@ -26,6 +27,7 @@ export const UserLayout = ({ children }: UserLayoutProps) => {
   useEffect(() => {
     if (!socket) return;
     const handleNewNotification = (notification: any) => {
+      playNotificationSound();
       dispatch(addNotification(notification));
       toast.success(`New Notification: ${notification.title}`, { icon: '🔔' });
     };

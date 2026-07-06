@@ -17,5 +17,10 @@ export const NotificationService = {
     markAllAsRead: async (): Promise<{ success: boolean }> => {
         const response = await api.put(API_ENDPOINTS.NOTIFICATIONS.MARK_ALL_READ);
         return response.data;
+    },
+
+    clearAllNotifications: async (): Promise<{ success: boolean }> => {
+        const response = await api.delete(API_ENDPOINTS.NOTIFICATIONS.CLEAR_ALL);
+        return response.data;
     }
 };

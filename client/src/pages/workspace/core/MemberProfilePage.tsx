@@ -38,7 +38,7 @@ export const MemberProfilePage = () => {
       
       // Fetch workspace members with full profile data
       const membersData = await WorkspaceService.getWorkspaceMembers(workspaceId, true);
-      const allMembers = membersData.data || [];
+      const allMembers = Array.isArray(membersData.data) ? membersData.data : membersData.data?.data || [];
       
       // Find the specific member
       const targetMember = allMembers.find((m: MemberData) => m.userId === userId);

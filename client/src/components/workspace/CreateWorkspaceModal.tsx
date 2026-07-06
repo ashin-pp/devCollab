@@ -4,6 +4,8 @@ import { WorkspaceService } from '../../api/workspace/workspace.service';
 import type { CreateWorkspaceData } from '../../types/workspace.types';
 import type { CreateWorkspaceModalProps } from '../../types/component.types';
 import Swal from 'sweetalert2';
+import toast from 'react-hot-toast';
+import { MAX_WORKSPACE_ICON_SIZE_BYTES } from '../../utils/constants';
 
 export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({ isOpen, onClose, onSuccess }) => {
     const [name, setName] = useState('');
@@ -56,8 +58,8 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({ isOp
             return;
         }
 
-        if (file.size > 2 * 1024 * 1024) {
-            Swal.fire('Error', 'Image must be less than 2MB', 'error');
+        if (file.size > MAX_WORKSPACE_ICON_SIZE_BYTES) {
+            toast.error('Image must be less than 2MB');
             return;
         }
 

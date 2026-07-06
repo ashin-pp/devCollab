@@ -1,0 +1,3 @@
+export const OTP_RESEND_COOLDOWN_MS = 60000;
+export const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+export const MAX_WORKSPACE_ICON_SIZE_BYTES = 2 * 1024 * 1024;

@@ -21,6 +21,7 @@ import { InviteMemberModal } from '../components/workspace/InviteMemberModal';
 import { NotificationBell } from '../components/notifications/NotificationBell';
 import { addNotification } from '../store/slices/notificationSlice';
 import { useDispatch } from 'react-redux';
+import { playNotificationSound } from '../utils/audio';
 
 import type { WorkspaceLayoutProps } from '../types/component.types';
 
@@ -126,11 +127,11 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
         .catch((err) => console.error('Failed to fetch workspace data', err));
 
       // Fetch workspace members
-      WorkspaceService.getWorkspaceMembers(workspaceId, false).then((response: { data?: MemberData[] }) => {
-        const members = response.data || [];
+      WorkspaceService.getWorkspaceMembers(workspaceId, false).then((response: any) => {
+        const members: MemberData[] = Array.isArray(response.data) ? response.data : response.data?.data || [];
         const currentMember = members.find((m) => m.userId === user.id);
         
-        if (!currentMember || currentMember.status !== 'approved' && currentMember.status !== 'invited' && currentMember.role !== 'owner') {
+        if (!currentMember || (currentMember.status !== 'approved' && currentMember.status !== 'invited' && currentMember.role !== 'owner')) {
           // If they aren't in the list, or they are pending, kick them out
           toast.error('You are no longer a member of this workspace');
           navigate('/dashboard');
@@ -164,10 +165,12 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
       // Could dispatch to Redux to update global user presence state
     });
 
-    socket?.on('workspace_member_removed', (data: { userId: string, workspaceId: string }) => {
+    socket?.on('workspace_member_removed', (data: { userId: string, workspaceId: string, removedBy?: string }) => {
       if (data.userId === user?.id && data.workspaceId === workspaceId) {
-        toast.error('You have been removed from this workspace');
-        navigate('/home');
+        if (data.removedBy && data.removedBy !== user?.id) {
+          toast.error('You have been removed from this workspace');
+          navigate('/dashboard');
+        }
       }
     });
 
@@ -194,6 +197,7 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
     };
 
     const handleNewNotification = (notification: any) => {
+      playNotificationSound();
       dispatch(addNotification(notification));
       toast.success(`New Notification: ${notification.title}`, { icon: '🔔' });
     };

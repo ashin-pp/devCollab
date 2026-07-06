@@ -26,7 +26,7 @@ export const WorkspaceDashboardPage = () => {
     if (workspaceId) {
       WorkspaceService.getWorkspaceMembers(workspaceId, true)
         .then((res) => {
-          setMembers(res.data || []);
+          setMembers(Array.isArray(res.data) ? res.data : res.data?.data || []);
           setLoadingMembers(false);
         })
         .catch(() => {

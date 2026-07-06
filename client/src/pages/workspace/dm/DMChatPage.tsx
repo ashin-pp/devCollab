@@ -362,7 +362,7 @@ export const DMChatPage = () => {
     if (!showNewMsg || !workspaceId) return;
     WorkspaceService.getWorkspaceMembers(workspaceId, false)
       .then((res: { data?: MemberData[] }) => {
-        const all = res.data || [];
+        const all = Array.isArray(res.data) ? res.data : res.data?.data || [];
         const currentId = currentUser?.id || (currentUser as { _id?: string })?._id;
         const others = all.filter((m: MemberData) => m.userId !== currentId && m.status === 'approved');
         setWorkspaceMembers(others);

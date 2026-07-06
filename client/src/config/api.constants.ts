@@ -102,6 +102,7 @@ export const API_ENDPOINTS = {
     BASE: '/notifications',
     MARK_READ: (id: string) => `/notifications/${id}/read`,
     MARK_ALL_READ: '/notifications/mark-all-read',
+    CLEAR_ALL: '/notifications/clear-all',
   },
 
   // AI endpoints
