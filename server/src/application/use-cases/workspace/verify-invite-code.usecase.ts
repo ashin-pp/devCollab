@@ -1,16 +1,16 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { inject, injectable } from 'tsyringe';
 import type { IWorkspaceRepository } from "../../../application/interfaces/repositories/workspace.repository.interface";
-import { WorkspaceResponseDto } from "../../dtos/workspace/response/workspace.response.dto";
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
-import { AppError } from "../../../domain/errors/AppError";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
+import { AppError } from "../../../domain/errors/AppError";
+import { WorkspaceResponseDto } from "../../dtos/workspace/response/workspace.response.dto";
+import { IVerifyInviteCodeUseCase } from "../../interfaces/use-cases/workspace/verify-invite-code.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class VerifyInviteCodeUseCase implements IBaseUseCase<{ inviteCode: string }, Partial<WorkspaceResponseDto>> {
+export class VerifyInviteCodeUseCase implements IVerifyInviteCodeUseCase {
     constructor(
-        @inject(TOKENS.IWorkspaceRepository) private _workspaceRepository: IWorkspaceRepository
+        @inject(REPOSITORY_TOKENS.IWorkspaceRepository) private _workspaceRepository: IWorkspaceRepository
     ) { }
 
     async execute(payload: { inviteCode: string }): Promise<Partial<WorkspaceResponseDto>> {

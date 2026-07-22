@@ -1,21 +1,21 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { USECASE_TOKENS } from "../../../infrastructure/di/usecase.tokens";
+import * as schedule from "node-schedule";
+import { inject, injectable } from 'tsyringe';
 import type { IAIReminderRepository } from "../../../application/interfaces/repositories/ai-reminder.repository.interface";
 import { AIReminder } from "../../../domain/entities/ai-reminder.entity";
-import { ICreateReminderDependency } from "../../../infrastructure/ai/tools/RemindTool";
-import { CreateNotificationUseCase } from "../notification/create-notification.usecase";
-import * as schedule from "node-schedule";
-
-import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
 import type { IChannelRepository } from "../../../application/interfaces/repositories/channel.repository.interface";
+import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
+import { ICreateAIReminderUseCase } from "../../interfaces/use-cases/ai/create-ai-reminder.usecase.interface";
+import type { ICreateNotificationUseCase } from "../../interfaces/use-cases/notification/create-notification.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class CreateAIReminderUseCase implements ICreateReminderDependency {
+export class CreateAIReminderUseCase implements ICreateAIReminderUseCase {
     constructor(
-        @inject(TOKENS.IAIReminderRepository) private _aiReminderRepository: IAIReminderRepository,
-        @inject(CreateNotificationUseCase) private _createNotificationUseCase: CreateNotificationUseCase,
-        @inject(TOKENS.IUserRepository) private _userRepository: IUserRepository,
-        @inject(TOKENS.IChannelRepository) private _channelRepository: IChannelRepository
+        @inject(REPOSITORY_TOKENS.IAIReminderRepository) private _aiReminderRepository: IAIReminderRepository,
+        @inject(USECASE_TOKENS.ICreateNotificationUseCase) private _createNotificationUseCase: ICreateNotificationUseCase,
+        @inject(REPOSITORY_TOKENS.IUserRepository) private _userRepository: IUserRepository,
+        @inject(REPOSITORY_TOKENS.IChannelRepository) private _channelRepository: IChannelRepository
     ) {}
 
     async execute(data: { userId: string; workspaceId: string; channelId: string; content: string; remindAt: string; senderId?: string }): Promise<void> {

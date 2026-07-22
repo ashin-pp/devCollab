@@ -1,16 +1,15 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { inject, injectable } from 'tsyringe';
 import type { IWorkspaceRepository } from "../../../application/interfaces/repositories/workspace.repository.interface";
-import { AppError } from "../../../domain/errors/AppError";
-import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
-
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
+import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
+import { AppError } from "../../../domain/errors/AppError";
+import { IToggleWorkspaceStatusUseCase } from "../../interfaces/use-cases/admin/toggle-workspace-status.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class ToggleWorkspaceStatusUseCase implements IBaseUseCase<{workspaceId: string, isActive: boolean}, void> {
+export class ToggleWorkspaceStatusUseCase implements IToggleWorkspaceStatusUseCase {
     constructor(
-        @inject(TOKENS.IWorkspaceRepository) private _workspaceRepository: IWorkspaceRepository
+        @inject(REPOSITORY_TOKENS.IWorkspaceRepository) private _workspaceRepository: IWorkspaceRepository
     ) {}
 
     async execute(payload: {workspaceId: string, isActive: boolean}): Promise<void> {

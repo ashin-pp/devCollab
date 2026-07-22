@@ -1,39 +1,40 @@
-import { injectable, inject } from 'tsyringe';
-import { Request, Response, NextFunction } from "express";
+import { NextFunction, Request, Response } from "express";
+import { inject, injectable } from 'tsyringe';
+import type { IAdminForgotPasswordUseCase } from "../../application/interfaces/use-cases/admin/admin-forgot-password.usecase.interface";
+import type { IAdminLoginUseCase } from "../../application/interfaces/use-cases/admin/admin-login.usecase.interface";
+import type { IAdminRefreshTokenUseCase } from "../../application/interfaces/use-cases/admin/admin-refresh-token.usecase.interface";
+import type { IAdminResetPasswordUseCase } from "../../application/interfaces/use-cases/admin/admin-reset-password.usecase.interface";
+import type { ICreateAdminUseCase } from "../../application/interfaces/use-cases/admin/create-admin.usecase.interface";
+import type { IGetAllUsersUseCase } from "../../application/interfaces/use-cases/admin/get-all-users.usecase.interface";
+import type { IGetAllWorkspacesUseCase } from "../../application/interfaces/use-cases/admin/get-all-workspaces.usecase.interface";
+import type { IAdminGetWorkspaceMembersUseCase } from "../../application/interfaces/use-cases/admin/admin-get-workspace-members.usecase.interface";
+import type { IToggleUserStatusUseCase } from "../../application/interfaces/use-cases/admin/toggle-user-status.usecase.interface";
+import type { IToggleWorkspaceStatusUseCase } from "../../application/interfaces/use-cases/admin/toggle-workspace-status.usecase.interface";
+import type { IUpdateWorkspaceMemberStatusUseCase } from "../../application/interfaces/use-cases/admin/update-workspace-member-status.usecase.interface";
+import type { IVerifyResetOtpUseCase } from "../../application/interfaces/use-cases/auth/verify-reset-otp.usecase.interface";
 import { envConfig } from "../../config/envConfig";
-import { CreateAdminUseCase } from "../../application/use-cases/admin/create-admin.usecase";
-import { AdminLoginUseCase } from "../../application/use-cases/admin/admin-login.usecase";
-import { AdminForgotPasswordUseCase } from "../../application/use-cases/admin/admin-forgot-password.usecase";
-import { AdminResetPasswordUseCase } from "../../application/use-cases/admin/admin-reset-password.usecase";
-import { GetAllUsersUseCase } from "../../application/use-cases/admin/get-all-users.usecase";
-import { ToggleUserStatusUseCase } from "../../application/use-cases/admin/toggle-user-status.usecase";
-import { VerifyResetOtpUseCase } from "../../application/use-cases/auth/verify-reset-otp.usecase";
-import { AdminRefreshTokenUseCase } from "../../application/use-cases/admin/admin-refresh-token.usecase";
-import { GetAllWorkspacesUseCase } from "../../application/use-cases/admin/get-all-workspaces.usecase";
-import { ToggleWorkspaceStatusUseCase } from "../../application/use-cases/admin/toggle-workspace-status.usecase";
-import { GetWorkspaceMembersUseCase } from "../../application/use-cases/admin/get-workspace-members.usecase";
-import { UpdateWorkspaceMemberStatusUseCase } from "../../application/use-cases/admin/update-workspace-member-status.usecase";
-import { ApiResponse } from "../http/helpers/implementation/apiResponse";
-import { HttpStatusCode } from "../../domain/enums/HttpStatusCode";
 import { AppConstants } from "../../domain/constants";
+import { HttpStatusCode } from "../../domain/enums/HttpStatusCode";
 import { SuccessMessage } from "../../domain/enums/SuccessMessage";
+import { USECASE_TOKENS } from "../../infrastructure/di/usecase.tokens";
+import { ApiResponse } from "../http/helpers/implementation/apiResponse";
 import { catchAsync } from "../utils/catch-async";
 
 @injectable()
 export class AdminController {
   constructor(
-        @inject(CreateAdminUseCase) private _createAdminUseCase: CreateAdminUseCase,
-        @inject(AdminLoginUseCase) private _adminLoginUseCase: AdminLoginUseCase,
-        @inject(AdminForgotPasswordUseCase) private _adminForgotPasswordUseCase: AdminForgotPasswordUseCase,
-        @inject(AdminResetPasswordUseCase) private _adminResetPasswordUseCase: AdminResetPasswordUseCase,
-        @inject(GetAllUsersUseCase) private _getAllUsersUseCase: GetAllUsersUseCase,
-        @inject(ToggleUserStatusUseCase) private _toggleUserStatusUseCase: ToggleUserStatusUseCase,
-        @inject(VerifyResetOtpUseCase) private _verifyResetOtpUseCase: VerifyResetOtpUseCase,
-        @inject(AdminRefreshTokenUseCase) private _adminRefreshTokenUseCase: AdminRefreshTokenUseCase,
-        @inject(GetAllWorkspacesUseCase) private _getAllWorkspacesUseCase: GetAllWorkspacesUseCase,
-        @inject(ToggleWorkspaceStatusUseCase) private _adminToggleWorkspaceStatusUseCase: ToggleWorkspaceStatusUseCase,
-        @inject(GetWorkspaceMembersUseCase) private _adminGetWorkspaceMembersUseCase: GetWorkspaceMembersUseCase,
-        @inject(UpdateWorkspaceMemberStatusUseCase) private _adminUpdateWorkspaceMemberStatusUseCase: UpdateWorkspaceMemberStatusUseCase
+        @inject(USECASE_TOKENS.ICreateAdminUseCase) private _createAdminUseCase: ICreateAdminUseCase,
+        @inject(USECASE_TOKENS.IAdminLoginUseCase) private _adminLoginUseCase: IAdminLoginUseCase,
+        @inject(USECASE_TOKENS.IAdminForgotPasswordUseCase) private _adminForgotPasswordUseCase: IAdminForgotPasswordUseCase,
+        @inject(USECASE_TOKENS.IAdminResetPasswordUseCase) private _adminResetPasswordUseCase: IAdminResetPasswordUseCase,
+        @inject(USECASE_TOKENS.IGetAllUsersUseCase) private _getAllUsersUseCase: IGetAllUsersUseCase,
+        @inject(USECASE_TOKENS.IToggleUserStatusUseCase) private _toggleUserStatusUseCase: IToggleUserStatusUseCase,
+        @inject(USECASE_TOKENS.IVerifyResetOtpUseCase) private _verifyResetOtpUseCase: IVerifyResetOtpUseCase,
+        @inject(USECASE_TOKENS.IAdminRefreshTokenUseCase) private _adminRefreshTokenUseCase: IAdminRefreshTokenUseCase,
+        @inject(USECASE_TOKENS.IGetAllWorkspacesUseCase) private _getAllWorkspacesUseCase: IGetAllWorkspacesUseCase,
+        @inject(USECASE_TOKENS.IToggleWorkspaceStatusUseCase) private _adminToggleWorkspaceStatusUseCase: IToggleWorkspaceStatusUseCase,
+        @inject(USECASE_TOKENS.IAdminGetWorkspaceMembersUseCase) private _adminGetWorkspaceMembersUseCase: IAdminGetWorkspaceMembersUseCase,
+        @inject(USECASE_TOKENS.IUpdateWorkspaceMemberStatusUseCase) private _adminUpdateWorkspaceMemberStatusUseCase: IUpdateWorkspaceMemberStatusUseCase
     ) { }
 
   public createAdmin = catchAsync(async (req: Request, res: Response, next: NextFunction) => {

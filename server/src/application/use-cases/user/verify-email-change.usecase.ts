@@ -1,19 +1,18 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
-import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
+import { inject, injectable } from 'tsyringe';
 import type { IOtpRepository } from "../../../application/interfaces/repositories/otp.repository.interface";
-import { AppError } from "../../../domain/errors/AppError";
-import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
+import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
-
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
+import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
+import { AppError } from "../../../domain/errors/AppError";
 import { VerifyEmailChangeRequestDto } from "../../dtos/user/request/verify-email-change.dto";
+import { IVerifyEmailChangeUseCase } from "../../interfaces/use-cases/user/verify-email-change.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class VerifyEmailChangeUseCase implements IBaseUseCase<VerifyEmailChangeRequestDto, void> {
+export class VerifyEmailChangeUseCase implements IVerifyEmailChangeUseCase {
     constructor(
-        @inject(TOKENS.IUserRepository) private _userRepository: IUserRepository,
-        @inject(TOKENS.IOtpRepository) private _otpRepository: IOtpRepository
+        @inject(REPOSITORY_TOKENS.IUserRepository) private _userRepository: IUserRepository,
+        @inject(REPOSITORY_TOKENS.IOtpRepository) private _otpRepository: IOtpRepository
     ) {}
 
     async execute(payload: VerifyEmailChangeRequestDto): Promise<void> {

@@ -1,17 +1,16 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { inject, injectable } from 'tsyringe';
 import type { IChannelMemberRepository } from "../../../application/interfaces/repositories/channel-member.repository.interface";
 import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
-
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
-import { ChannelMemberResponseDto } from "../../dtos/channel/response/channel-member.response.dto";
 import { ChannelMemberRole, ChannelMemberStatus } from "../../../domain/enums/ChannelMemberStatus";
+import { ChannelMemberResponseDto } from "../../dtos/channel/response/channel-member.response.dto";
+import { IGetChannelRequestsUseCase } from "../../interfaces/use-cases/channel/get-channel-requests.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class GetChannelRequestsUseCase implements IBaseUseCase<{channelId: string}, ChannelMemberResponseDto[]> {
+export class GetChannelRequestsUseCase implements IGetChannelRequestsUseCase {
     constructor(
-        @inject(TOKENS.IChannelMemberRepository) private _channelMemberRepository: IChannelMemberRepository,
-        @inject(TOKENS.IUserRepository) private _userRepository: IUserRepository
+        @inject(REPOSITORY_TOKENS.IChannelMemberRepository) private _channelMemberRepository: IChannelMemberRepository,
+        @inject(REPOSITORY_TOKENS.IUserRepository) private _userRepository: IUserRepository
     ) {}
 
     async execute(payload: {channelId: string}): Promise<ChannelMemberResponseDto[]> {

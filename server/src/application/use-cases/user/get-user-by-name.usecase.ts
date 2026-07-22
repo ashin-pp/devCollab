@@ -1,14 +1,13 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { inject, injectable } from 'tsyringe';
 import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
 import { User } from "../../../domain/entities/user.entity";
-
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
+import { IGetUserByNameUseCase } from "../../interfaces/use-cases/user/get-user-by-name.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class GetUserByNameUseCase implements IBaseUseCase<{name: string}, User | null> {
+export class GetUserByNameUseCase implements IGetUserByNameUseCase {
     constructor(
-        @inject(TOKENS.IUserRepository) private _userRepository: IUserRepository
+        @inject(REPOSITORY_TOKENS.IUserRepository) private _userRepository: IUserRepository
     ) {}
 
     async execute(payload: {name: string}): Promise<User | null> {

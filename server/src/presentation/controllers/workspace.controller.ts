@@ -1,46 +1,48 @@
-import { injectable, inject } from 'tsyringe';
-import { Response, NextFunction } from "express";
-import { CreateWorkspaceUseCase } from "../../application/use-cases/workspace/create-workspace.usecase";
-import { JoinWorkspaceUseCase } from "../../application/use-cases/workspace/join-workspace.usecase";
-import { GetUserWorkspacesUseCase } from "../../application/use-cases/workspace/get-user-workspaces.usecase";
-import { GetPublicWorkspacesUseCase } from "../../application/use-cases/workspace/get-public-workspaces.usecase";
-import { VerifyInviteCodeUseCase } from "../../application/use-cases/workspace/verify-invite-code.usecase";
-import { GetWorkspaceMembersUseCase } from "../../application/use-cases/workspace/get-workspace-members.usecase";
-import { HandleJoinRequestUseCase } from "../../application/use-cases/workspace/handle-join-request.usecase";
-import { RemoveWorkspaceMemberUseCase } from "../../application/use-cases/workspace/remove-workspace-member.usecase";
-import { BlockWorkspaceMemberUseCase } from "../../application/use-cases/workspace/block-workspace-member.usecase";
-import { UnblockWorkspaceMemberUseCase } from "../../application/use-cases/workspace/unblock-workspace-member.usecase";
-import { UpdateWorkspaceUseCase } from "../../application/use-cases/workspace/update-workspace.usecase";
-import { RegenerateInviteCodeUseCase } from "../../application/use-cases/workspace/regenerate-invite-code.usecase";
-import { DeleteWorkspaceUseCase } from "../../application/use-cases/workspace/delete-workspace.usecase";
-import { ApiResponse } from "../http/helpers/implementation/apiResponse";
+import { NextFunction, Response } from "express";
+import { inject, injectable } from 'tsyringe';
+import { ErrorMessage } from "../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../domain/enums/HttpStatusCode";
 import { SuccessMessage } from "../../domain/enums/SuccessMessage";
-import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 import { AppError } from "../../domain/errors/AppError";
-import { ErrorMessage } from "../../domain/enums/ErrorMessage";
 import { SocketService } from "../../infrastructure/socket/socket.service";
+import { ApiResponse } from "../http/helpers/implementation/apiResponse";
+import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 
-import { SendWorkspaceInviteUseCase } from "../../application/use-cases/workspace/send-workspace-invite.usecase";
+// Import removed, as workspace.controller shouldn't use the admin use case
+import type { IGetWorkspaceMembersUseCase } from "../../application/interfaces/use-cases/workspace/get-workspace-members.usecase.interface";
+import type { IBlockWorkspaceMemberUseCase } from "../../application/interfaces/use-cases/workspace/block-workspace-member.usecase.interface";
+import type { ICreateWorkspaceUseCase } from "../../application/interfaces/use-cases/workspace/create-workspace.usecase.interface";
+import type { IDeleteWorkspaceUseCase } from "../../application/interfaces/use-cases/workspace/delete-workspace.usecase.interface";
+import type { IGetPublicWorkspacesUseCase } from "../../application/interfaces/use-cases/workspace/get-public-workspaces.usecase.interface";
+import type { IGetUserWorkspacesUseCase } from "../../application/interfaces/use-cases/workspace/get-user-workspaces.usecase.interface";
+import type { IHandleJoinRequestUseCase } from "../../application/interfaces/use-cases/workspace/handle-join-request.usecase.interface";
+import type { IJoinWorkspaceUseCase } from "../../application/interfaces/use-cases/workspace/join-workspace.usecase.interface";
+import type { IRegenerateInviteCodeUseCase } from "../../application/interfaces/use-cases/workspace/regenerate-invite-code.usecase.interface";
+import type { IRemoveWorkspaceMemberUseCase } from "../../application/interfaces/use-cases/workspace/remove-workspace-member.usecase.interface";
+import type { ISendWorkspaceInviteUseCase } from "../../application/interfaces/use-cases/workspace/send-workspace-invite.usecase.interface";
+import type { IUnblockWorkspaceMemberUseCase } from "../../application/interfaces/use-cases/workspace/unblock-workspace-member.usecase.interface";
+import type { IUpdateWorkspaceUseCase } from "../../application/interfaces/use-cases/workspace/update-workspace.usecase.interface";
+import type { IVerifyInviteCodeUseCase } from "../../application/interfaces/use-cases/workspace/verify-invite-code.usecase.interface";
+import { USECASE_TOKENS } from "../../infrastructure/di/usecase.tokens";
 import { catchAsync } from "../utils/catch-async";
 
 @injectable()
 export class WorkspaceController {
     constructor(
-        @inject(CreateWorkspaceUseCase) private readonly _createWorkspaceUseCase: CreateWorkspaceUseCase,
-        @inject(JoinWorkspaceUseCase) private readonly _joinWorkspaceUseCase: JoinWorkspaceUseCase,
-        @inject(GetUserWorkspacesUseCase) private readonly _getUserWorkspacesUseCase: GetUserWorkspacesUseCase,
-        @inject(GetPublicWorkspacesUseCase) private readonly _getPublicWorkspacesUseCase: GetPublicWorkspacesUseCase,
-        @inject(VerifyInviteCodeUseCase) private readonly _verifyInviteCodeUseCase: VerifyInviteCodeUseCase,
-        @inject(GetWorkspaceMembersUseCase) private readonly _getWorkspaceMembersUseCase: GetWorkspaceMembersUseCase,
-        @inject(HandleJoinRequestUseCase) private readonly _handleJoinRequestUseCase: HandleJoinRequestUseCase,
-        @inject(RemoveWorkspaceMemberUseCase) private readonly _removeWorkspaceMemberUseCase: RemoveWorkspaceMemberUseCase,
-        @inject(BlockWorkspaceMemberUseCase) private readonly _blockWorkspaceMemberUseCase: BlockWorkspaceMemberUseCase,
-        @inject(UnblockWorkspaceMemberUseCase) private readonly _unblockWorkspaceMemberUseCase: UnblockWorkspaceMemberUseCase,
-        @inject(UpdateWorkspaceUseCase) private readonly _updateWorkspaceUseCase: UpdateWorkspaceUseCase,
-        @inject(RegenerateInviteCodeUseCase) private readonly _regenerateInviteCodeUseCase: RegenerateInviteCodeUseCase,
-        @inject(DeleteWorkspaceUseCase) private readonly _deleteWorkspaceUseCase: DeleteWorkspaceUseCase,
-        @inject(SendWorkspaceInviteUseCase) private readonly _sendWorkspaceInviteUseCase: SendWorkspaceInviteUseCase
+        @inject(USECASE_TOKENS.ICreateWorkspaceUseCase) private readonly _createWorkspaceUseCase: ICreateWorkspaceUseCase,
+        @inject(USECASE_TOKENS.IJoinWorkspaceUseCase) private readonly _joinWorkspaceUseCase: IJoinWorkspaceUseCase,
+        @inject(USECASE_TOKENS.IGetUserWorkspacesUseCase) private readonly _getUserWorkspacesUseCase: IGetUserWorkspacesUseCase,
+        @inject(USECASE_TOKENS.IGetPublicWorkspacesUseCase) private readonly _getPublicWorkspacesUseCase: IGetPublicWorkspacesUseCase,
+        @inject(USECASE_TOKENS.IVerifyInviteCodeUseCase) private readonly _verifyInviteCodeUseCase: IVerifyInviteCodeUseCase,
+        @inject(USECASE_TOKENS.IGetWorkspaceMembersUseCase) private readonly _getWorkspaceMembersUseCase: IGetWorkspaceMembersUseCase,
+        @inject(USECASE_TOKENS.IHandleJoinRequestUseCase) private readonly _handleJoinRequestUseCase: IHandleJoinRequestUseCase,
+        @inject(USECASE_TOKENS.IRemoveWorkspaceMemberUseCase) private readonly _removeWorkspaceMemberUseCase: IRemoveWorkspaceMemberUseCase,
+        @inject(USECASE_TOKENS.IBlockWorkspaceMemberUseCase) private readonly _blockWorkspaceMemberUseCase: IBlockWorkspaceMemberUseCase,
+        @inject(USECASE_TOKENS.IUnblockWorkspaceMemberUseCase) private readonly _unblockWorkspaceMemberUseCase: IUnblockWorkspaceMemberUseCase,
+        @inject(USECASE_TOKENS.IUpdateWorkspaceUseCase) private readonly _updateWorkspaceUseCase: IUpdateWorkspaceUseCase,
+        @inject(USECASE_TOKENS.IRegenerateInviteCodeUseCase) private readonly _regenerateInviteCodeUseCase: IRegenerateInviteCodeUseCase,
+        @inject(USECASE_TOKENS.IDeleteWorkspaceUseCase) private readonly _deleteWorkspaceUseCase: IDeleteWorkspaceUseCase,
+        @inject(USECASE_TOKENS.ISendWorkspaceInviteUseCase) private readonly _sendWorkspaceInviteUseCase: ISendWorkspaceInviteUseCase
     ) {}
 
     public create = catchAsync(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
@@ -87,7 +89,7 @@ export class WorkspaceController {
         });
 
     public getPublicWorkspaces = catchAsync(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-        const workspaces = await this._getPublicWorkspacesUseCase.execute({});
+        const workspaces = await this._getPublicWorkspacesUseCase.execute();
         const response = ApiResponse.success("Public workspaces retrieved successfully", workspaces);
         res.status(HttpStatusCode.OK).json(response);
         });

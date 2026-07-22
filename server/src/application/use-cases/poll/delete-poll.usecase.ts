@@ -1,12 +1,13 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { inject, injectable } from 'tsyringe';
 import type { IPollRepository } from "../../../application/interfaces/repositories/poll.repository.interface";
 import { Poll } from "../../../domain/entities/poll.entity";
+import { IDeletePollUseCase } from "../../interfaces/use-cases/poll/delete-poll.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class DeletePollUseCase {
+export class DeletePollUseCase implements IDeletePollUseCase {
     constructor(
-        @inject(TOKENS.IPollRepository) private readonly _pollRepository: IPollRepository
+        @inject(REPOSITORY_TOKENS.IPollRepository) private readonly _pollRepository: IPollRepository
     ) {}
 
     async execute(pollId: string, userId: string): Promise<Poll> {

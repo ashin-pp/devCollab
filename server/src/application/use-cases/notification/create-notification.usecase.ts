@@ -1,16 +1,16 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { inject, injectable } from 'tsyringe';
 import type { INotificationRepository } from "../../../application/interfaces/repositories/notification.repository.interface";
 import { Notification } from "../../../domain/entities/notification.entity";
 import { SocketService } from "../../../infrastructure/socket/socket.service";
 
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
 import { CreateNotificationRequestDto } from "../../dtos/notification/request/create-notification.dto";
+import { ICreateNotificationUseCase } from "../../interfaces/use-cases/notification/create-notification.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class CreateNotificationUseCase implements IBaseUseCase<CreateNotificationRequestDto, Notification> {
+export class CreateNotificationUseCase implements ICreateNotificationUseCase {
     constructor(
-        @inject(TOKENS.INotificationRepository) private _notificationRepository: INotificationRepository
+        @inject(REPOSITORY_TOKENS.INotificationRepository) private _notificationRepository: INotificationRepository
     ) {}
 
     async execute(payload: CreateNotificationRequestDto): Promise<Notification> {

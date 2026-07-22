@@ -1,14 +1,16 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { USECASE_TOKENS } from "../../../infrastructure/di/usecase.tokens";
+import { inject, injectable } from 'tsyringe';
 import type { IAIService } from "../../../application/interfaces/services/ai.service.interface";
-import { SaveAIChatUseCase } from "./save-ai-chat.usecase";
 import { AIAgentType } from "../../../domain/enums/AIAgentType";
+import { IHandleAiCommandUseCase } from "../../interfaces/use-cases/ai/handle-ai-command.usecase.interface";
+import type { ISaveAIChatUseCase } from "../../interfaces/use-cases/ai/save-ai-chat.usecase.interface";
+import { SERVICE_TOKENS } from "../../../infrastructure/di/service.tokens";
 
 @injectable()
-export class HandleAiCommandUseCase {
+export class HandleAiCommandUseCase implements IHandleAiCommandUseCase {
     constructor(
-        @inject(TOKENS.IAIService) private _aiService: IAIService,
-        @inject(SaveAIChatUseCase) private _saveAIChatUseCase: SaveAIChatUseCase
+        @inject(SERVICE_TOKENS.IAIService) private _aiService: IAIService,
+        @inject(USECASE_TOKENS.ISaveAIChatUseCase) private _saveAIChatUseCase: ISaveAIChatUseCase
     ) { }
 
     async execute(input: string, workspaceId: string, channelId: string, userId: string): Promise<string> {

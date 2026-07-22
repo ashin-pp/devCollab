@@ -1,13 +1,14 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { inject, injectable } from 'tsyringe';
 import type { IPollRepository } from "../../../application/interfaces/repositories/poll.repository.interface";
-import { AppError } from "../../../domain/errors/AppError";
 import { Poll } from "../../../domain/entities/poll.entity";
+import { AppError } from "../../../domain/errors/AppError";
+import { IClosePollUseCase } from "../../interfaces/use-cases/poll/close-poll.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class ClosePollUseCase {
+export class ClosePollUseCase implements IClosePollUseCase {
     constructor(
-        @inject(TOKENS.IPollRepository) private readonly _pollRepository: IPollRepository
+        @inject(REPOSITORY_TOKENS.IPollRepository) private readonly _pollRepository: IPollRepository
     ) {}
 
     async execute(pollId: string, userId: string): Promise<Poll> {

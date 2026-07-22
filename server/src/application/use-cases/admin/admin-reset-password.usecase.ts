@@ -1,19 +1,20 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { inject, injectable } from 'tsyringe';
 import type { IAdminRepository } from "../../../application/interfaces/repositories/admin.repository.interface";
 import type { IOtpRepository } from "../../../application/interfaces/repositories/otp.repository.interface";
 import type { IHashService } from "../../../application/interfaces/services/hash.service.interface";
-import { ResetPasswordRequestDto } from "../../dtos/auth/request/reset-password.dto";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
+import { ResetPasswordRequestDto } from "../../dtos/auth/request/reset-password.dto";
 
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
+import { IAdminResetPasswordUseCase } from "../../interfaces/use-cases/admin/admin-reset-password.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
+import { SERVICE_TOKENS } from "../../../infrastructure/di/service.tokens";
 
 @injectable()
-export class AdminResetPasswordUseCase implements IBaseUseCase<ResetPasswordRequestDto, void> {
+export class AdminResetPasswordUseCase implements IAdminResetPasswordUseCase {
     constructor(
-        @inject(TOKENS.IAdminRepository) private _adminRepository: IAdminRepository,
-        @inject(TOKENS.IOtpRepository) private _otpRepository: IOtpRepository,
-        @inject(TOKENS.IHashService) private _hashService: IHashService
+        @inject(REPOSITORY_TOKENS.IAdminRepository) private _adminRepository: IAdminRepository,
+        @inject(REPOSITORY_TOKENS.IOtpRepository) private _otpRepository: IOtpRepository,
+        @inject(SERVICE_TOKENS.IHashService) private _hashService: IHashService
     ) { }
 
     async execute(data: ResetPasswordRequestDto): Promise<void> {

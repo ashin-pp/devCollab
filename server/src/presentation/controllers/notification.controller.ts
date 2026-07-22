@@ -1,18 +1,18 @@
-import { injectable, inject } from 'tsyringe';
+import { NextFunction, Response } from "express";
+import { inject, injectable } from 'tsyringe';
+import type { IClearUserNotificationsUseCase } from "../../application/interfaces/use-cases/notification/clear-user-notifications.usecase.interface";
+import type { IGetUserNotificationsUseCase } from "../../application/interfaces/use-cases/notification/get-user-notifications.usecase.interface";
+import type { IMarkNotificationReadUseCase } from "../../application/interfaces/use-cases/notification/mark-notification-read.usecase.interface";
+import { USECASE_TOKENS } from "../../infrastructure/di/usecase.tokens";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
-import { Response, NextFunction } from "express";
-import { GetUserNotificationsUseCase } from "../../application/use-cases/notification/get-user-notifications.usecase";
-import { MarkNotificationReadUseCase } from "../../application/use-cases/notification/mark-notification-read.usecase";
-import { ClearUserNotificationsUseCase } from "../../application/use-cases/notification/clear-user-notifications.usecase";
-import { logger } from "../../infrastructure/di/container";
 import { catchAsync } from "../utils/catch-async";
 
 @injectable()
 export class NotificationController {
     constructor(
-        @inject(GetUserNotificationsUseCase) private _getUserNotificationsUseCase: GetUserNotificationsUseCase,
-        @inject(MarkNotificationReadUseCase) private _markNotificationReadUseCase: MarkNotificationReadUseCase,
-        @inject(ClearUserNotificationsUseCase) private _clearUserNotificationsUseCase: ClearUserNotificationsUseCase
+        @inject(USECASE_TOKENS.IGetUserNotificationsUseCase) private _getUserNotificationsUseCase: IGetUserNotificationsUseCase,
+        @inject(USECASE_TOKENS.IMarkNotificationReadUseCase) private _markNotificationReadUseCase: IMarkNotificationReadUseCase,
+        @inject(USECASE_TOKENS.IClearUserNotificationsUseCase) private _clearUserNotificationsUseCase: IClearUserNotificationsUseCase
     ) {}
 
     getNotifications = catchAsync(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {

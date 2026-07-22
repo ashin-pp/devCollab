@@ -1,18 +1,18 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { inject, injectable } from 'tsyringe';
 import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
-import { AppError } from "../../../domain/errors/AppError";
-import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
+import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
+import { AppError } from "../../../domain/errors/AppError";
 import { UpdateUserProfileRequestDto } from "../../dtos/user/request/update-user-profile.dto";
 import { UserProfileResponseDto } from "../../dtos/user/response/user-profile.response.dto";
 
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
+import { IUpdateUserProfileUseCase } from "../../interfaces/use-cases/user/update-user-profile.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class UpdateUserProfileUseCase implements IBaseUseCase<{userId: string, data: UpdateUserProfileRequestDto}, UserProfileResponseDto> {
+export class UpdateUserProfileUseCase implements IUpdateUserProfileUseCase {
     constructor(
-        @inject(TOKENS.IUserRepository) private _userRepository: IUserRepository
+        @inject(REPOSITORY_TOKENS.IUserRepository) private _userRepository: IUserRepository
     ) {}
 
     async execute(payload: {userId: string, data: UpdateUserProfileRequestDto}): Promise<UserProfileResponseDto> {

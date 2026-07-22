@@ -1,16 +1,16 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
-import type { IWorkspaceRepository } from "../../../application/interfaces/repositories/workspace.repository.interface";
+import { inject, injectable } from 'tsyringe';
 import type { IWorkspaceMemberRepository } from "../../../application/interfaces/repositories/workspace-member.repository.interface";
+import type { IWorkspaceRepository } from "../../../application/interfaces/repositories/workspace.repository.interface";
 import { WorkspaceMember } from "../../../domain/entities/workspace-member.entity";
 import { WorkspaceResponseDto } from "../../dtos/workspace/response/workspace.response.dto";
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
+import { IGetUserWorkspacesUseCase } from "../../interfaces/use-cases/workspace/get-user-workspaces.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class GetUserWorkspacesUseCase implements IBaseUseCase<{ userId: string }, (WorkspaceResponseDto & { memberStatus: string })[]> {
+export class GetUserWorkspacesUseCase implements IGetUserWorkspacesUseCase {
     constructor(
-        @inject(TOKENS.IWorkspaceRepository) private _workspaceRepository: IWorkspaceRepository,
-        @inject(TOKENS.IWorkspaceMemberRepository) private _workspaceMemberRepository: IWorkspaceMemberRepository
+        @inject(REPOSITORY_TOKENS.IWorkspaceRepository) private _workspaceRepository: IWorkspaceRepository,
+        @inject(REPOSITORY_TOKENS.IWorkspaceMemberRepository) private _workspaceMemberRepository: IWorkspaceMemberRepository
     ) {}
 
     async execute(payload: { userId: string }): Promise<(WorkspaceResponseDto & { memberStatus: string })[]> {

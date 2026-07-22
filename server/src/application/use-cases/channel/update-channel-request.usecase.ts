@@ -1,20 +1,20 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { inject, injectable } from 'tsyringe';
 import type { IChannelMemberRepository } from "../../../application/interfaces/repositories/channel-member.repository.interface";
 import type { IChannelRepository } from "../../../application/interfaces/repositories/channel.repository.interface";
-import { AppError } from "../../../domain/errors/AppError";
+import { ChannelMemberStatus } from "../../../domain/enums/ChannelMemberStatus";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
-import { ChannelMemberStatus } from "../../../domain/enums/ChannelMemberStatus";
+import { AppError } from "../../../domain/errors/AppError";
 import { UpdateChannelRequestDto } from "../../dtos/channel/request/update-channel-request.dto";
 
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
+import { IUpdateChannelRequestUseCase } from "../../interfaces/use-cases/channel/update-channel-request.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class UpdateChannelRequestUseCase implements IBaseUseCase<UpdateChannelRequestDto, { success: boolean; message: string }> {
+export class UpdateChannelRequestUseCase implements IUpdateChannelRequestUseCase {
     constructor(
-        @inject(TOKENS.IChannelMemberRepository) private _channelMemberRepository: IChannelMemberRepository,
-        @inject(TOKENS.IChannelRepository) private _channelRepository: IChannelRepository
+        @inject(REPOSITORY_TOKENS.IChannelMemberRepository) private _channelMemberRepository: IChannelMemberRepository,
+        @inject(REPOSITORY_TOKENS.IChannelRepository) private _channelRepository: IChannelRepository
     ) {}
 
     async execute(payload: UpdateChannelRequestDto): Promise<{ success: boolean; message: string }> {

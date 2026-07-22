@@ -1,28 +1,29 @@
-import { injectable, inject } from 'tsyringe';
-import { Response, NextFunction } from "express";
-import { CreatePollUseCase } from "../../application/use-cases/poll/create-poll.usecase";
-import { VotePollUseCase } from "../../application/use-cases/poll/vote-poll.usecase";
-import { GetWorkspacePollsUseCase } from "../../application/use-cases/poll/get-workspace-polls.usecase";
-import { GetChannelPollsUseCase } from "../../application/use-cases/poll/get-channel-polls.usecase";
-import { DeletePollUseCase } from "../../application/use-cases/poll/delete-poll.usecase";
-import { ClosePollUseCase } from "../../application/use-cases/poll/close-poll.usecase";
-import { ApiResponse } from "../http/helpers/implementation/apiResponse";
-import { HttpStatusCode } from "../../domain/enums/HttpStatusCode";
-import { AuthenticatedRequest } from "../middlewares/authMiddleware";
-import { AppError } from "../../domain/errors/AppError";
+import { NextFunction, Response } from "express";
+import { inject, injectable } from 'tsyringe';
+import type { IClosePollUseCase } from "../../application/interfaces/use-cases/poll/close-poll.usecase.interface";
+import type { ICreatePollUseCase } from "../../application/interfaces/use-cases/poll/create-poll.usecase.interface";
+import type { IDeletePollUseCase } from "../../application/interfaces/use-cases/poll/delete-poll.usecase.interface";
+import type { IGetChannelPollsUseCase } from "../../application/interfaces/use-cases/poll/get-channel-polls.usecase.interface";
+import type { IGetWorkspacePollsUseCase } from "../../application/interfaces/use-cases/poll/get-workspace-polls.usecase.interface";
+import type { IVotePollUseCase } from "../../application/interfaces/use-cases/poll/vote-poll.usecase.interface";
 import { ErrorMessage } from "../../domain/enums/ErrorMessage";
+import { HttpStatusCode } from "../../domain/enums/HttpStatusCode";
+import { AppError } from "../../domain/errors/AppError";
+import { USECASE_TOKENS } from "../../infrastructure/di/usecase.tokens";
 import { SocketService } from "../../infrastructure/socket/socket.service";
+import { ApiResponse } from "../http/helpers/implementation/apiResponse";
+import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 import { catchAsync } from "../utils/catch-async";
 
 @injectable()
 export class PollController {
     constructor(
-        @inject(CreatePollUseCase) private readonly _createPollUseCase: CreatePollUseCase,
-        @inject(VotePollUseCase) private readonly _votePollUseCase: VotePollUseCase,
-        @inject(GetWorkspacePollsUseCase) private readonly _getWorkspacePollsUseCase: GetWorkspacePollsUseCase,
-        @inject(GetChannelPollsUseCase) private readonly _getChannelPollsUseCase: GetChannelPollsUseCase,
-        @inject(DeletePollUseCase) private readonly _deletePollUseCase: DeletePollUseCase,
-        @inject(ClosePollUseCase) private readonly _closePollUseCase: ClosePollUseCase
+        @inject(USECASE_TOKENS.ICreatePollUseCase) private readonly _createPollUseCase: ICreatePollUseCase,
+        @inject(USECASE_TOKENS.IVotePollUseCase) private readonly _votePollUseCase: IVotePollUseCase,
+        @inject(USECASE_TOKENS.IGetWorkspacePollsUseCase) private readonly _getWorkspacePollsUseCase: IGetWorkspacePollsUseCase,
+        @inject(USECASE_TOKENS.IGetChannelPollsUseCase) private readonly _getChannelPollsUseCase: IGetChannelPollsUseCase,
+        @inject(USECASE_TOKENS.IDeletePollUseCase) private readonly _deletePollUseCase: IDeletePollUseCase,
+        @inject(USECASE_TOKENS.IClosePollUseCase) private readonly _closePollUseCase: IClosePollUseCase
     ) {}
 
     public create = catchAsync(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {

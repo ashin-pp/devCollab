@@ -1,14 +1,13 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { inject, injectable } from 'tsyringe';
 import type { IMessageRepository } from "../../../application/interfaces/repositories/message.repository.interface";
 import { Message } from "../../../domain/entities/message.entity";
-
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
+import { IGetChannelMessagesUseCase } from "../../interfaces/use-cases/channel/get-channel-messages.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class GetChannelMessagesUseCase implements IBaseUseCase<{channelId: string, page?: number, limit?: number}, Message[]> {
+export class GetChannelMessagesUseCase implements IGetChannelMessagesUseCase {
     constructor(
-        @inject(TOKENS.IMessageRepository) private _messageRepository: IMessageRepository
+        @inject(REPOSITORY_TOKENS.IMessageRepository) private _messageRepository: IMessageRepository
     ) {}
 
     async execute(payload: {channelId: string, page?: number, limit?: number}): Promise<Message[]> {

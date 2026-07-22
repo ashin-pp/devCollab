@@ -1,16 +1,16 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { inject, injectable } from 'tsyringe';
 import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
 import { User } from "../../../domain/entities/user.entity";
 import { PaginationQueryParamsRequestDto } from "../../dtos/common/request/pagination-query-params.dto";
 import { PaginatedResponseDto } from "../../dtos/common/response/paginated-response.dto";
 
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
+import { IGetAllUsersUseCase } from "../../interfaces/use-cases/admin/get-all-users.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class GetAllUsersUseCase implements IBaseUseCase<PaginationQueryParamsRequestDto, PaginatedResponseDto<User>> {
+export class GetAllUsersUseCase implements IGetAllUsersUseCase {
     constructor(
-        @inject(TOKENS.IUserRepository) private _userRepository: IUserRepository
+        @inject(REPOSITORY_TOKENS.IUserRepository) private _userRepository: IUserRepository
     ) { }
 
     async execute(params: PaginationQueryParamsRequestDto): Promise<PaginatedResponseDto<User>> {

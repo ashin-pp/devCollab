@@ -1,21 +1,22 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { USECASE_TOKENS } from "../../../infrastructure/di/usecase.tokens";
+import { inject, injectable } from 'tsyringe';
 import type { IWorkspaceMemberRepository } from "../../../application/interfaces/repositories/workspace-member.repository.interface";
 import type { IWorkspaceRepository } from "../../../application/interfaces/repositories/workspace.repository.interface";
-import { AppError } from "../../../domain/errors/AppError";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { MemberStatus } from "../../../domain/enums/MemberStatus";
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
+import { AppError } from "../../../domain/errors/AppError";
 import { WorkspaceMemberResponseDto } from "../../dtos/workspace/response/workspace-member.response.dto";
 
+import { IHandleJoinRequestUseCase } from "../../interfaces/use-cases/workspace/handle-join-request.usecase.interface";
 import { CreateNotificationUseCase } from "../notification/create-notification.usecase";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class HandleJoinRequestUseCase implements IBaseUseCase<{workspaceId: string, requestUserId: string, action: 'approve' | 'reject', targetUserId: string}, WorkspaceMemberResponseDto | { message: string }> {
+export class HandleJoinRequestUseCase implements IHandleJoinRequestUseCase {
     constructor(
-        @inject(TOKENS.IWorkspaceRepository) private _workspaceRepository: IWorkspaceRepository,
-        @inject(TOKENS.IWorkspaceMemberRepository) private _workspaceMemberRepository: IWorkspaceMemberRepository,
+        @inject(REPOSITORY_TOKENS.IWorkspaceRepository) private _workspaceRepository: IWorkspaceRepository,
+        @inject(REPOSITORY_TOKENS.IWorkspaceMemberRepository) private _workspaceMemberRepository: IWorkspaceMemberRepository,
         @inject(CreateNotificationUseCase) private _createNotificationUseCase?: CreateNotificationUseCase
     ) {}
 

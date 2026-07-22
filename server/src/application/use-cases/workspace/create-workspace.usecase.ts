@@ -1,24 +1,24 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
-import type { IWorkspaceRepository } from "../../../application/interfaces/repositories/workspace.repository.interface";
+import crypto from "crypto";
+import { inject, injectable } from 'tsyringe';
 import type { IWorkspaceMemberRepository } from "../../../application/interfaces/repositories/workspace-member.repository.interface";
-import { Workspace } from "../../../domain/entities/workspace.entity";
+import type { IWorkspaceRepository } from "../../../application/interfaces/repositories/workspace.repository.interface";
 import { WorkspaceMember } from "../../../domain/entities/workspace-member.entity";
-import { CreateWorkspaceRequestDto } from "../../dtos/workspace/request/create-workspace.dto";
-import { WorkspaceResponseDto } from "../../dtos/workspace/response/workspace.response.dto";
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
-import { AppError } from "../../../domain/errors/AppError";
+import { Workspace } from "../../../domain/entities/workspace.entity";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
-import { WorkspacePrivacy } from "../../../domain/enums/WorkspacePrivacy";
 import { MemberRole } from "../../../domain/enums/MemberRole";
-import crypto from "crypto";
+import { WorkspacePrivacy } from "../../../domain/enums/WorkspacePrivacy";
+import { AppError } from "../../../domain/errors/AppError";
+import { CreateWorkspaceRequestDto } from "../../dtos/workspace/request/create-workspace.dto";
+import { WorkspaceResponseDto } from "../../dtos/workspace/response/workspace.response.dto";
+import { ICreateWorkspaceUseCase } from "../../interfaces/use-cases/workspace/create-workspace.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class CreateWorkspaceUseCase implements IBaseUseCase<CreateWorkspaceRequestDto, WorkspaceResponseDto> {
+export class CreateWorkspaceUseCase implements ICreateWorkspaceUseCase {
     constructor(
-        @inject(TOKENS.IWorkspaceRepository) private _workspaceRepository: IWorkspaceRepository,
-        @inject(TOKENS.IWorkspaceMemberRepository) private _workspaceMemberRepository: IWorkspaceMemberRepository
+        @inject(REPOSITORY_TOKENS.IWorkspaceRepository) private _workspaceRepository: IWorkspaceRepository,
+        @inject(REPOSITORY_TOKENS.IWorkspaceMemberRepository) private _workspaceMemberRepository: IWorkspaceMemberRepository
     ) { }
 
     async execute(payload: CreateWorkspaceRequestDto): Promise<WorkspaceResponseDto> {

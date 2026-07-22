@@ -1,15 +1,16 @@
-import { injectable, inject } from 'tsyringe';
-import { Response, NextFunction } from "express";
-import { AuthenticatedRequest } from "../middlewares/authMiddleware";
-import { UploadChatImageUseCase } from "../../application/use-cases/chat/upload-chat-image.usecase";
+import { NextFunction, Response } from "express";
+import { inject, injectable } from 'tsyringe';
+import type { IUploadChatImageUseCase } from "../../application/interfaces/use-cases/chat/upload-chat-image.usecase.interface";
 import { HttpStatusCode } from "../../domain/enums/HttpStatusCode";
 import { AppError } from "../../domain/errors/AppError";
+import { USECASE_TOKENS } from "../../infrastructure/di/usecase.tokens";
+import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 import { catchAsync } from "../utils/catch-async";
 
 @injectable()
 export class UploadController {
     constructor(
-        @inject(UploadChatImageUseCase) private readonly _uploadChatImageUseCase: UploadChatImageUseCase
+        @inject(USECASE_TOKENS.IUploadChatImageUseCase) private readonly _uploadChatImageUseCase: IUploadChatImageUseCase
     ) {}
 
     public uploadChatImage = catchAsync(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {

@@ -1,0 +1,43 @@
+import { container } from 'tsyringe';
+import { USECASE_TOKENS } from "../usecase.tokens";
+import { AddChannelMemberUseCase } from "../../../application/use-cases/channel/add-channel-member.usecase";
+import { BlockChannelMemberUseCase } from "../../../application/use-cases/channel/block-channel-member.usecase";
+import { CreateChannelUseCase } from "../../../application/use-cases/channel/create-channel.usecase";
+import { DeleteChannelUseCase } from "../../../application/use-cases/channel/delete-channel.usecase";
+import { GetBlockedChannelMembersUseCase } from "../../../application/use-cases/channel/get-blocked-channel-members.usecase";
+import { GetChannelMembersUseCase } from "../../../application/use-cases/channel/get-channel-members.usecase";
+import { GetChannelMessagesUseCase } from "../../../application/use-cases/channel/get-channel-messages.usecase";
+import { GetChannelRequestsUseCase } from "../../../application/use-cases/channel/get-channel-requests.usecase";
+import { GetUnreadCountsUseCase } from "../../../application/use-cases/channel/get-unread-counts.usecase";
+import { GetUnreadMessagesUseCase } from "../../../application/use-cases/channel/get-unread-messages.usecase";
+import { GetWorkspaceChannelsUseCase } from "../../../application/use-cases/channel/get-workspace-channels.usecase";
+import { JoinChannelUseCase } from "../../../application/use-cases/channel/join-channel.usecase";
+import { LeaveChannelUseCase } from "../../../application/use-cases/channel/leave-channel.usecase";
+import { MarkChannelAsReadUseCase } from "../../../application/use-cases/channel/mark-channel-as-read.usecase";
+import { RemoveChannelMemberUseCase } from "../../../application/use-cases/channel/remove-channel-member.usecase";
+import { SendMessageUseCase } from "../../../application/use-cases/channel/send-message.usecase";
+import { UnblockChannelMemberUseCase } from "../../../application/use-cases/channel/unblock-channel-member.usecase";
+import { UpdateChannelRequestUseCase } from "../../../application/use-cases/channel/update-channel-request.usecase";
+import { UpdateChannelUseCase } from "../../../application/use-cases/channel/update-channel.usecase";
+
+export function registerChannelUseCases() {
+    container.register(USECASE_TOKENS.IAddChannelMemberUseCase, { useClass: AddChannelMemberUseCase });
+    container.register(USECASE_TOKENS.IBlockChannelMemberUseCase, { useClass: BlockChannelMemberUseCase });
+    container.register(USECASE_TOKENS.ICreateChannelUseCase, { useClass: CreateChannelUseCase });
+    container.register(USECASE_TOKENS.IDeleteChannelUseCase, { useClass: DeleteChannelUseCase });
+    container.register(USECASE_TOKENS.IGetBlockedChannelMembersUseCase, { useClass: GetBlockedChannelMembersUseCase });
+    container.register(USECASE_TOKENS.IGetChannelMembersUseCase, { useClass: GetChannelMembersUseCase });
+    container.register(USECASE_TOKENS.IGetChannelMessagesUseCase, { useClass: GetChannelMessagesUseCase });
+    container.register(USECASE_TOKENS.IGetChannelRequestsUseCase, { useClass: GetChannelRequestsUseCase });
+    container.register(USECASE_TOKENS.IGetUnreadCountsUseCase, { useClass: GetUnreadCountsUseCase });
+    container.register(USECASE_TOKENS.IGetUnreadMessagesUseCase, { useClass: GetUnreadMessagesUseCase });
+    container.register(USECASE_TOKENS.IGetWorkspaceChannelsUseCase, { useClass: GetWorkspaceChannelsUseCase });
+    container.register(USECASE_TOKENS.IJoinChannelUseCase, { useClass: JoinChannelUseCase });
+    container.register(USECASE_TOKENS.ILeaveChannelUseCase, { useClass: LeaveChannelUseCase });
+    container.register(USECASE_TOKENS.IMarkChannelAsReadUseCase, { useClass: MarkChannelAsReadUseCase });
+    container.register(USECASE_TOKENS.IRemoveChannelMemberUseCase, { useClass: RemoveChannelMemberUseCase });
+    container.register(USECASE_TOKENS.ISendMessageUseCase, { useClass: SendMessageUseCase });
+    container.register(USECASE_TOKENS.IUnblockChannelMemberUseCase, { useClass: UnblockChannelMemberUseCase });
+    container.register(USECASE_TOKENS.IUpdateChannelRequestUseCase, { useClass: UpdateChannelRequestUseCase });
+    container.register(USECASE_TOKENS.IUpdateChannelUseCase, { useClass: UpdateChannelUseCase });
+}

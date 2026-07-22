@@ -1,17 +1,17 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { inject, injectable } from 'tsyringe';
 import type { IOtpRepository } from "../../../application/interfaces/repositories/otp.repository.interface";
 import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
-import { VerifyOtpRequestDto } from "../../dtos/auth/request/verify-otp.dto";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
+import { VerifyOtpRequestDto } from "../../dtos/auth/request/verify-otp.dto";
 
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
+import { IVerifyOtpUseCase } from "../../interfaces/use-cases/auth/verify-otp.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class VerifyOtpUseCase implements IBaseUseCase<VerifyOtpRequestDto, void> {
+export class VerifyOtpUseCase implements IVerifyOtpUseCase {
     constructor(
-        @inject(TOKENS.IOtpRepository) private _otpRepository: IOtpRepository,
-        @inject(TOKENS.IUserRepository) private _userRepository: IUserRepository
+        @inject(REPOSITORY_TOKENS.IOtpRepository) private _otpRepository: IOtpRepository,
+        @inject(REPOSITORY_TOKENS.IUserRepository) private _userRepository: IUserRepository
     ) { }
 
     async execute(payload: VerifyOtpRequestDto): Promise<void> {

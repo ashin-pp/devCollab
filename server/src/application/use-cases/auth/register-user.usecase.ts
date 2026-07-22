@@ -1,18 +1,19 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { inject, injectable } from 'tsyringe';
 import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
 import type { IHashService } from "../../../application/interfaces/services/hash.service.interface";
-import type { RegisterUserRequestDto } from "../../dtos/auth/request/register-user.dto";
-import type { UserResponseDto } from "../../dtos/auth/response/user.response.dto";
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
 import { User } from "../../../domain/entities/user.entity";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
+import type { RegisterUserRequestDto } from "../../dtos/auth/request/register-user.dto";
+import type { UserResponseDto } from "../../dtos/auth/response/user.response.dto";
+import { IRegisterUserUseCase } from "../../interfaces/use-cases/auth/register-user.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
+import { SERVICE_TOKENS } from "../../../infrastructure/di/service.tokens";
 
 @injectable()
-export class RegisterUserUseCase implements IBaseUseCase<RegisterUserRequestDto, UserResponseDto> {
+export class RegisterUserUseCase implements IRegisterUserUseCase {
     constructor(
-        @inject(TOKENS.IUserRepository) private _userRepository: IUserRepository,
-        @inject(TOKENS.IHashService) private _hashService: IHashService
+        @inject(REPOSITORY_TOKENS.IUserRepository) private _userRepository: IUserRepository,
+        @inject(SERVICE_TOKENS.IHashService) private _hashService: IHashService
     ) { }
 
     async execute(data: RegisterUserRequestDto): Promise<UserResponseDto> {

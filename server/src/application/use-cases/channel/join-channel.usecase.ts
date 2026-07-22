@@ -1,28 +1,27 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
-import type { IChannelRepository } from "../../../application/interfaces/repositories/channel.repository.interface";
+import { inject, injectable } from 'tsyringe';
 import type { IChannelMemberRepository } from "../../../application/interfaces/repositories/channel-member.repository.interface";
-import type { IWorkspaceRepository } from "../../../application/interfaces/repositories/workspace.repository.interface";
-import type { IWorkspaceMemberRepository } from "../../../application/interfaces/repositories/workspace-member.repository.interface";
+import type { IChannelRepository } from "../../../application/interfaces/repositories/channel.repository.interface";
 import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
+import type { IWorkspaceMemberRepository } from "../../../application/interfaces/repositories/workspace-member.repository.interface";
+import type { IWorkspaceRepository } from "../../../application/interfaces/repositories/workspace.repository.interface";
 import { ChannelMember } from "../../../domain/entities/channel-member.entity";
-import { AppError } from "../../../domain/errors/AppError";
+import { ChannelMemberRole, ChannelMemberStatus } from "../../../domain/enums/ChannelMemberStatus";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
-import { ChannelMemberStatus, ChannelMemberRole } from "../../../domain/enums/ChannelMemberStatus";
 import { MemberRole } from "../../../domain/enums/MemberRole";
-
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
+import { AppError } from "../../../domain/errors/AppError";
 import { JoinChannelRequestDto } from "../../dtos/channel/request/join-channel-request.dto";
+import { IJoinChannelUseCase } from "../../interfaces/use-cases/channel/join-channel.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class JoinChannelUseCase implements IBaseUseCase<JoinChannelRequestDto, { success: boolean; status: string; message: string; userName?: string }> {
+export class JoinChannelUseCase implements IJoinChannelUseCase {
     constructor(
-        @inject(TOKENS.IChannelRepository) private _channelRepository: IChannelRepository,
-        @inject(TOKENS.IChannelMemberRepository) private _channelMemberRepository: IChannelMemberRepository,
-        @inject(TOKENS.IWorkspaceRepository) private _workspaceRepository: IWorkspaceRepository,
-        @inject(TOKENS.IWorkspaceMemberRepository) private _workspaceMemberRepository: IWorkspaceMemberRepository,
-        @inject(TOKENS.IUserRepository) private _userRepository: IUserRepository
+        @inject(REPOSITORY_TOKENS.IChannelRepository) private _channelRepository: IChannelRepository,
+        @inject(REPOSITORY_TOKENS.IChannelMemberRepository) private _channelMemberRepository: IChannelMemberRepository,
+        @inject(REPOSITORY_TOKENS.IWorkspaceRepository) private _workspaceRepository: IWorkspaceRepository,
+        @inject(REPOSITORY_TOKENS.IWorkspaceMemberRepository) private _workspaceMemberRepository: IWorkspaceMemberRepository,
+        @inject(REPOSITORY_TOKENS.IUserRepository) private _userRepository: IUserRepository
     ) { }
 
     async execute(payload: JoinChannelRequestDto): Promise<{ success: boolean; status: string; message: string; userName?: string }> {

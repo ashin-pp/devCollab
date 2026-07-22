@@ -1,12 +1,14 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { inject, injectable } from 'tsyringe';
 import type { IAITaskRepository } from "../../../application/interfaces/repositories/ai-task.repository.interface";
 import { AITask } from "../../../domain/entities/ai-task.entity";
 import { AITaskStatus } from "../../../domain/enums/AITaskStatus";
+import { ICreateAITaskUseCase } from "../../interfaces/use-cases/ai/create-ai-task.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
+
 @injectable()
-export class CreateAITaskUseCase {
+export class CreateAITaskUseCase implements ICreateAITaskUseCase {
     constructor(
-        @inject(TOKENS.IAITaskRepository) private _aiTaskRepository: IAITaskRepository
+        @inject(REPOSITORY_TOKENS.IAITaskRepository) private _aiTaskRepository: IAITaskRepository
     ) {}
 
     async execute(data: { workspaceId: string; channelId: string; title: string; description: string; assignedTo: string; dueDate: string }): Promise<void> {

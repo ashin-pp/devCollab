@@ -1,16 +1,15 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
-import type { IMessageRepository } from "../../../application/interfaces/repositories/message.repository.interface";
+import { inject, injectable } from 'tsyringe';
 import type { IChannelMemberRepository } from "../../../application/interfaces/repositories/channel-member.repository.interface";
+import type { IMessageRepository } from "../../../application/interfaces/repositories/message.repository.interface";
 import { Message } from "../../../domain/entities/message.entity";
-
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
+import { IGetUnreadMessagesUseCase } from "../../interfaces/use-cases/channel/get-unread-messages.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class GetUnreadMessagesUseCase implements IBaseUseCase<{channelId: string, userId: string}, Message[]> {
+export class GetUnreadMessagesUseCase implements IGetUnreadMessagesUseCase {
     constructor(
-        @inject(TOKENS.IMessageRepository) private _messageRepository: IMessageRepository,
-        @inject(TOKENS.IChannelMemberRepository) private _channelMemberRepository: IChannelMemberRepository
+        @inject(REPOSITORY_TOKENS.IMessageRepository) private _messageRepository: IMessageRepository,
+        @inject(REPOSITORY_TOKENS.IChannelMemberRepository) private _channelMemberRepository: IChannelMemberRepository
     ) {}
 
     async execute(payload: {channelId: string, userId: string}): Promise<Message[]> {

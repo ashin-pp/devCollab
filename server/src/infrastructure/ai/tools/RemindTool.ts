@@ -3,13 +3,11 @@ import { z } from "zod";
 import { GoogleAuthService } from "../../services/google-auth.service";
 import { google } from "googleapis";
 import { logger } from "../../../infrastructure/di/container";
-import { GetUserByNameUseCase } from "../../../application/use-cases/user/get-user-by-name.usecase";
+import type { IGetUserByNameUseCase } from "../../../application/interfaces/use-cases/user/get-user-by-name.usecase.interface";
 
-export interface ICreateReminderDependency {
-    execute(data: { userId: string; workspaceId: string; channelId: string; content: string; remindAt: string; senderId?: string; }): Promise<void>;
-}
+import { ICreateAIReminderUseCase } from "../../../application/interfaces/use-cases/ai/create-ai-reminder.usecase.interface";
 
-export const createRemindTool = (createAIReminderUseCase: ICreateReminderDependency | null, getUserByNameUseCase?: GetUserByNameUseCase) => {
+export const createRemindTool = (createAIReminderUseCase: ICreateAIReminderUseCase | null, getUserByNameUseCase?: IGetUserByNameUseCase) => {
     return tool(
         async ({ content, remindAt, targetUsername }, config) => {
             if (createAIReminderUseCase) {

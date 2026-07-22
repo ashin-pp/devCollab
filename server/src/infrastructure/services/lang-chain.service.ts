@@ -1,5 +1,6 @@
+import type { ICreateAIReminderUseCase } from "../../application/interfaces/use-cases/ai/create-ai-reminder.usecase.interface";
+import { USECASE_TOKENS } from "../di/usecase.tokens";
 import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../di/tokens';
 import { IAIService } from "../../application/interfaces/services/ai.service.interface";
 import { ChatGroq } from "@langchain/groq";
 import { envConfig } from "../../config/envConfig";
@@ -10,33 +11,32 @@ import { createSupervisorNode } from "../ai/graph/SupervisorNode";
 import { createWorkerNode } from "../ai/graph/WorkerNode";
 import { NOTIFY_AGENT_PROMPT, SUMMARY_AGENT_PROMPT, REMIND_AGENT_PROMPT } from "../ai/constants/AgentPrompts";
 import { HumanMessage } from "@langchain/core/messages";
-
-import { CreateNotificationUseCase } from "../../application/use-cases/notification/create-notification.usecase";
-import { GetChannelMessagesUseCase } from "../../application/use-cases/channel/get-channel-messages.usecase";
 import { createNotifyTool } from "../ai/tools/NotifyTool";
 import { createSummaryTool } from "../ai/tools/SummaryTool";
-import { createRemindTool, ICreateReminderDependency } from "../ai/tools/RemindTool";
+import { createRemindTool } from "../ai/tools/RemindTool";
 import { createSendDMTool } from "../ai/tools/SendDMTool";
-import { SendDirectMessageUseCase } from "../../application/use-cases/dm/send-direct-message.usecase";
-import { StartConversationUseCase } from "../../application/use-cases/dm/start-conversation.usecase";
-import { GetUserByNameUseCase } from "../../application/use-cases/user/get-user-by-name.usecase";
-
 import type { IUserRepository } from "../../application/interfaces/repositories/user.repository.interface";
 import type { IChannelRepository } from "../../application/interfaces/repositories/channel.repository.interface";
+import type { ICreateNotificationUseCase } from "../../application/interfaces/use-cases/notification/create-notification.usecase.interface";
+import type { IGetChannelMessagesUseCase } from "../../application/interfaces/use-cases/channel/get-channel-messages.usecase.interface";
+import type { ISendDirectMessageUseCase } from "../../application/interfaces/use-cases/dm/send-direct-message.usecase.interface";
+import type { IStartConversationUseCase } from "../../application/interfaces/use-cases/dm/start-conversation.usecase.interface";
+import type { IGetUserByNameUseCase } from "../../application/interfaces/use-cases/user/get-user-by-name.usecase.interface";
+import { REPOSITORY_TOKENS } from "../di/repository.tokens";
 
 @injectable()
 export class LangChainService implements IAIService {
     private _graph: ReturnType<typeof this.buildGraph>;
 
     constructor(
-        @inject(CreateNotificationUseCase) private _createNotificationUseCase: CreateNotificationUseCase,
-        @inject(GetChannelMessagesUseCase) private _getChannelMessagesUseCase: GetChannelMessagesUseCase,
-        @inject(SendDirectMessageUseCase) private _sendDirectMessageUseCase: SendDirectMessageUseCase,
-        @inject(StartConversationUseCase) private _startConversationUseCase: StartConversationUseCase,
-        @inject(GetUserByNameUseCase) private _getUserByNameUseCase: GetUserByNameUseCase,
-        @inject(TOKENS.ICreateReminderDependency) private _createAIReminderUseCase: ICreateReminderDependency | null = null,
-        @inject(TOKENS.IUserRepository) private _userRepository?: IUserRepository,
-        @inject(TOKENS.IChannelRepository) private _channelRepository?: IChannelRepository
+        @inject(USECASE_TOKENS.ICreateNotificationUseCase) private _createNotificationUseCase: ICreateNotificationUseCase,
+        @inject(USECASE_TOKENS.IGetChannelMessagesUseCase) private _getChannelMessagesUseCase: IGetChannelMessagesUseCase,
+        @inject(USECASE_TOKENS.ISendDirectMessageUseCase) private _sendDirectMessageUseCase: ISendDirectMessageUseCase,
+        @inject(USECASE_TOKENS.IStartConversationUseCase) private _startConversationUseCase: IStartConversationUseCase,
+        @inject(USECASE_TOKENS.IGetUserByNameUseCase) private _getUserByNameUseCase: IGetUserByNameUseCase,
+        @inject(USECASE_TOKENS.ICreateAIReminderUseCase) private _createAIReminderUseCase: ICreateAIReminderUseCase | null = null,
+        @inject(REPOSITORY_TOKENS.IUserRepository) private _userRepository?: IUserRepository,
+        @inject(REPOSITORY_TOKENS.IChannelRepository) private _channelRepository?: IChannelRepository
     ) {
         this._graph = this.buildGraph();
     }

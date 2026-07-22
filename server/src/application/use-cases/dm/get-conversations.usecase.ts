@@ -1,19 +1,20 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { inject, injectable } from 'tsyringe';
 import type { IConversationRepository } from "../../../application/interfaces/repositories/conversation.repository.interface";
-import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
 import type { IDirectMessageRepository } from "../../../application/interfaces/repositories/direct-message.repository.interface";
-import { AppError } from "../../../domain/errors/AppError";
+import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
+import { AppError } from "../../../domain/errors/AppError";
 import { ConversationResponseDto } from "../../dtos/dm/response/conversation.response.dto";
+import { IGetConversationsUseCase } from "../../interfaces/use-cases/dm/get-conversations.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class GetConversationsUseCase {
+export class GetConversationsUseCase implements IGetConversationsUseCase {
     constructor(
-        @inject(TOKENS.IConversationRepository) private _conversationRepository: IConversationRepository,
-        @inject(TOKENS.IUserRepository) private _userRepository: IUserRepository,
-        @inject(TOKENS.IDirectMessageRepository) private _dmRepository: IDirectMessageRepository
+        @inject(REPOSITORY_TOKENS.IConversationRepository) private _conversationRepository: IConversationRepository,
+        @inject(REPOSITORY_TOKENS.IUserRepository) private _userRepository: IUserRepository,
+        @inject(REPOSITORY_TOKENS.IDirectMessageRepository) private _dmRepository: IDirectMessageRepository
     ) {}
 
     async execute(workspaceId: string, userId: string): Promise<ConversationResponseDto[]> {

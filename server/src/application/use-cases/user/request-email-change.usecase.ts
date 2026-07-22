@@ -1,23 +1,23 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
-import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
+import { inject, injectable } from 'tsyringe';
 import type { IOtpRepository } from "../../../application/interfaces/repositories/otp.repository.interface";
+import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
 import type { IEmailService } from "../../../application/interfaces/services/email.service.interface";
-import { AppError } from "../../../domain/errors/AppError";
-import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
-import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
-import { OtpVerification } from "../../../domain/entities/otp-verification.entity";
 import { AppConstants } from "../../../domain/constants";
-
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
+import { OtpVerification } from "../../../domain/entities/otp-verification.entity";
+import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
+import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
+import { AppError } from "../../../domain/errors/AppError";
 import { RequestEmailChangeDto } from "../../dtos/user/request/request-email-change.dto";
+import { IRequestEmailChangeUseCase } from "../../interfaces/use-cases/user/request-email-change.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
+import { SERVICE_TOKENS } from "../../../infrastructure/di/service.tokens";
 
 @injectable()
-export class RequestEmailChangeUseCase implements IBaseUseCase<RequestEmailChangeDto, void> {
+export class RequestEmailChangeUseCase implements IRequestEmailChangeUseCase {
     constructor(
-        @inject(TOKENS.IUserRepository) private _userRepository: IUserRepository,
-        @inject(TOKENS.IOtpRepository) private _otpRepository: IOtpRepository,
-        @inject(TOKENS.IEmailService) private _emailService: IEmailService
+        @inject(REPOSITORY_TOKENS.IUserRepository) private _userRepository: IUserRepository,
+        @inject(REPOSITORY_TOKENS.IOtpRepository) private _otpRepository: IOtpRepository,
+        @inject(SERVICE_TOKENS.IEmailService) private _emailService: IEmailService
     ) {}
 
     async execute(payload: RequestEmailChangeDto): Promise<void> {

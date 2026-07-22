@@ -1,17 +1,17 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { inject, injectable } from 'tsyringe';
 import type { IOtpRepository } from "../../../application/interfaces/repositories/otp.repository.interface";
 import type { IEmailService } from "../../../application/interfaces/services/email.service.interface";
-import { OtpVerification } from "../../../domain/entities/otp-verification.entity";
 import { AppConstants } from "../../../domain/constants";
-
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
+import { OtpVerification } from "../../../domain/entities/otp-verification.entity";
+import { ISendOtpUseCase } from "../../interfaces/use-cases/auth/send-otp.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
+import { SERVICE_TOKENS } from "../../../infrastructure/di/service.tokens";
 
 @injectable()
-export class SendOtpUseCase implements IBaseUseCase<{email: string}, void> {
+export class SendOtpUseCase implements ISendOtpUseCase {
     constructor(
-        @inject(TOKENS.IOtpRepository) private _otpRepository: IOtpRepository,
-        @inject(TOKENS.IEmailService) private _emailService: IEmailService
+        @inject(REPOSITORY_TOKENS.IOtpRepository) private _otpRepository: IOtpRepository,
+        @inject(SERVICE_TOKENS.IEmailService) private _emailService: IEmailService
     ) {}
 
     async execute(payload: {email: string}): Promise<void> {

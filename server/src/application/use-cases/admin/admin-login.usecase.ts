@@ -1,21 +1,21 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { inject, injectable } from 'tsyringe';
 import type { IAdminRepository } from "../../../application/interfaces/repositories/admin.repository.interface";
 import type { IHashService } from "../../../application/interfaces/services/hash.service.interface";
 import type { IJwtService } from "../../../application/interfaces/services/jwt.service.interface";
-import { LoginUserRequestDto } from "../../dtos/auth/request/login-user.dto";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
-import { Admin } from "../../../domain/entities/admin.entity";
+import { LoginUserRequestDto } from "../../dtos/auth/request/login-user.dto";
 
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
 import { AdminAuthResponseDto } from "../../dtos/admin/response/admin-auth.response.dto";
+import { IAdminLoginUseCase } from "../../interfaces/use-cases/admin/admin-login.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
+import { SERVICE_TOKENS } from "../../../infrastructure/di/service.tokens";
 
 @injectable()
-export class AdminLoginUseCase implements IBaseUseCase<LoginUserRequestDto, AdminAuthResponseDto> {
+export class AdminLoginUseCase implements IAdminLoginUseCase {
     constructor(
-        @inject(TOKENS.IAdminRepository) private _adminRepository: IAdminRepository,
-        @inject(TOKENS.IHashService) private _hashService: IHashService,
-        @inject(TOKENS.IJwtService) private _jwtService: IJwtService
+        @inject(REPOSITORY_TOKENS.IAdminRepository) private _adminRepository: IAdminRepository,
+        @inject(SERVICE_TOKENS.IHashService) private _hashService: IHashService,
+        @inject(SERVICE_TOKENS.IJwtService) private _jwtService: IJwtService
     ) { }
 
     async execute(data: LoginUserRequestDto): Promise<AdminAuthResponseDto> {

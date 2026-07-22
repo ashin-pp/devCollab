@@ -1,20 +1,18 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
-import type { IChannelRepository } from "../../../application/interfaces/repositories/channel.repository.interface";
+import { inject, injectable } from 'tsyringe';
 import type { IChannelMemberRepository } from "../../../application/interfaces/repositories/channel-member.repository.interface";
-import { Channel } from "../../../domain/entities/channel.entity";
+import type { IChannelRepository } from "../../../application/interfaces/repositories/channel.repository.interface";
 import { ChannelMember } from "../../../domain/entities/channel-member.entity";
-
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
-import { ChannelResponseDto } from "../../dtos/channel/response/channel.response.dto";
+import { Channel } from "../../../domain/entities/channel.entity";
 import { CreateChannelRequestDto } from "../../dtos/channel/request/create-channel-request.dto";
-
+import { ChannelResponseDto } from "../../dtos/channel/response/channel.response.dto";
+import { ICreateChannelUseCase } from "../../interfaces/use-cases/channel/create-channel.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class CreateChannelUseCase implements IBaseUseCase<CreateChannelRequestDto, ChannelResponseDto> {
+export class CreateChannelUseCase implements ICreateChannelUseCase {
     constructor(
-        @inject(TOKENS.IChannelRepository) private _channelRepository: IChannelRepository,
-        @inject(TOKENS.IChannelMemberRepository) private _channelMemberRepository: IChannelMemberRepository
+        @inject(REPOSITORY_TOKENS.IChannelRepository) private _channelRepository: IChannelRepository,
+        @inject(REPOSITORY_TOKENS.IChannelMemberRepository) private _channelMemberRepository: IChannelMemberRepository
     ) {}
 
     async execute(payload: CreateChannelRequestDto): Promise<ChannelResponseDto> {

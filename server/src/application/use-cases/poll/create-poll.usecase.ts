@@ -1,18 +1,20 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
-import type { IPollRepository } from "../../../application/interfaces/repositories/poll.repository.interface";
-import type { IWorkspaceMemberRepository } from "../../../application/interfaces/repositories/workspace-member.repository.interface";
+import { USECASE_TOKENS } from "../../../infrastructure/di/usecase.tokens";
+import mongoose from "mongoose";
+import { inject, injectable } from 'tsyringe';
 import type { IChannelMemberRepository } from "../../../application/interfaces/repositories/channel-member.repository.interface";
 import type { IChannelRepository } from "../../../application/interfaces/repositories/channel.repository.interface";
+import type { IPollRepository } from "../../../application/interfaces/repositories/poll.repository.interface";
+import type { IWorkspaceMemberRepository } from "../../../application/interfaces/repositories/workspace-member.repository.interface";
 import type { IWorkspaceRepository } from "../../../application/interfaces/repositories/workspace.repository.interface";
-import { CreateNotificationUseCase } from "../notification/create-notification.usecase";
 import { Poll } from "../../../domain/entities/poll.entity";
-import mongoose from "mongoose";
+import { ICreatePollUseCase } from "../../interfaces/use-cases/poll/create-poll.usecase.interface";
+import { CreateNotificationUseCase } from "../notification/create-notification.usecase";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class CreatePollUseCase {
+export class CreatePollUseCase implements ICreatePollUseCase {
     constructor(
-        @inject(TOKENS.IPollRepository) private readonly _pollRepository: IPollRepository,
+        @inject(REPOSITORY_TOKENS.IPollRepository) private readonly _pollRepository: IPollRepository,
         private readonly _workspaceMemberRepository?: IWorkspaceMemberRepository,
         private readonly _channelMemberRepository?: IChannelMemberRepository,
         @inject(CreateNotificationUseCase) private readonly _createNotificationUseCase?: CreateNotificationUseCase,

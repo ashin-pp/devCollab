@@ -1,27 +1,27 @@
-import { injectable, inject } from 'tsyringe';
 import { Response } from "express";
-import { StartConversationUseCase } from "../../application/use-cases/dm/start-conversation.usecase";
-import { GetConversationsUseCase } from "../../application/use-cases/dm/get-conversations.usecase";
-import { SendDirectMessageUseCase } from "../../application/use-cases/dm/send-direct-message.usecase";
-import { GetDirectMessagesUseCase } from "../../application/use-cases/dm/get-direct-messages.usecase";
-import { MarkMessageAsSeenUseCase } from "../../application/use-cases/dm/mark-message-as-seen.usecase";
-import { ApiResponse } from "../http/helpers/implementation/apiResponse";
-import { HttpStatusCode } from "../../domain/enums/HttpStatusCode";
-import { SuccessMessage } from "../../domain/enums/SuccessMessage";
+import { inject, injectable } from 'tsyringe';
+import type { IGetConversationsUseCase } from "../../application/interfaces/use-cases/dm/get-conversations.usecase.interface";
+import type { IGetDirectMessagesUseCase } from "../../application/interfaces/use-cases/dm/get-direct-messages.usecase.interface";
+import type { IMarkMessageAsSeenUseCase } from "../../application/interfaces/use-cases/dm/mark-message-as-seen.usecase.interface";
+import type { ISendDirectMessageUseCase } from "../../application/interfaces/use-cases/dm/send-direct-message.usecase.interface";
+import type { IStartConversationUseCase } from "../../application/interfaces/use-cases/dm/start-conversation.usecase.interface";
 import { ErrorMessage } from "../../domain/enums/ErrorMessage";
+import { HttpStatusCode } from "../../domain/enums/HttpStatusCode";
 import { MessageType } from "../../domain/enums/MessageType";
-import { AuthenticatedRequest } from "../middlewares/authMiddleware";
+import { SuccessMessage } from "../../domain/enums/SuccessMessage";
 import { AppError } from "../../domain/errors/AppError";
-import { catchAsync } from "../utils/catch-async";
+import { USECASE_TOKENS } from "../../infrastructure/di/usecase.tokens";
+import { ApiResponse } from "../http/helpers/implementation/apiResponse";
+import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 
 @injectable()
 export class DMController {
     constructor(
-        @inject(StartConversationUseCase) private readonly _startConversationUseCase: StartConversationUseCase,
-        @inject(GetConversationsUseCase) private readonly _getConversationsUseCase: GetConversationsUseCase,
-        @inject(SendDirectMessageUseCase) private readonly _sendDirectMessageUseCase: SendDirectMessageUseCase,
-        @inject(GetDirectMessagesUseCase) private readonly _getDirectMessagesUseCase: GetDirectMessagesUseCase,
-        @inject(MarkMessageAsSeenUseCase) private readonly _markMessageAsSeenUseCase: MarkMessageAsSeenUseCase
+        @inject(USECASE_TOKENS.IStartConversationUseCase) private readonly _startConversationUseCase: IStartConversationUseCase,
+        @inject(USECASE_TOKENS.IGetConversationsUseCase) private readonly _getConversationsUseCase: IGetConversationsUseCase,
+        @inject(USECASE_TOKENS.ISendDirectMessageUseCase) private readonly _sendDirectMessageUseCase: ISendDirectMessageUseCase,
+        @inject(USECASE_TOKENS.IGetDirectMessagesUseCase) private readonly _getDirectMessagesUseCase: IGetDirectMessagesUseCase,
+        @inject(USECASE_TOKENS.IMarkMessageAsSeenUseCase) private readonly _markMessageAsSeenUseCase: IMarkMessageAsSeenUseCase
     ) {}
 
     startConversation = async (req: AuthenticatedRequest, res: Response): Promise<void> => {

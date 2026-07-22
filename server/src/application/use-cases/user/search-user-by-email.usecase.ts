@@ -1,16 +1,16 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { inject, injectable } from 'tsyringe';
 import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
-import { AppError } from "../../../domain/errors/AppError";
-import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
+import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
+import { AppError } from "../../../domain/errors/AppError";
 import { UserProfileResponseDto } from "../../dtos/user/response/user-profile.response.dto";
+import { ISearchUserByEmailUseCase } from "../../interfaces/use-cases/user/search-user-by-email.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class SearchUserByEmailUseCase implements IBaseUseCase<{email: string}, Partial<UserProfileResponseDto>> {
+export class SearchUserByEmailUseCase implements ISearchUserByEmailUseCase {
     constructor(
-        @inject(TOKENS.IUserRepository) private _userRepository: IUserRepository
+        @inject(REPOSITORY_TOKENS.IUserRepository) private _userRepository: IUserRepository
     ) { }
 
     async execute(payload: {email: string}): Promise<Partial<UserProfileResponseDto>> {

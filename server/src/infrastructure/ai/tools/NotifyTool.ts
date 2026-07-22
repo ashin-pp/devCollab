@@ -1,13 +1,13 @@
 import { tool } from "@langchain/core/tools";
 import { z } from "zod";
-import { CreateNotificationUseCase } from "../../../application/use-cases/notification/create-notification.usecase";
-import { GetUserByNameUseCase } from "../../../application/use-cases/user/get-user-by-name.usecase";
+import type { ICreateNotificationUseCase } from "../../../application/interfaces/use-cases/notification/create-notification.usecase.interface";
+import type { IGetUserByNameUseCase } from "../../../application/interfaces/use-cases/user/get-user-by-name.usecase.interface";
 import { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
 import { IChannelRepository } from "../../../application/interfaces/repositories/channel.repository.interface";
 
 export const createNotifyTool = (
-    createNotificationUseCase: CreateNotificationUseCase, 
-    getUserByNameUseCase?: GetUserByNameUseCase,
+    createNotificationUseCase: ICreateNotificationUseCase, 
+    getUserByNameUseCase?: IGetUserByNameUseCase,
     userRepository?: IUserRepository,
     channelRepository?: IChannelRepository
 ) => {

@@ -1,7 +1,16 @@
 import 'reflect-metadata';
 import { container } from 'tsyringe';
-import { registerDependencies } from './dependency-registration';
 
+// 1. Register all dependencies
+import { registerRepositories } from './repositories.dependency';
+import { registerServices } from './services.dependency';
+import { registerAllUseCases } from './usecases';
+
+registerRepositories();
+registerServices();
+registerAllUseCases();
+
+// 2. Resolve controllers
 import { AuthController } from '../../presentation/controllers/auth.controller';
 import { AdminController } from '../../presentation/controllers/admin.controller';
 import { UserController } from '../../presentation/controllers/user.controller';
@@ -13,9 +22,6 @@ import { PollController } from '../../presentation/controllers/poll.controller';
 import { UploadController } from '../../presentation/controllers/upload.controller';
 import { NotificationController } from '../../presentation/controllers/notification.controller';
 import { AIController } from '../../presentation/controllers/ai.controller';
-
-// Initialize container
-registerDependencies();
 
 export const authController = container.resolve(AuthController);
 export const adminController = container.resolve(AdminController);
@@ -29,9 +35,12 @@ export const uploadController = container.resolve(UploadController);
 export const notificationController = container.resolve(NotificationController);
 export const aiController = container.resolve(AIController);
 
-import { TOKENS } from './tokens';
+// 3. Resolve base services
 import { WinstonLogger } from '../services/winston-logger.service';
 import { JwtService } from '../services/jwt.service';
+import { SERVICE_TOKENS } from "./service.tokens";
 
-export const logger = container.resolve<WinstonLogger>(TOKENS.ILogger);
-export const jwtService = container.resolve<JwtService>(TOKENS.IJwtService);
+export const logger = container.resolve<WinstonLogger>(SERVICE_TOKENS.ILogger);
+export const jwtService = container.resolve<JwtService>(SERVICE_TOKENS.IJwtService);
+
+export { container };

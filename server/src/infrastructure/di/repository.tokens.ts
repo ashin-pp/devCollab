@@ -1,0 +1,17 @@
+export const REPOSITORY_TOKENS = {
+    IUserRepository: 'IUserRepository',
+    IAdminRepository: 'IAdminRepository',
+    IOtpRepository: 'IOtpRepository',
+    IWorkspaceRepository: 'IWorkspaceRepository',
+    IWorkspaceMemberRepository: 'IWorkspaceMemberRepository',
+    IChannelRepository: 'IChannelRepository',
+    IChannelMemberRepository: 'IChannelMemberRepository',
+    IMessageRepository: 'IMessageRepository',
+    IConversationRepository: 'IConversationRepository',
+    IDirectMessageRepository: 'IDirectMessageRepository',
+    IAITaskRepository: 'IAITaskRepository',
+    IAIReminderRepository: 'IAIReminderRepository',
+    IAIChatRepository: 'IAIChatRepository',
+    INotificationRepository: 'INotificationRepository',
+    IPollRepository: 'IPollRepository'
+} as const;

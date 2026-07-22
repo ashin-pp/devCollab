@@ -1,13 +1,14 @@
-import { injectable, inject } from 'tsyringe';
-import { Request, Response, NextFunction } from "express";
+import { NextFunction, Request, Response } from "express";
+import { inject, injectable } from 'tsyringe';
+import type { IHandleAiCommandUseCase } from "../../application/interfaces/use-cases/ai/handle-ai-command.usecase.interface";
+import { USECASE_TOKENS } from "../../infrastructure/di/usecase.tokens";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
-import { HandleAiCommandUseCase } from "../../application/use-cases/ai/handle-ai-command.usecase";
 import { catchAsync } from "../utils/catch-async";
 
 @injectable()
 export class AIController {
     constructor(
-        @inject(HandleAiCommandUseCase) private _handleAiCommandUseCase: HandleAiCommandUseCase
+        @inject(USECASE_TOKENS.IHandleAiCommandUseCase) private _handleAiCommandUseCase: IHandleAiCommandUseCase
     ) {}
 
     processMessage = catchAsync(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {

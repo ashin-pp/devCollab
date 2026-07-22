@@ -1,18 +1,17 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { inject, injectable } from 'tsyringe';
 import type { IChannelMemberRepository } from "../../../application/interfaces/repositories/channel-member.repository.interface";
 import type { IChannelRepository } from "../../../application/interfaces/repositories/channel.repository.interface";
-import { AppError } from "../../../domain/errors/AppError";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
-
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
+import { AppError } from "../../../domain/errors/AppError";
+import { ILeaveChannelUseCase } from "../../interfaces/use-cases/channel/leave-channel.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class LeaveChannelUseCase implements IBaseUseCase<{workspaceId: string, channelId: string, requestUserId: string}, boolean> {
+export class LeaveChannelUseCase implements ILeaveChannelUseCase {
     constructor(
-        @inject(TOKENS.IChannelRepository) private _channelRepository: IChannelRepository,
-        @inject(TOKENS.IChannelMemberRepository) private _channelMemberRepository: IChannelMemberRepository
+        @inject(REPOSITORY_TOKENS.IChannelRepository) private _channelRepository: IChannelRepository,
+        @inject(REPOSITORY_TOKENS.IChannelMemberRepository) private _channelMemberRepository: IChannelMemberRepository
     ) {}
 
     async execute(payload: {workspaceId: string, channelId: string, requestUserId: string}): Promise<boolean> {

@@ -1,18 +1,19 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { inject, injectable } from 'tsyringe';
 import type { IConversationRepository } from "../../../application/interfaces/repositories/conversation.repository.interface";
 import type { IWorkspaceMemberRepository } from "../../../application/interfaces/repositories/workspace-member.repository.interface";
 import { Conversation } from "../../../domain/entities/conversation.entity";
-import { AppError } from "../../../domain/errors/AppError";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { MemberStatus } from "../../../domain/enums/MemberStatus";
+import { AppError } from "../../../domain/errors/AppError";
+import { IStartConversationUseCase } from "../../interfaces/use-cases/dm/start-conversation.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class StartConversationUseCase {
+export class StartConversationUseCase implements IStartConversationUseCase {
     constructor(
-        @inject(TOKENS.IConversationRepository) private _conversationRepository: IConversationRepository,
-        @inject(TOKENS.IWorkspaceMemberRepository) private _workspaceMemberRepository: IWorkspaceMemberRepository
+        @inject(REPOSITORY_TOKENS.IConversationRepository) private _conversationRepository: IConversationRepository,
+        @inject(REPOSITORY_TOKENS.IWorkspaceMemberRepository) private _workspaceMemberRepository: IWorkspaceMemberRepository
     ) {}
 
     async execute(workspaceId: string, initiatorId: string, receiverId: string): Promise<Conversation> {

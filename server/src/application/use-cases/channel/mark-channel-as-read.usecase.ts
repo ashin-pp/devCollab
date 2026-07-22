@@ -1,13 +1,13 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { inject, injectable } from 'tsyringe';
 import type { IChannelMemberRepository } from "../../../application/interfaces/repositories/channel-member.repository.interface";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
+import { IMarkChannelAsReadUseCase } from "../../interfaces/use-cases/channel/mark-channel-as-read.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class MarkChannelAsReadUseCase implements IBaseUseCase<{channelId: string, userId: string}, {success: boolean, message: string, statusCode: number}> {
+export class MarkChannelAsReadUseCase implements IMarkChannelAsReadUseCase {
     constructor(
-        @inject(TOKENS.IChannelMemberRepository) private _channelMemberRepository: IChannelMemberRepository
+        @inject(REPOSITORY_TOKENS.IChannelMemberRepository) private _channelMemberRepository: IChannelMemberRepository
     ) {}
 
     async execute(payload: {channelId: string, userId: string}): Promise<{success: boolean, message: string, statusCode: number}> {

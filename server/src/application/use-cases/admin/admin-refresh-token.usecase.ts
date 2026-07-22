@@ -1,19 +1,19 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
-import type { IJwtService } from "../../../application/interfaces/services/jwt.service.interface";
+import { inject, injectable } from 'tsyringe';
 import type { IAdminRepository } from "../../../application/interfaces/repositories/admin.repository.interface";
+import type { IJwtService } from "../../../application/interfaces/services/jwt.service.interface";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
-import { AppError } from "../../../domain/errors/AppError";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
-
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
+import { AppError } from "../../../domain/errors/AppError";
 import { AdminAuthResponseDto } from "../../dtos/admin/response/admin-auth.response.dto";
+import { IAdminRefreshTokenUseCase } from "../../interfaces/use-cases/admin/admin-refresh-token.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
+import { SERVICE_TOKENS } from "../../../infrastructure/di/service.tokens";
 
 @injectable()
-export class AdminRefreshTokenUseCase implements IBaseUseCase<{refreshToken: string}, AdminAuthResponseDto> {
+export class AdminRefreshTokenUseCase implements IAdminRefreshTokenUseCase {
     constructor(
-        @inject(TOKENS.IJwtService) private _jwtService: IJwtService,
-        @inject(TOKENS.IAdminRepository) private _adminRepository: IAdminRepository
+        @inject(SERVICE_TOKENS.IJwtService) private _jwtService: IJwtService,
+        @inject(REPOSITORY_TOKENS.IAdminRepository) private _adminRepository: IAdminRepository
     ) {}
 
     async execute(payload: {refreshToken: string}): Promise<AdminAuthResponseDto> {

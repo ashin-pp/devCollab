@@ -1,23 +1,22 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
-import type { IWorkspaceRepository } from "../../../application/interfaces/repositories/workspace.repository.interface";
-import type { IWorkspaceMemberRepository } from "../../../application/interfaces/repositories/workspace-member.repository.interface";
-import type { IChannelRepository } from "../../../application/interfaces/repositories/channel.repository.interface";
+import { inject, injectable } from 'tsyringe';
 import type { IChannelMemberRepository } from "../../../application/interfaces/repositories/channel-member.repository.interface";
-import { AppError } from "../../../domain/errors/AppError";
+import type { IChannelRepository } from "../../../application/interfaces/repositories/channel.repository.interface";
+import type { IWorkspaceMemberRepository } from "../../../application/interfaces/repositories/workspace-member.repository.interface";
+import type { IWorkspaceRepository } from "../../../application/interfaces/repositories/workspace.repository.interface";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { MemberRole } from "../../../domain/enums/MemberRole";
-
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
+import { AppError } from "../../../domain/errors/AppError";
+import { IRemoveWorkspaceMemberUseCase } from "../../interfaces/use-cases/workspace/remove-workspace-member.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class RemoveWorkspaceMemberUseCase implements IBaseUseCase<{workspaceId: string, requesterId: string, targetUserId: string}, void> {
+export class RemoveWorkspaceMemberUseCase implements IRemoveWorkspaceMemberUseCase {
     constructor(
-        @inject(TOKENS.IWorkspaceRepository) private _workspaceRepository: IWorkspaceRepository,
-        @inject(TOKENS.IWorkspaceMemberRepository) private _workspaceMemberRepository: IWorkspaceMemberRepository,
-        @inject(TOKENS.IChannelRepository) private _channelRepository: IChannelRepository,
-        @inject(TOKENS.IChannelMemberRepository) private _channelMemberRepository: IChannelMemberRepository
+        @inject(REPOSITORY_TOKENS.IWorkspaceRepository) private _workspaceRepository: IWorkspaceRepository,
+        @inject(REPOSITORY_TOKENS.IWorkspaceMemberRepository) private _workspaceMemberRepository: IWorkspaceMemberRepository,
+        @inject(REPOSITORY_TOKENS.IChannelRepository) private _channelRepository: IChannelRepository,
+        @inject(REPOSITORY_TOKENS.IChannelMemberRepository) private _channelMemberRepository: IChannelMemberRepository
     ) {}
 
     async execute(payload: {workspaceId: string, requesterId: string, targetUserId: string}): Promise<void> {

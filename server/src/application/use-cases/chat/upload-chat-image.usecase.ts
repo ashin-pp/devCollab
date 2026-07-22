@@ -1,13 +1,14 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { inject, injectable } from 'tsyringe';
 import type { IStorageService } from "../../../application/interfaces/services/storage.service.interface";
-import { AppError } from "../../../domain/errors/AppError";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
+import { AppError } from "../../../domain/errors/AppError";
+import { IUploadChatImageUseCase } from "../../interfaces/use-cases/chat/upload-chat-image.usecase.interface";
+import { SERVICE_TOKENS } from "../../../infrastructure/di/service.tokens";
 
 @injectable()
-export class UploadChatImageUseCase {
+export class UploadChatImageUseCase implements IUploadChatImageUseCase {
     constructor(
-        @inject(TOKENS.IStorageService) private _storageService: IStorageService
+        @inject(SERVICE_TOKENS.IStorageService) private _storageService: IStorageService
     ) {}
 
     async execute(userId: string, fileBuffer: Buffer, fileName: string, contentType: string): Promise<string> {

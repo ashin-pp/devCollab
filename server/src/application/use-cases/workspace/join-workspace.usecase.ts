@@ -1,23 +1,23 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
-import type { IWorkspaceRepository } from "../../../application/interfaces/repositories/workspace.repository.interface";
+import { inject, injectable } from 'tsyringe';
 import type { IWorkspaceMemberRepository } from "../../../application/interfaces/repositories/workspace-member.repository.interface";
+import type { IWorkspaceRepository } from "../../../application/interfaces/repositories/workspace.repository.interface";
 import { WorkspaceMember } from "../../../domain/entities/workspace-member.entity";
-import { JoinWorkspaceRequestDto } from "../../dtos/workspace/request/join-workspace.dto";
-import { WorkspaceMemberResponseDto } from "../../dtos/workspace/response/workspace-member.response.dto";
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
-import { AppError } from "../../../domain/errors/AppError";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { MemberRole } from "../../../domain/enums/MemberRole";
 import { MemberStatus } from "../../../domain/enums/MemberStatus";
 import { WorkspacePrivacy } from "../../../domain/enums/WorkspacePrivacy";
+import { AppError } from "../../../domain/errors/AppError";
+import { JoinWorkspaceRequestDto } from "../../dtos/workspace/request/join-workspace.dto";
+import { WorkspaceMemberResponseDto } from "../../dtos/workspace/response/workspace-member.response.dto";
+import { IJoinWorkspaceUseCase } from "../../interfaces/use-cases/workspace/join-workspace.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class JoinWorkspaceUseCase implements IBaseUseCase<JoinWorkspaceRequestDto, WorkspaceMemberResponseDto> {
+export class JoinWorkspaceUseCase implements IJoinWorkspaceUseCase {
     constructor(
-        @inject(TOKENS.IWorkspaceRepository) private _workspaceRepository: IWorkspaceRepository,
-        @inject(TOKENS.IWorkspaceMemberRepository) private _workspaceMemberRepository: IWorkspaceMemberRepository
+        @inject(REPOSITORY_TOKENS.IWorkspaceRepository) private _workspaceRepository: IWorkspaceRepository,
+        @inject(REPOSITORY_TOKENS.IWorkspaceMemberRepository) private _workspaceMemberRepository: IWorkspaceMemberRepository
     ) { }
 
     async execute(payload: JoinWorkspaceRequestDto): Promise<WorkspaceMemberResponseDto> {

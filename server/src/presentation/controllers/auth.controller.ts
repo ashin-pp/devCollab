@@ -1,32 +1,33 @@
-import { injectable, inject } from 'tsyringe';
-import { Request, Response, NextFunction } from "express";
+import { NextFunction, Request, Response } from "express";
+import { inject, injectable } from 'tsyringe';
+import type { IForgotPasswordUseCase } from "../../application/interfaces/use-cases/auth/forgot-password.usecase.interface";
+import type { IGoogleAuthUseCase } from "../../application/interfaces/use-cases/auth/google-auth.usecase.interface";
+import type { ILoginUserUseCase } from "../../application/interfaces/use-cases/auth/login-user.usecase.interface";
+import type { IRefreshTokenUseCase } from "../../application/interfaces/use-cases/auth/refresh-token.usecase.interface";
+import type { IRegisterUserUseCase } from "../../application/interfaces/use-cases/auth/register-user.usecase.interface";
+import type { IResetPasswordUseCase } from "../../application/interfaces/use-cases/auth/reset-password.usecase.interface";
+import type { ISendOtpUseCase } from "../../application/interfaces/use-cases/auth/send-otp.usecase.interface";
+import type { IVerifyOtpUseCase } from "../../application/interfaces/use-cases/auth/verify-otp.usecase.interface";
+import type { IVerifyResetOtpUseCase } from "../../application/interfaces/use-cases/auth/verify-reset-otp.usecase.interface";
 import { envConfig } from "../../config/envConfig";
-import { RegisterUserUseCase } from "../../application/use-cases/auth/register-user.usecase";
-import { SendOtpUseCase } from "../../application/use-cases/auth/send-otp.usecase";
-import { ApiResponse } from "../http/helpers/implementation/apiResponse";
-import { VerifyOtpUseCase } from "../../application/use-cases/auth/verify-otp.usecase";
 import { HttpStatusCode } from "../../domain/enums/HttpStatusCode";
 import { SuccessMessage } from "../../domain/enums/SuccessMessage";
-import { LoginUserUseCase } from "../../application/use-cases/auth/login-user.usecase";
-import { GoogleAuthUseCase } from "../../application/use-cases/auth/google-auth.usecase";
-import { ForgotPasswordUseCase } from "../../application/use-cases/auth/forgot-password.usecase";
-import { ResetPasswordUseCase } from "../../application/use-cases/auth/reset-password.usecase";
-import { RefreshTokenUseCase } from "../../application/use-cases/auth/refresh-token.usecase";
-import { VerifyResetOtpUseCase } from "../../application/use-cases/auth/verify-reset-otp.usecase";
+import { USECASE_TOKENS } from "../../infrastructure/di/usecase.tokens";
+import { ApiResponse } from "../http/helpers/implementation/apiResponse";
 import { catchAsync } from "../utils/catch-async";
 
 @injectable()
 export class AuthController {
     constructor(
-        @inject(RegisterUserUseCase) private readonly _registerUserUseCase: RegisterUserUseCase,
-        @inject(SendOtpUseCase) private readonly _sendOtpUseCase: SendOtpUseCase,
-        @inject(VerifyOtpUseCase) private readonly _verifyOtpUseCase: VerifyOtpUseCase,
-        @inject(LoginUserUseCase) private readonly _loginUserUseCase: LoginUserUseCase,
-        @inject(GoogleAuthUseCase) private readonly _googleAuthUseCase: GoogleAuthUseCase,
-        @inject(ForgotPasswordUseCase) private readonly _forgotPasswordUseCase: ForgotPasswordUseCase,
-        @inject(ResetPasswordUseCase) private readonly _resetPasswordUseCase: ResetPasswordUseCase,
-        @inject(RefreshTokenUseCase) private readonly _refreshTokenUseCase: RefreshTokenUseCase,
-        @inject(VerifyResetOtpUseCase) private readonly _verifyResetOtpUseCase: VerifyResetOtpUseCase
+        @inject(USECASE_TOKENS.IRegisterUserUseCase) private readonly _registerUserUseCase: IRegisterUserUseCase,
+        @inject(USECASE_TOKENS.ISendOtpUseCase) private readonly _sendOtpUseCase: ISendOtpUseCase,
+        @inject(USECASE_TOKENS.IVerifyOtpUseCase) private readonly _verifyOtpUseCase: IVerifyOtpUseCase,
+        @inject(USECASE_TOKENS.ILoginUserUseCase) private readonly _loginUserUseCase: ILoginUserUseCase,
+        @inject(USECASE_TOKENS.IGoogleAuthUseCase) private readonly _googleAuthUseCase: IGoogleAuthUseCase,
+        @inject(USECASE_TOKENS.IForgotPasswordUseCase) private readonly _forgotPasswordUseCase: IForgotPasswordUseCase,
+        @inject(USECASE_TOKENS.IResetPasswordUseCase) private readonly _resetPasswordUseCase: IResetPasswordUseCase,
+        @inject(USECASE_TOKENS.IRefreshTokenUseCase) private readonly _refreshTokenUseCase: IRefreshTokenUseCase,
+        @inject(USECASE_TOKENS.IVerifyResetOtpUseCase) private readonly _verifyResetOtpUseCase: IVerifyResetOtpUseCase
     ) { }
 
   public register = catchAsync(async (req: Request, res: Response, next: NextFunction) => {

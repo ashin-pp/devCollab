@@ -1,17 +1,16 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { inject, injectable } from 'tsyringe';
 import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
-import { AppError } from "../../../domain/errors/AppError";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { UserStatus } from "../../../domain/enums/UserStatus";
-
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
+import { AppError } from "../../../domain/errors/AppError";
+import { IToggleUserStatusUseCase } from "../../interfaces/use-cases/admin/toggle-user-status.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class ToggleUserStatusUseCase implements IBaseUseCase<{userId: string}, UserStatus> {
+export class ToggleUserStatusUseCase implements IToggleUserStatusUseCase {
     constructor(
-        @inject(TOKENS.IUserRepository) private _userRepository: IUserRepository
+        @inject(REPOSITORY_TOKENS.IUserRepository) private _userRepository: IUserRepository
     ) {}
 
     async execute(payload: {userId: string}): Promise<UserStatus> {

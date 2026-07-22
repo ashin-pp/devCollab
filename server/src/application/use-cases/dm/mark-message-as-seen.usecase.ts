@@ -1,16 +1,17 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
-import type { IDirectMessageRepository } from "../../../application/interfaces/repositories/direct-message.repository.interface";
+import { inject, injectable } from 'tsyringe';
 import type { IConversationRepository } from "../../../application/interfaces/repositories/conversation.repository.interface";
-import { AppError } from "../../../domain/errors/AppError";
+import type { IDirectMessageRepository } from "../../../application/interfaces/repositories/direct-message.repository.interface";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
+import { AppError } from "../../../domain/errors/AppError";
+import { IMarkMessageAsSeenUseCase } from "../../interfaces/use-cases/dm/mark-message-as-seen.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class MarkMessageAsSeenUseCase {
+export class MarkMessageAsSeenUseCase implements IMarkMessageAsSeenUseCase {
     constructor(
-        @inject(TOKENS.IDirectMessageRepository) private _dmRepository: IDirectMessageRepository,
-        @inject(TOKENS.IConversationRepository) private _conversationRepository: IConversationRepository
+        @inject(REPOSITORY_TOKENS.IDirectMessageRepository) private _dmRepository: IDirectMessageRepository,
+        @inject(REPOSITORY_TOKENS.IConversationRepository) private _conversationRepository: IConversationRepository
     ) { }
 
     async execute(conversationId: string, receiverId: string): Promise<void> {

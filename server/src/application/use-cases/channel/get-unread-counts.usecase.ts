@@ -1,18 +1,18 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
-import type { IChannelRepository } from "../../../application/interfaces/repositories/channel.repository.interface";
+import { inject, injectable } from 'tsyringe';
 import type { IChannelMemberRepository } from "../../../application/interfaces/repositories/channel-member.repository.interface";
+import type { IChannelRepository } from "../../../application/interfaces/repositories/channel.repository.interface";
 import type { IMessageRepository } from "../../../application/interfaces/repositories/message.repository.interface";
-import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { ChannelMemberStatus } from "../../../domain/enums/ChannelMemberStatus";
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
+import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
+import { IGetUnreadCountsUseCase } from "../../interfaces/use-cases/channel/get-unread-counts.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class GetUnreadCountsUseCase implements IBaseUseCase<{workspaceId: string, userId: string}, { success: boolean; data: Record<string, number>; statusCode: number }> {
+export class GetUnreadCountsUseCase implements IGetUnreadCountsUseCase {
     constructor(
-        @inject(TOKENS.IChannelRepository) private _channelRepository: IChannelRepository,
-        @inject(TOKENS.IChannelMemberRepository) private _channelMemberRepository: IChannelMemberRepository,
-        @inject(TOKENS.IMessageRepository) private _messageRepository: IMessageRepository
+        @inject(REPOSITORY_TOKENS.IChannelRepository) private _channelRepository: IChannelRepository,
+        @inject(REPOSITORY_TOKENS.IChannelMemberRepository) private _channelMemberRepository: IChannelMemberRepository,
+        @inject(REPOSITORY_TOKENS.IMessageRepository) private _messageRepository: IMessageRepository
     ) {}
 
     async execute(payload: {workspaceId: string, userId: string}): Promise<{ success: boolean; data: Record<string, number>; statusCode: number }> {

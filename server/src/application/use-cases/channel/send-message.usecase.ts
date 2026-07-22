@@ -1,26 +1,25 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
-import type { IMessageRepository } from "../../../application/interfaces/repositories/message.repository.interface";
+import { USECASE_TOKENS } from "../../../infrastructure/di/usecase.tokens";
+import { inject, injectable } from 'tsyringe';
 import type { IChannelMemberRepository } from "../../../application/interfaces/repositories/channel-member.repository.interface";
 import type { IChannelRepository } from "../../../application/interfaces/repositories/channel.repository.interface";
+import type { IMessageRepository } from "../../../application/interfaces/repositories/message.repository.interface";
 import type { IWorkspaceRepository } from "../../../application/interfaces/repositories/workspace.repository.interface";
 import { Message } from "../../../domain/entities/message.entity";
-import { AppError } from "../../../domain/errors/AppError";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
-import { CreateNotificationUseCase } from "../notification/create-notification.usecase";
-
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
+import { AppError } from "../../../domain/errors/AppError";
 import { SendMessageRequestDto } from "../../dtos/channel/request/send-message-request.dto";
-
+import { ISendMessageUseCase } from "../../interfaces/use-cases/channel/send-message.usecase.interface";
+import type { ICreateNotificationUseCase } from "../../interfaces/use-cases/notification/create-notification.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class SendMessageUseCase implements IBaseUseCase<SendMessageRequestDto, Message> {
+export class SendMessageUseCase implements ISendMessageUseCase {
     constructor(
-        @inject(TOKENS.IMessageRepository) private _messageRepository: IMessageRepository,
-        @inject(TOKENS.IChannelMemberRepository) private _channelMemberRepository: IChannelMemberRepository,
-        @inject(CreateNotificationUseCase) private _createNotificationUseCase: CreateNotificationUseCase,
-        @inject(TOKENS.IChannelRepository) private _channelRepository: IChannelRepository,
-        @inject(TOKENS.IWorkspaceRepository) private _workspaceRepository: IWorkspaceRepository
+        @inject(REPOSITORY_TOKENS.IMessageRepository) private _messageRepository: IMessageRepository,
+        @inject(REPOSITORY_TOKENS.IChannelMemberRepository) private _channelMemberRepository: IChannelMemberRepository,
+        @inject(USECASE_TOKENS.ICreateNotificationUseCase) private _createNotificationUseCase: ICreateNotificationUseCase,
+        @inject(REPOSITORY_TOKENS.IChannelRepository) private _channelRepository: IChannelRepository,
+        @inject(REPOSITORY_TOKENS.IWorkspaceRepository) private _workspaceRepository: IWorkspaceRepository
     ) {}
     async execute(payload: SendMessageRequestDto): Promise<Message> {
         const { workspaceId, channelId, senderId, content, messageType = 'text', imageUrl, mentionedUserIds } = payload;

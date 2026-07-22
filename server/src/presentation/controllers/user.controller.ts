@@ -1,36 +1,37 @@
-import { injectable, inject } from 'tsyringe';
-import { Response, NextFunction } from "express";
-import { GetUserProfileUseCase } from "../../application/use-cases/user/get-user-profile.usecase";
-import { UpdateUserProfileUseCase } from "../../application/use-cases/user/update-user-profile.usecase";
-import { ChangePasswordUseCase } from "../../application/use-cases/user/change-password.usecase";
-import { UploadProfileImageUseCase } from "../../application/use-cases/user/upload-profile-image.usecase";
-import { DeleteProfileImageUseCase } from "../../application/use-cases/user/delete-profile-image.usecase";
-import { ApiResponse } from "../http/helpers/implementation/apiResponse";
+import { NextFunction, Response } from "express";
+import { inject, injectable } from 'tsyringe';
+import { ChangePasswordRequestDto } from "../../application/dtos/user/request/change-password.dto";
+import { UpdateUserProfileRequestDto } from "../../application/dtos/user/request/update-user-profile.dto";
+import { ErrorMessage } from "../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../domain/enums/HttpStatusCode";
 import { SuccessMessage } from "../../domain/enums/SuccessMessage";
-import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 import { AppError } from "../../domain/errors/AppError";
-import { ErrorMessage } from "../../domain/enums/ErrorMessage";
-import { UpdateUserProfileRequestDto } from "../../application/dtos/user/request/update-user-profile.dto";
-import { ChangePasswordRequestDto } from "../../application/dtos/user/request/change-password.dto";
+import { ApiResponse } from "../http/helpers/implementation/apiResponse";
+import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 
-import { RequestEmailChangeUseCase } from "../../application/use-cases/user/request-email-change.usecase";
-import { VerifyEmailChangeUseCase } from "../../application/use-cases/user/verify-email-change.usecase";
 
-import { SearchUserByEmailUseCase } from "../../application/use-cases/user/search-user-by-email.usecase";
+import type { IChangePasswordUseCase } from "../../application/interfaces/use-cases/user/change-password.usecase.interface";
+import type { IDeleteProfileImageUseCase } from "../../application/interfaces/use-cases/user/delete-profile-image.usecase.interface";
+import type { IGetUserProfileUseCase } from "../../application/interfaces/use-cases/user/get-user-profile.usecase.interface";
+import type { IRequestEmailChangeUseCase } from "../../application/interfaces/use-cases/user/request-email-change.usecase.interface";
+import type { ISearchUserByEmailUseCase } from "../../application/interfaces/use-cases/user/search-user-by-email.usecase.interface";
+import type { IUpdateUserProfileUseCase } from "../../application/interfaces/use-cases/user/update-user-profile.usecase.interface";
+import type { IUploadProfileImageUseCase } from "../../application/interfaces/use-cases/user/upload-profile-image.usecase.interface";
+import type { IVerifyEmailChangeUseCase } from "../../application/interfaces/use-cases/user/verify-email-change.usecase.interface";
+import { USECASE_TOKENS } from "../../infrastructure/di/usecase.tokens";
 import { catchAsync } from "../utils/catch-async";
 
 @injectable()
 export class UserController {
     constructor(
-        @inject(GetUserProfileUseCase) private readonly _getUserProfileUseCase: GetUserProfileUseCase,
-        @inject(UpdateUserProfileUseCase) private readonly _updateUserProfileUseCase: UpdateUserProfileUseCase,
-        @inject(ChangePasswordUseCase) private readonly _changePasswordUseCase: ChangePasswordUseCase,
-        @inject(RequestEmailChangeUseCase) private readonly _requestEmailChangeUseCase: RequestEmailChangeUseCase,
-        @inject(VerifyEmailChangeUseCase) private readonly _verifyEmailChangeUseCase: VerifyEmailChangeUseCase,
-        @inject(UploadProfileImageUseCase) private readonly _uploadProfileImageUseCase: UploadProfileImageUseCase,
-        @inject(DeleteProfileImageUseCase) private readonly _deleteProfileImageUseCase: DeleteProfileImageUseCase,
-        @inject(SearchUserByEmailUseCase) private readonly _searchUserByEmailUseCase: SearchUserByEmailUseCase
+        @inject(USECASE_TOKENS.IGetUserProfileUseCase) private readonly _getUserProfileUseCase: IGetUserProfileUseCase,
+        @inject(USECASE_TOKENS.IUpdateUserProfileUseCase) private readonly _updateUserProfileUseCase: IUpdateUserProfileUseCase,
+        @inject(USECASE_TOKENS.IChangePasswordUseCase) private readonly _changePasswordUseCase: IChangePasswordUseCase,
+        @inject(USECASE_TOKENS.IRequestEmailChangeUseCase) private readonly _requestEmailChangeUseCase: IRequestEmailChangeUseCase,
+        @inject(USECASE_TOKENS.IVerifyEmailChangeUseCase) private readonly _verifyEmailChangeUseCase: IVerifyEmailChangeUseCase,
+        @inject(USECASE_TOKENS.IUploadProfileImageUseCase) private readonly _uploadProfileImageUseCase: IUploadProfileImageUseCase,
+        @inject(USECASE_TOKENS.IDeleteProfileImageUseCase) private readonly _deleteProfileImageUseCase: IDeleteProfileImageUseCase,
+        @inject(USECASE_TOKENS.ISearchUserByEmailUseCase) private readonly _searchUserByEmailUseCase: ISearchUserByEmailUseCase
     ) {}
 
     public getProfile = catchAsync(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {

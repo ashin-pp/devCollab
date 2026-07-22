@@ -1,51 +1,52 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../infrastructure/di/tokens';
-import { Response, NextFunction } from "express";
-import { AuthenticatedRequest } from "../middlewares/authMiddleware";
-import { SocketService } from "../../infrastructure/socket/socket.service";
-import { CreateChannelUseCase } from "../../application/use-cases/channel/create-channel.usecase";
-import { GetWorkspaceChannelsUseCase } from "../../application/use-cases/channel/get-workspace-channels.usecase";
-import { GetChannelMembersUseCase } from "../../application/use-cases/channel/get-channel-members.usecase";
-import { AddChannelMemberUseCase } from "../../application/use-cases/channel/add-channel-member.usecase";
-import { RemoveChannelMemberUseCase } from "../../application/use-cases/channel/remove-channel-member.usecase";
-import { BlockChannelMemberUseCase } from "../../application/use-cases/channel/block-channel-member.usecase";
-import { GetBlockedChannelMembersUseCase } from "../../application/use-cases/channel/get-blocked-channel-members.usecase";
-import { UnblockChannelMemberUseCase } from "../../application/use-cases/channel/unblock-channel-member.usecase";
-import { UpdateChannelUseCase } from "../../application/use-cases/channel/update-channel.usecase";
-import { LeaveChannelUseCase } from "../../application/use-cases/channel/leave-channel.usecase";
-import { DeleteChannelUseCase } from "../../application/use-cases/channel/delete-channel.usecase";
-import { JoinChannelUseCase } from "../../application/use-cases/channel/join-channel.usecase";
-import { GetChannelRequestsUseCase } from "../../application/use-cases/channel/get-channel-requests.usecase";
-import { UpdateChannelRequestUseCase } from "../../application/use-cases/channel/update-channel-request.usecase";
-import { MarkChannelAsReadUseCase } from "../../application/use-cases/channel/mark-channel-as-read.usecase";
-import { GetUnreadCountsUseCase } from "../../application/use-cases/channel/get-unread-counts.usecase";
+import { NextFunction, Response } from "express";
+import { inject, injectable } from 'tsyringe';
 import type { IMessageRepository } from "../../application/interfaces/repositories/message.repository.interface";
+import type { IAddChannelMemberUseCase } from "../../application/interfaces/use-cases/channel/add-channel-member.usecase.interface";
+import type { IBlockChannelMemberUseCase } from "../../application/interfaces/use-cases/channel/block-channel-member.usecase.interface";
+import type { ICreateChannelUseCase } from "../../application/interfaces/use-cases/channel/create-channel.usecase.interface";
+import type { IDeleteChannelUseCase } from "../../application/interfaces/use-cases/channel/delete-channel.usecase.interface";
+import type { IGetBlockedChannelMembersUseCase } from "../../application/interfaces/use-cases/channel/get-blocked-channel-members.usecase.interface";
+import type { IGetChannelMembersUseCase } from "../../application/interfaces/use-cases/channel/get-channel-members.usecase.interface";
+import type { IGetChannelRequestsUseCase } from "../../application/interfaces/use-cases/channel/get-channel-requests.usecase.interface";
+import type { IGetUnreadCountsUseCase } from "../../application/interfaces/use-cases/channel/get-unread-counts.usecase.interface";
+import type { IGetWorkspaceChannelsUseCase } from "../../application/interfaces/use-cases/channel/get-workspace-channels.usecase.interface";
+import type { IJoinChannelUseCase } from "../../application/interfaces/use-cases/channel/join-channel.usecase.interface";
+import type { ILeaveChannelUseCase } from "../../application/interfaces/use-cases/channel/leave-channel.usecase.interface";
+import type { IMarkChannelAsReadUseCase } from "../../application/interfaces/use-cases/channel/mark-channel-as-read.usecase.interface";
+import type { IRemoveChannelMemberUseCase } from "../../application/interfaces/use-cases/channel/remove-channel-member.usecase.interface";
+import type { IUnblockChannelMemberUseCase } from "../../application/interfaces/use-cases/channel/unblock-channel-member.usecase.interface";
+import type { IUpdateChannelRequestUseCase } from "../../application/interfaces/use-cases/channel/update-channel-request.usecase.interface";
+import type { IUpdateChannelUseCase } from "../../application/interfaces/use-cases/channel/update-channel.usecase.interface";
 import { Message } from "../../domain/entities/message.entity";
+import { ErrorMessage } from "../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../domain/enums/HttpStatusCode";
 import { AppError } from "../../domain/errors/AppError";
-import { ErrorMessage } from "../../domain/enums/ErrorMessage";
+import { USECASE_TOKENS } from "../../infrastructure/di/usecase.tokens";
+import { SocketService } from "../../infrastructure/socket/socket.service";
+import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 import { catchAsync } from "../utils/catch-async";
+import { REPOSITORY_TOKENS } from "../../infrastructure/di/repository.tokens";
 
 @injectable()
 export class ChannelController {
     constructor(
-        @inject(CreateChannelUseCase) private readonly _createChannelUseCase: CreateChannelUseCase,
-        @inject(GetWorkspaceChannelsUseCase) private readonly _getWorkspaceChannelsUseCase: GetWorkspaceChannelsUseCase,
-        @inject(GetChannelMembersUseCase) private _getChannelMembersUseCase: GetChannelMembersUseCase,
-        @inject(AddChannelMemberUseCase) private _addChannelMemberUseCase: AddChannelMemberUseCase,
-        @inject(RemoveChannelMemberUseCase) private _removeChannelMemberUseCase: RemoveChannelMemberUseCase,
-        @inject(BlockChannelMemberUseCase) private _blockChannelMemberUseCase: BlockChannelMemberUseCase,
-        @inject(GetBlockedChannelMembersUseCase) private _getBlockedChannelMembersUseCase: GetBlockedChannelMembersUseCase,
-        @inject(UnblockChannelMemberUseCase) private _unblockChannelMemberUseCase: UnblockChannelMemberUseCase,
-        @inject(UpdateChannelUseCase) private _updateChannelUseCase: UpdateChannelUseCase,
-        @inject(LeaveChannelUseCase) private readonly _leaveChannelUseCase: LeaveChannelUseCase,
-        @inject(DeleteChannelUseCase) private readonly _deleteChannelUseCase: DeleteChannelUseCase,
-        @inject(JoinChannelUseCase) private readonly _joinChannelUseCase: JoinChannelUseCase,
-        @inject(GetChannelRequestsUseCase) private readonly _getChannelRequestsUseCase: GetChannelRequestsUseCase,
-        @inject(UpdateChannelRequestUseCase) private readonly _updateChannelRequestUseCase: UpdateChannelRequestUseCase,
-        @inject(MarkChannelAsReadUseCase) private readonly _markChannelAsReadUseCase: MarkChannelAsReadUseCase,
-        @inject(GetUnreadCountsUseCase) private readonly _getUnreadCountsUseCase: GetUnreadCountsUseCase,
-        @inject(TOKENS.IMessageRepository) private readonly _messageRepository: IMessageRepository
+        @inject(USECASE_TOKENS.ICreateChannelUseCase) private readonly _createChannelUseCase: ICreateChannelUseCase,
+        @inject(USECASE_TOKENS.IGetWorkspaceChannelsUseCase) private readonly _getWorkspaceChannelsUseCase: IGetWorkspaceChannelsUseCase,
+        @inject(USECASE_TOKENS.IGetChannelMembersUseCase) private _getChannelMembersUseCase: IGetChannelMembersUseCase,
+        @inject(USECASE_TOKENS.IAddChannelMemberUseCase) private _addChannelMemberUseCase: IAddChannelMemberUseCase,
+        @inject(USECASE_TOKENS.IRemoveChannelMemberUseCase) private _removeChannelMemberUseCase: IRemoveChannelMemberUseCase,
+        @inject(USECASE_TOKENS.IBlockChannelMemberUseCase) private _blockChannelMemberUseCase: IBlockChannelMemberUseCase,
+        @inject(USECASE_TOKENS.IGetBlockedChannelMembersUseCase) private _getBlockedChannelMembersUseCase: IGetBlockedChannelMembersUseCase,
+        @inject(USECASE_TOKENS.IUnblockChannelMemberUseCase) private _unblockChannelMemberUseCase: IUnblockChannelMemberUseCase,
+        @inject(USECASE_TOKENS.IUpdateChannelUseCase) private _updateChannelUseCase: IUpdateChannelUseCase,
+        @inject(USECASE_TOKENS.ILeaveChannelUseCase) private readonly _leaveChannelUseCase: ILeaveChannelUseCase,
+        @inject(USECASE_TOKENS.IDeleteChannelUseCase) private readonly _deleteChannelUseCase: IDeleteChannelUseCase,
+        @inject(USECASE_TOKENS.IJoinChannelUseCase) private readonly _joinChannelUseCase: IJoinChannelUseCase,
+        @inject(USECASE_TOKENS.IGetChannelRequestsUseCase) private readonly _getChannelRequestsUseCase: IGetChannelRequestsUseCase,
+        @inject(USECASE_TOKENS.IUpdateChannelRequestUseCase) private readonly _updateChannelRequestUseCase: IUpdateChannelRequestUseCase,
+        @inject(USECASE_TOKENS.IMarkChannelAsReadUseCase) private readonly _markChannelAsReadUseCase: IMarkChannelAsReadUseCase,
+        @inject(USECASE_TOKENS.IGetUnreadCountsUseCase) private readonly _getUnreadCountsUseCase: IGetUnreadCountsUseCase,
+        @inject(REPOSITORY_TOKENS.IMessageRepository) private readonly _messageRepository: IMessageRepository
     ) {}
 
     createChannel = catchAsync(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {

@@ -1,21 +1,22 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { inject, injectable } from 'tsyringe';
 import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
 import type { IJwtService } from "../../../application/interfaces/services/jwt.service.interface";
 import { User } from "../../../domain/entities/user.entity";
-import { GoogleAuthRequestDto } from "../../dtos/auth/request/google-auth.dto";
-import { AuthResponseDto } from "../../dtos/auth/response/auth.response.dto";
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
-import { AppError } from "../../../domain/errors/AppError";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { UserStatus } from "../../../domain/enums/UserStatus";
+import { AppError } from "../../../domain/errors/AppError";
+import { GoogleAuthRequestDto } from "../../dtos/auth/request/google-auth.dto";
+import { AuthResponseDto } from "../../dtos/auth/response/auth.response.dto";
+import { IGoogleAuthUseCase } from "../../interfaces/use-cases/auth/google-auth.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
+import { SERVICE_TOKENS } from "../../../infrastructure/di/service.tokens";
 
 @injectable()
-export class GoogleAuthUseCase implements IBaseUseCase<GoogleAuthRequestDto, AuthResponseDto> {
+export class GoogleAuthUseCase implements IGoogleAuthUseCase {
     constructor(
-        @inject(TOKENS.IUserRepository) private _userRepository: IUserRepository,
-        @inject(TOKENS.IJwtService) private _jwtService: IJwtService
+        @inject(REPOSITORY_TOKENS.IUserRepository) private _userRepository: IUserRepository,
+        @inject(SERVICE_TOKENS.IJwtService) private _jwtService: IJwtService
     ) {}
 
     async execute(payload: GoogleAuthRequestDto): Promise<AuthResponseDto> {

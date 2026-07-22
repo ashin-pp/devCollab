@@ -1,27 +1,29 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
-import type { IWorkspaceRepository } from "../../../application/interfaces/repositories/workspace.repository.interface";
-import type { IWorkspaceMemberRepository } from "../../../application/interfaces/repositories/workspace-member.repository.interface";
+import { USECASE_TOKENS } from "../../../infrastructure/di/usecase.tokens";
+import { inject, injectable } from 'tsyringe';
 import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
+import type { IWorkspaceMemberRepository } from "../../../application/interfaces/repositories/workspace-member.repository.interface";
+import type { IWorkspaceRepository } from "../../../application/interfaces/repositories/workspace.repository.interface";
 import type { IEmailService } from "../../../application/interfaces/services/email.service.interface";
-import { AppError } from "../../../domain/errors/AppError";
+import { WorkspaceMember } from "../../../domain/entities/workspace-member.entity";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
-import { WorkspaceMember } from "../../../domain/entities/workspace-member.entity";
 import { MemberRole } from "../../../domain/enums/MemberRole";
 import { MemberStatus } from "../../../domain/enums/MemberStatus";
 import { WorkspacePrivacy } from "../../../domain/enums/WorkspacePrivacy";
+import { AppError } from "../../../domain/errors/AppError";
 import { CreateNotificationUseCase } from "../notification/create-notification.usecase";
 
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
+import { ISendWorkspaceInviteUseCase } from "../../interfaces/use-cases/workspace/send-workspace-invite.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
+import { SERVICE_TOKENS } from "../../../infrastructure/di/service.tokens";
 
 @injectable()
-export class SendWorkspaceInviteUseCase implements IBaseUseCase<{workspaceId: string, requesterId: string, targetEmail: string}, { success: boolean; message: string }> {
+export class SendWorkspaceInviteUseCase implements ISendWorkspaceInviteUseCase {
     constructor(
-        @inject(TOKENS.IWorkspaceRepository) private _workspaceRepository: IWorkspaceRepository,
-        @inject(TOKENS.IWorkspaceMemberRepository) private _workspaceMemberRepository: IWorkspaceMemberRepository,
-        @inject(TOKENS.IUserRepository) private _userRepository: IUserRepository,
-        @inject(TOKENS.IEmailService) private _emailService: IEmailService,
+        @inject(REPOSITORY_TOKENS.IWorkspaceRepository) private _workspaceRepository: IWorkspaceRepository,
+        @inject(REPOSITORY_TOKENS.IWorkspaceMemberRepository) private _workspaceMemberRepository: IWorkspaceMemberRepository,
+        @inject(REPOSITORY_TOKENS.IUserRepository) private _userRepository: IUserRepository,
+        @inject(SERVICE_TOKENS.IEmailService) private _emailService: IEmailService,
         @inject(CreateNotificationUseCase) private _createNotificationUseCase?: CreateNotificationUseCase
     ) {}
 

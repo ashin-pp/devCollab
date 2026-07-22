@@ -1,18 +1,19 @@
-import { injectable, inject } from 'tsyringe';
-import { Response, NextFunction } from "express";
-import { AuthenticatedRequest } from "../middlewares/authMiddleware";
-import { SendMessageUseCase } from "../../application/use-cases/channel/send-message.usecase";
-import { GetChannelMessagesUseCase } from "../../application/use-cases/channel/get-channel-messages.usecase";
+import { NextFunction, Response } from "express";
+import { inject, injectable } from 'tsyringe';
+import type { IGetChannelMessagesUseCase } from "../../application/interfaces/use-cases/channel/get-channel-messages.usecase.interface";
+import type { ISendMessageUseCase } from "../../application/interfaces/use-cases/channel/send-message.usecase.interface";
+import { ErrorMessage } from "../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../domain/enums/HttpStatusCode";
 import { AppError } from "../../domain/errors/AppError";
-import { ErrorMessage } from "../../domain/enums/ErrorMessage";
+import { USECASE_TOKENS } from "../../infrastructure/di/usecase.tokens";
+import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 import { catchAsync } from "../utils/catch-async";
 
 @injectable()
 export class MessageController {
     constructor(
-        @inject(SendMessageUseCase) private readonly _sendMessageUseCase: SendMessageUseCase,
-        @inject(GetChannelMessagesUseCase) private readonly _getChannelMessagesUseCase: GetChannelMessagesUseCase
+        @inject(USECASE_TOKENS.ISendMessageUseCase) private readonly _sendMessageUseCase: ISendMessageUseCase,
+        @inject(USECASE_TOKENS.IGetChannelMessagesUseCase) private readonly _getChannelMessagesUseCase: IGetChannelMessagesUseCase
     ) {}
 
     sendMessage = catchAsync(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {

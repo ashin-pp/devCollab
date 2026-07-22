@@ -1,16 +1,15 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { inject, injectable } from 'tsyringe';
 import type { IChannelRepository } from "../../../application/interfaces/repositories/channel.repository.interface";
-import { AppError } from "../../../domain/errors/AppError";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
-
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
+import { AppError } from "../../../domain/errors/AppError";
+import { IDeleteChannelUseCase } from "../../interfaces/use-cases/channel/delete-channel.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class DeleteChannelUseCase implements IBaseUseCase<{workspaceId: string, channelId: string, requestUserId: string}, boolean> {
+export class DeleteChannelUseCase implements IDeleteChannelUseCase {
     constructor(
-        @inject(TOKENS.IChannelRepository) private _channelRepository: IChannelRepository
+        @inject(REPOSITORY_TOKENS.IChannelRepository) private _channelRepository: IChannelRepository
     ) { }
 
     async execute(payload: {workspaceId: string, channelId: string, requestUserId: string}): Promise<boolean> {

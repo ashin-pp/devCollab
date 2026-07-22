@@ -1,19 +1,20 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
-import type { IJwtService } from "../../../application/interfaces/services/jwt.service.interface";
+import { inject, injectable } from 'tsyringe';
 import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
-import { AuthResponseDto } from "../../dtos/auth/response/auth.response.dto";
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
+import type { IJwtService } from "../../../application/interfaces/services/jwt.service.interface";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
-import { AppError } from "../../../domain/errors/AppError";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { UserStatus } from "../../../domain/enums/UserStatus";
+import { AppError } from "../../../domain/errors/AppError";
+import { AuthResponseDto } from "../../dtos/auth/response/auth.response.dto";
+import { IRefreshTokenUseCase } from "../../interfaces/use-cases/auth/refresh-token.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
+import { SERVICE_TOKENS } from "../../../infrastructure/di/service.tokens";
 
 @injectable()
-export class RefreshTokenUseCase implements IBaseUseCase<{refreshToken: string}, AuthResponseDto> {
+export class RefreshTokenUseCase implements IRefreshTokenUseCase {
     constructor(
-        @inject(TOKENS.IJwtService) private _jwtService: IJwtService,
-        @inject(TOKENS.IUserRepository) private _userRepository: IUserRepository
+        @inject(SERVICE_TOKENS.IJwtService) private _jwtService: IJwtService,
+        @inject(REPOSITORY_TOKENS.IUserRepository) private _userRepository: IUserRepository
     ) {}
 
     async execute(payload: {refreshToken: string}): Promise<AuthResponseDto> {

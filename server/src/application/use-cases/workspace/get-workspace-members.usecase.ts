@@ -1,24 +1,24 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
-import type { IWorkspaceMemberRepository } from "../../../application/interfaces/repositories/workspace-member.repository.interface";
+import { inject, injectable } from 'tsyringe';
 import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
+import type { IWorkspaceMemberRepository } from "../../../application/interfaces/repositories/workspace-member.repository.interface";
 import type { IWorkspaceRepository } from "../../../application/interfaces/repositories/workspace.repository.interface";
-import { AppError } from "../../../domain/errors/AppError";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { MemberStatus } from "../../../domain/enums/MemberStatus";
-import { WorkspaceMemberResponseDto, MemberUserResponseDto, MemberUserFullProfileResponseDto } from "../../dtos/workspace/response/workspace-member-details.dto";
+import { AppError } from "../../../domain/errors/AppError";
 import { PaginationQueryParamsRequestDto } from "../../dtos/common/request/pagination-query-params.dto";
 import { PaginatedResponseDto } from "../../dtos/common/response/paginated-response.dto";
+import { MemberUserFullProfileResponseDto, MemberUserResponseDto, WorkspaceMemberResponseDto } from "../../dtos/workspace/response/workspace-member-details.dto";
 
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
+import { IGetWorkspaceMembersUseCase } from "../../interfaces/use-cases/workspace/get-workspace-members.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class GetWorkspaceMembersUseCase implements IBaseUseCase<{workspaceId: string, requestUserId: string, includeProfile?: boolean, params: PaginationQueryParamsRequestDto}, PaginatedResponseDto<WorkspaceMemberResponseDto>> {
+export class GetWorkspaceMembersUseCase implements IGetWorkspaceMembersUseCase {
     constructor(
-        @inject(TOKENS.IWorkspaceRepository) private _workspaceRepository: IWorkspaceRepository,
-        @inject(TOKENS.IWorkspaceMemberRepository) private _workspaceMemberRepository: IWorkspaceMemberRepository,
-        @inject(TOKENS.IUserRepository) private _userRepository: IUserRepository
+        @inject(REPOSITORY_TOKENS.IWorkspaceRepository) private _workspaceRepository: IWorkspaceRepository,
+        @inject(REPOSITORY_TOKENS.IWorkspaceMemberRepository) private _workspaceMemberRepository: IWorkspaceMemberRepository,
+        @inject(REPOSITORY_TOKENS.IUserRepository) private _userRepository: IUserRepository
     ) {}
 
     async execute(payload: {workspaceId: string, requestUserId: string, includeProfile?: boolean, params: PaginationQueryParamsRequestDto}): Promise<PaginatedResponseDto<WorkspaceMemberResponseDto>> {

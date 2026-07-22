@@ -1,17 +1,19 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { USECASE_TOKENS } from "../../../infrastructure/di/usecase.tokens";
+import { inject, injectable } from 'tsyringe';
 import type { IAdminRepository } from "../../../application/interfaces/repositories/admin.repository.interface";
 import type { IOtpRepository } from "../../../application/interfaces/repositories/otp.repository.interface";
-import { SendOtpUseCase } from "../auth/send-otp.usecase";
-import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { AppConstants } from "../../../domain/constants";
+import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
+import { IAdminForgotPasswordUseCase } from "../../interfaces/use-cases/admin/admin-forgot-password.usecase.interface";
+import type { ISendOtpUseCase } from "../../interfaces/use-cases/auth/send-otp.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class AdminForgotPasswordUseCase {
+export class AdminForgotPasswordUseCase implements IAdminForgotPasswordUseCase {
     constructor(
-        @inject(TOKENS.IAdminRepository) private _adminRepository: IAdminRepository,
-        @inject(SendOtpUseCase) private _sendOtpUseCase: SendOtpUseCase,
-        @inject(TOKENS.IOtpRepository) private _otpRepository: IOtpRepository
+        @inject(REPOSITORY_TOKENS.IAdminRepository) private _adminRepository: IAdminRepository,
+        @inject(USECASE_TOKENS.ISendOtpUseCase) private _sendOtpUseCase: ISendOtpUseCase,
+        @inject(REPOSITORY_TOKENS.IOtpRepository) private _otpRepository: IOtpRepository
     ) { }
 
     async execute(email: string): Promise<void> {

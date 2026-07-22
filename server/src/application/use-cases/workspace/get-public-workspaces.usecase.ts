@@ -1,16 +1,16 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { inject, injectable } from 'tsyringe';
 import type { IWorkspaceRepository } from "../../../application/interfaces/repositories/workspace.repository.interface";
 import { WorkspaceResponseDto } from "../../dtos/workspace/response/workspace.response.dto";
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
+import { IGetPublicWorkspacesUseCase } from "../../interfaces/use-cases/workspace/get-public-workspaces.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class GetPublicWorkspacesUseCase implements IBaseUseCase<{}, WorkspaceResponseDto[]> {
+export class GetPublicWorkspacesUseCase implements IGetPublicWorkspacesUseCase {
     constructor(
-        @inject(TOKENS.IWorkspaceRepository) private _workspaceRepository: IWorkspaceRepository
+        @inject(REPOSITORY_TOKENS.IWorkspaceRepository) private _workspaceRepository: IWorkspaceRepository
     ) {}
 
-    async execute(payload: {}): Promise<WorkspaceResponseDto[]> {
+    async execute(): Promise<WorkspaceResponseDto[]> {
         const workspaces = await this._workspaceRepository.findPublicWorkspaces();
         return workspaces.map(ws => ({
             id: ws.id as string,

@@ -1,27 +1,26 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { inject, injectable } from 'tsyringe';
 import type { IChannelMemberRepository } from "../../../application/interfaces/repositories/channel-member.repository.interface";
-import type { IWorkspaceMemberRepository } from "../../../application/interfaces/repositories/workspace-member.repository.interface";
-import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
 import type { IChannelRepository } from "../../../application/interfaces/repositories/channel.repository.interface";
+import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
+import type { IWorkspaceMemberRepository } from "../../../application/interfaces/repositories/workspace-member.repository.interface";
 import { ChannelMember } from "../../../domain/entities/channel-member.entity";
-import { AppError } from "../../../domain/errors/AppError";
+import { ChannelMemberRole, ChannelMemberStatus } from "../../../domain/enums/ChannelMemberStatus";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
-import { ChannelMemberResponseDto } from "../../dtos/channel/response/channel-member.response.dto";
-import { AddChannelMemberRequestDto } from "../../dtos/channel/request/add-channel-member-request.dto";
 import { MemberStatus } from "../../../domain/enums/MemberStatus";
-import { ChannelMemberRole, ChannelMemberStatus } from "../../../domain/enums/ChannelMemberStatus";
-
+import { AppError } from "../../../domain/errors/AppError";
+import { AddChannelMemberRequestDto } from "../../dtos/channel/request/add-channel-member-request.dto";
+import { ChannelMemberResponseDto } from "../../dtos/channel/response/channel-member.response.dto";
+import { IAddChannelMemberUseCase } from "../../interfaces/use-cases/channel/add-channel-member.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class AddChannelMemberUseCase implements IBaseUseCase<AddChannelMemberRequestDto, ChannelMemberResponseDto[]> {
+export class AddChannelMemberUseCase implements IAddChannelMemberUseCase {
     constructor(
-        @inject(TOKENS.IChannelRepository) private _channelRepository: IChannelRepository,
-        @inject(TOKENS.IChannelMemberRepository) private _channelMemberRepository: IChannelMemberRepository,
-        @inject(TOKENS.IWorkspaceMemberRepository) private _workspaceMemberRepository: IWorkspaceMemberRepository,
-        @inject(TOKENS.IUserRepository) private _userRepository: IUserRepository
+        @inject(REPOSITORY_TOKENS.IChannelRepository) private _channelRepository: IChannelRepository,
+        @inject(REPOSITORY_TOKENS.IChannelMemberRepository) private _channelMemberRepository: IChannelMemberRepository,
+        @inject(REPOSITORY_TOKENS.IWorkspaceMemberRepository) private _workspaceMemberRepository: IWorkspaceMemberRepository,
+        @inject(REPOSITORY_TOKENS.IUserRepository) private _userRepository: IUserRepository
     ) { }
 
     async execute(payload: AddChannelMemberRequestDto): Promise<ChannelMemberResponseDto[]> {

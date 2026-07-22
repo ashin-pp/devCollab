@@ -1,8 +1,8 @@
 import { tool } from "@langchain/core/tools";
 import { z } from "zod";
-import { GetChannelMessagesUseCase } from "../../../application/use-cases/channel/get-channel-messages.usecase";
+import type { IGetChannelMessagesUseCase } from "../../../application/interfaces/use-cases/channel/get-channel-messages.usecase.interface";
 
-export const createSummaryTool = (getChannelMessagesUseCase: GetChannelMessagesUseCase) => {
+export const createSummaryTool = (getChannelMessagesUseCase: IGetChannelMessagesUseCase) => {
     return tool(
         async (_args, config) => {
             const context = config?.configurable?.context;

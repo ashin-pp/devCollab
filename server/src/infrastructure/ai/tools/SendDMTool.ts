@@ -1,11 +1,12 @@
 import { tool } from "@langchain/core/tools";
 import { z } from "zod";
-import { SendDirectMessageUseCase } from "../../../application/use-cases/dm/send-direct-message.usecase";
-import { StartConversationUseCase } from "../../../application/use-cases/dm/start-conversation.usecase";
+import type { ISendDirectMessageUseCase } from "../../../application/interfaces/use-cases/dm/send-direct-message.usecase.interface";
+import type { IStartConversationUseCase } from "../../../application/interfaces/use-cases/dm/start-conversation.usecase.interface";
+import { MessageType } from "../../../domain/enums/MessageType";
 
 export const createSendDMTool = (
-    sendDirectMessageUseCase: SendDirectMessageUseCase,
-    startConversationUseCase: StartConversationUseCase
+    sendDirectMessageUseCase: ISendDirectMessageUseCase,
+    startConversationUseCase: IStartConversationUseCase
 ) => {
     return tool(
         async ({ content }, config) => {
@@ -22,7 +23,7 @@ export const createSendDMTool = (
                 const conversation = await startConversationUseCase.execute(workspaceId, userId, userId);
                 
                 // Send DM
-                await sendDirectMessageUseCase.execute(conversation.id as string, userId, content);
+                await sendDirectMessageUseCase.execute(conversation.id as string, userId, content, MessageType.TEXT);
                 
                 return "Successfully sent the summary to the user's DM.";
             } catch (error) {

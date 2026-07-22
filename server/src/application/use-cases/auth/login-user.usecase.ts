@@ -1,20 +1,21 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { inject, injectable } from 'tsyringe';
 import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
 import type { IHashService } from "../../../application/interfaces/services/hash.service.interface";
 import type { IJwtService } from "../../../application/interfaces/services/jwt.service.interface";
-import { LoginUserRequestDto } from "../../dtos/auth/request/login-user.dto";
-import { AuthResponseDto } from "../../dtos/auth/response/auth.response.dto";
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { UserStatus } from "../../../domain/enums/UserStatus";
+import { LoginUserRequestDto } from "../../dtos/auth/request/login-user.dto";
+import { AuthResponseDto } from "../../dtos/auth/response/auth.response.dto";
+import { ILoginUserUseCase } from "../../interfaces/use-cases/auth/login-user.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
+import { SERVICE_TOKENS } from "../../../infrastructure/di/service.tokens";
 
 @injectable()
-export class LoginUserUseCase implements IBaseUseCase<LoginUserRequestDto, AuthResponseDto> {
+export class LoginUserUseCase implements ILoginUserUseCase {
     constructor(
-        @inject(TOKENS.IUserRepository) private _userRepository: IUserRepository,
-        @inject(TOKENS.IHashService) private _hashService: IHashService,
-        @inject(TOKENS.IJwtService) private _jwtService: IJwtService
+        @inject(REPOSITORY_TOKENS.IUserRepository) private _userRepository: IUserRepository,
+        @inject(SERVICE_TOKENS.IHashService) private _hashService: IHashService,
+        @inject(SERVICE_TOKENS.IJwtService) private _jwtService: IJwtService
     ) { }
 
     async execute(payload: LoginUserRequestDto): Promise<AuthResponseDto> {

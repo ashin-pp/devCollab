@@ -1,21 +1,20 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
-import type { IWorkspaceRepository } from "../../../application/interfaces/repositories/workspace.repository.interface";
+import { inject, injectable } from 'tsyringe';
 import type { IWorkspaceMemberRepository } from "../../../application/interfaces/repositories/workspace-member.repository.interface";
-import { AppError } from "../../../domain/errors/AppError";
+import type { IWorkspaceRepository } from "../../../application/interfaces/repositories/workspace.repository.interface";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { MemberRole } from "../../../domain/enums/MemberRole";
-import { WorkspacePrivacy } from "../../../domain/enums/WorkspacePrivacy";
-import { WorkspaceResponseDto } from "../../dtos/workspace/response/workspace.response.dto";
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
+import { AppError } from "../../../domain/errors/AppError";
 import { UpdateWorkspaceRequestDto } from "../../dtos/workspace/request/update-workspace.dto";
+import { WorkspaceResponseDto } from "../../dtos/workspace/response/workspace.response.dto";
+import { IUpdateWorkspaceUseCase } from "../../interfaces/use-cases/workspace/update-workspace.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class UpdateWorkspaceUseCase implements IBaseUseCase<UpdateWorkspaceRequestDto, WorkspaceResponseDto> {
+export class UpdateWorkspaceUseCase implements IUpdateWorkspaceUseCase {
     constructor(
-        @inject(TOKENS.IWorkspaceRepository) private _workspaceRepository: IWorkspaceRepository,
-        @inject(TOKENS.IWorkspaceMemberRepository) private _workspaceMemberRepository: IWorkspaceMemberRepository
+        @inject(REPOSITORY_TOKENS.IWorkspaceRepository) private _workspaceRepository: IWorkspaceRepository,
+        @inject(REPOSITORY_TOKENS.IWorkspaceMemberRepository) private _workspaceMemberRepository: IWorkspaceMemberRepository
     ) {}
 
     async execute(payload: UpdateWorkspaceRequestDto): Promise<WorkspaceResponseDto> {

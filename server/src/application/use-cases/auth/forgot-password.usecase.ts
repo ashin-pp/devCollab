@@ -1,16 +1,16 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { USECASE_TOKENS } from "../../../infrastructure/di/usecase.tokens";
+import { inject, injectable } from 'tsyringe';
 import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
-import { SendOtpUseCase } from "./send-otp.usecase";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
-
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
+import { IForgotPasswordUseCase } from "../../interfaces/use-cases/auth/forgot-password.usecase.interface";
+import type { ISendOtpUseCase } from "../../interfaces/use-cases/auth/send-otp.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class ForgotPasswordUseCase implements IBaseUseCase<{email: string}, void> {
+export class ForgotPasswordUseCase implements IForgotPasswordUseCase {
     constructor(
-        @inject(TOKENS.IUserRepository) private _userRepository: IUserRepository,
-        @inject(SendOtpUseCase) private _sendOtpUseCase: SendOtpUseCase
+        @inject(REPOSITORY_TOKENS.IUserRepository) private _userRepository: IUserRepository,
+        @inject(USECASE_TOKENS.ISendOtpUseCase) private _sendOtpUseCase: ISendOtpUseCase
     ) { }
 
     async execute(payload: {email: string}): Promise<void> {

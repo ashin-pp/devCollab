@@ -1,19 +1,17 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
-import type { IChannelRepository } from "../../../application/interfaces/repositories/channel.repository.interface";
+import { inject, injectable } from 'tsyringe';
 import type { IChannelMemberRepository } from "../../../application/interfaces/repositories/channel-member.repository.interface";
-
+import type { IChannelRepository } from "../../../application/interfaces/repositories/channel.repository.interface";
 import { ChannelMemberStatus } from "../../../domain/enums/ChannelMemberStatus";
 
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
 import { ChannelResponseDto } from "../../dtos/channel/response/channel.response.dto";
-
+import { IGetWorkspaceChannelsUseCase } from "../../interfaces/use-cases/channel/get-workspace-channels.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class GetWorkspaceChannelsUseCase implements IBaseUseCase<{workspaceId: string, userId: string}, ChannelResponseDto[]> {
+export class GetWorkspaceChannelsUseCase implements IGetWorkspaceChannelsUseCase {
     constructor(
-        @inject(TOKENS.IChannelRepository) private _channelRepository: IChannelRepository,
-        @inject(TOKENS.IChannelMemberRepository) private _channelMemberRepository: IChannelMemberRepository
+        @inject(REPOSITORY_TOKENS.IChannelRepository) private _channelRepository: IChannelRepository,
+        @inject(REPOSITORY_TOKENS.IChannelMemberRepository) private _channelMemberRepository: IChannelMemberRepository
     ) {}
 
     async execute(payload: {workspaceId: string, userId: string}): Promise<ChannelResponseDto[]> {

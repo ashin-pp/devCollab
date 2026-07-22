@@ -1,13 +1,13 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
+import { inject, injectable } from 'tsyringe';
 import type { IOtpRepository } from "../../../application/interfaces/repositories/otp.repository.interface";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
+import { IVerifyResetOtpUseCase } from "../../interfaces/use-cases/auth/verify-reset-otp.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 @injectable()
-export class VerifyResetOtpUseCase implements IBaseUseCase<{email: string, otp: string}, void> {
+export class VerifyResetOtpUseCase implements IVerifyResetOtpUseCase {
     constructor(
-        @inject(TOKENS.IOtpRepository) private _otpRepository: IOtpRepository
+        @inject(REPOSITORY_TOKENS.IOtpRepository) private _otpRepository: IOtpRepository
     ) { }
 
     async execute(payload: {email: string, otp: string}): Promise<void> {

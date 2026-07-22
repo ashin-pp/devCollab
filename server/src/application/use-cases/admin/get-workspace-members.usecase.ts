@@ -1,14 +1,11 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
-import type { IWorkspaceMemberRepository } from "../../../application/interfaces/repositories/workspace-member.repository.interface";
+import { inject, injectable } from 'tsyringe';
 import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
-import { AppError } from "../../../domain/errors/AppError";
-import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
-import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
+import type { IWorkspaceMemberRepository } from "../../../application/interfaces/repositories/workspace-member.repository.interface";
 import { PaginationQueryParamsRequestDto } from "../../dtos/common/request/pagination-query-params.dto";
 import { PaginatedResponseDto } from "../../dtos/common/response/paginated-response.dto";
 
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
+import { IAdminGetWorkspaceMembersUseCase } from "../../interfaces/use-cases/admin/admin-get-workspace-members.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
 export interface WorkspaceMemberDetails {
     id?: string;
@@ -22,10 +19,10 @@ export interface WorkspaceMemberDetails {
 }
 
 @injectable()
-export class GetWorkspaceMembersUseCase implements IBaseUseCase<{workspaceId: string, params: PaginationQueryParamsRequestDto}, PaginatedResponseDto<WorkspaceMemberDetails>> {
+export class AdminGetWorkspaceMembersUseCase implements IAdminGetWorkspaceMembersUseCase {
     constructor(
-        @inject(TOKENS.IWorkspaceMemberRepository) private _workspaceMemberRepository: IWorkspaceMemberRepository,
-        @inject(TOKENS.IUserRepository) private _userRepository: IUserRepository
+        @inject(REPOSITORY_TOKENS.IWorkspaceMemberRepository) private _workspaceMemberRepository: IWorkspaceMemberRepository,
+        @inject(REPOSITORY_TOKENS.IUserRepository) private _userRepository: IUserRepository
     ) {}
 
     async execute(payload: {workspaceId: string, params: PaginationQueryParamsRequestDto}): Promise<PaginatedResponseDto<WorkspaceMemberDetails>> {

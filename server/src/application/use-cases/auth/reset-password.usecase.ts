@@ -1,19 +1,20 @@
-import { injectable, inject } from 'tsyringe';
-import { TOKENS } from '../../../infrastructure/di/tokens';
-import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
+import { inject, injectable } from 'tsyringe';
 import type { IOtpRepository } from "../../../application/interfaces/repositories/otp.repository.interface";
+import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
 import type { IHashService } from "../../../application/interfaces/services/hash.service.interface";
-import { ResetPasswordRequestDto } from "../../dtos/auth/request/reset-password.dto";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
+import { ResetPasswordRequestDto } from "../../dtos/auth/request/reset-password.dto";
 
-import { IBaseUseCase } from "../../interfaces/use-cases/base.usecase.interface";
+import { IResetPasswordUseCase } from "../../interfaces/use-cases/auth/reset-password.usecase.interface";
+import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
+import { SERVICE_TOKENS } from "../../../infrastructure/di/service.tokens";
 
 @injectable()
-export class ResetPasswordUseCase implements IBaseUseCase<ResetPasswordRequestDto, void> {
+export class ResetPasswordUseCase implements IResetPasswordUseCase {
     constructor(
-        @inject(TOKENS.IUserRepository) private _userRepository: IUserRepository,
-        @inject(TOKENS.IOtpRepository) private _otpRepository: IOtpRepository,
-        @inject(TOKENS.IHashService) private _hashService: IHashService
+        @inject(REPOSITORY_TOKENS.IUserRepository) private _userRepository: IUserRepository,
+        @inject(REPOSITORY_TOKENS.IOtpRepository) private _otpRepository: IOtpRepository,
+        @inject(SERVICE_TOKENS.IHashService) private _hashService: IHashService
     ) { }
 
     async execute(payload: ResetPasswordRequestDto): Promise<void> {
