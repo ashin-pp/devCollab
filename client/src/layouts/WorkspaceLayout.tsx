@@ -641,6 +641,9 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
         isOpen={isCreateChannelModalOpen}
         onClose={() => setIsCreateChannelModalOpen(false)}
         workspaceId={workspaceId || ''}
+        existingChannelNames={channels
+          .map((c) => (typeof c.name === 'string' ? c.name : ''))
+          .filter(Boolean)}
         onSuccess={(newChannel) => {
           const channelWithMembership = { ...newChannel, isMember: true };
           setChannels(prev => [...prev, channelWithMembership]);

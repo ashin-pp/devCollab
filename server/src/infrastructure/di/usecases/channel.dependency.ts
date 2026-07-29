@@ -7,6 +7,7 @@ import { DeleteChannelUseCase } from "../../../application/use-cases/channel/del
 import { GetBlockedChannelMembersUseCase } from "../../../application/use-cases/channel/get-blocked-channel-members.usecase";
 import { GetChannelMembersUseCase } from "../../../application/use-cases/channel/get-channel-members.usecase";
 import { GetChannelMessagesUseCase } from "../../../application/use-cases/channel/get-channel-messages.usecase";
+import { GetThreadRepliesUseCase } from "../../../application/use-cases/channel/get-thread-replies.usecase";
 import { GetChannelRequestsUseCase } from "../../../application/use-cases/channel/get-channel-requests.usecase";
 import { GetUnreadCountsUseCase } from "../../../application/use-cases/channel/get-unread-counts.usecase";
 import { GetUnreadMessagesUseCase } from "../../../application/use-cases/channel/get-unread-messages.usecase";
@@ -28,6 +29,7 @@ export function registerChannelUseCases() {
     container.register(USECASE_TOKENS.IGetBlockedChannelMembersUseCase, { useClass: GetBlockedChannelMembersUseCase });
     container.register(USECASE_TOKENS.IGetChannelMembersUseCase, { useClass: GetChannelMembersUseCase });
     container.register(USECASE_TOKENS.IGetChannelMessagesUseCase, { useClass: GetChannelMessagesUseCase });
+    container.register(USECASE_TOKENS.IGetThreadRepliesUseCase, { useClass: GetThreadRepliesUseCase });
     container.register(USECASE_TOKENS.IGetChannelRequestsUseCase, { useClass: GetChannelRequestsUseCase });
     container.register(USECASE_TOKENS.IGetUnreadCountsUseCase, { useClass: GetUnreadCountsUseCase });
     container.register(USECASE_TOKENS.IGetUnreadMessagesUseCase, { useClass: GetUnreadMessagesUseCase });

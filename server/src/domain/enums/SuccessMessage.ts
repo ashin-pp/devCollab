@@ -19,4 +19,5 @@ export const SuccessMessage = {
     MESSAGES_FETCHED: "Messages fetched successfully",
     MESSAGE_SENT: "Message sent successfully",
     MESSAGES_MARKED_SEEN: "Messages marked as seen",
+    THREAD_REPLIES_FETCHED: "Thread replies fetched successfully",
 } as const;

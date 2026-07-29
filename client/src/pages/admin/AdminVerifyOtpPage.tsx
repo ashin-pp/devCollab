@@ -5,6 +5,7 @@ import { AdminService } from '../../api/admin/admin.service';
 import toast from 'react-hot-toast';
 import { isAxiosError } from 'axios';
 import { OTP_RESEND_COOLDOWN_MS } from '../../utils/constants';
+import { isDigitOnly, validateAdminOtp } from '../../validation';
 
 export const AdminVerifyOtpPage = () => {
   const [otp, setOtp] = useState(['', '', '', '']);
@@ -38,7 +39,7 @@ export const AdminVerifyOtpPage = () => {
   }, [email, navigate]);
 
   const handleChange = (index: number, value: string) => {
-    if (value && !/^\d+$/.test(value)) return;
+    if (value && !isDigitOnly(value)) return;
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
@@ -56,7 +57,8 @@ export const AdminVerifyOtpPage = () => {
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     const otpString = otp.join('');
-    if (otpString.length !== 4) return toast.error("Please enter a 4-digit code");
+    const otpError = validateAdminOtp(otp);
+    if (otpError) return toast.error(otpError);
 
     setIsLoading(true);
     try {

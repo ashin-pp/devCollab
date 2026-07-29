@@ -10,8 +10,8 @@ export class MarkChannelAsReadUseCase implements IMarkChannelAsReadUseCase {
         @inject(REPOSITORY_TOKENS.IChannelMemberRepository) private _channelMemberRepository: IChannelMemberRepository
     ) {}
 
-    async execute(payload: {channelId: string, userId: string}): Promise<{success: boolean, message: string, statusCode: number}> {
-        const { channelId, userId } = payload;
+    async execute(payload: {channelId: string, userId: string, readUpto?: Date}): Promise<{success: boolean, message: string, statusCode: number}> {
+        const { channelId, userId, readUpto } = payload;
         const membership = await this._channelMemberRepository.findByChannelIdAndUserId(channelId, userId);
         
         if (!membership) {
@@ -22,7 +22,7 @@ export class MarkChannelAsReadUseCase implements IMarkChannelAsReadUseCase {
             };
         }
 
-        await this._channelMemberRepository.updateLastReadAt(channelId, userId, new Date());
+        await this._channelMemberRepository.updateLastReadAt(channelId, userId, readUpto ?? new Date());
 
         return {
             success: true,

@@ -30,6 +30,18 @@ export class ChannelRepository implements IChannelRepository {
         return channels.map(c => this._mapper.toDomain(c));
     }
 
+    async findByWorkspaceAndName(workspaceId: string, name: string): Promise<Channel | null> {
+        const trimmed = name.trim();
+        if (!trimmed) return null;
+
+        const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const channel = await ChannelModel.findOne({
+            workspace_id: workspaceId,
+            name: { $regex: `^${escaped}$`, $options: 'i' },
+        });
+        return channel ? this._mapper.toDomain(channel) : null;
+    }
+
     async update(id: string, channelData: Partial<Channel>): Promise<Channel | null> {
         const updateData: any = {};
         if (channelData.name) updateData.name = channelData.name;

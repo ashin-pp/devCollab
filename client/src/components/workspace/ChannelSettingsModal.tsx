@@ -4,6 +4,7 @@ import { ChannelService } from '../../api/workspace/channel.service';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import type { ChannelSettingsModalProps } from '../../types/component.types';
+import { normalizeChannelName, validateChannelName } from '../../validation';
 
 export const ChannelSettingsModal = ({ 
   isOpen, 
@@ -32,11 +33,21 @@ export const ChannelSettingsModal = ({
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    const nameError = validateChannelName(name);
+    if (nameError) {
+      toast.error(nameError);
+      return;
+    }
+
+    const formattedName = normalizeChannelName(name);
 
     setIsSubmitting(true);
     try {
-      const res = await ChannelService.updateChannel(workspaceId, channelId, { name, description, privacy });
+      const res = await ChannelService.updateChannel(workspaceId, channelId, {
+        name: formattedName,
+        description,
+        privacy,
+      });
       if (res.data?.success || res.status === 200) {
         toast.success('Channel settings updated');
         onChannelUpdated();

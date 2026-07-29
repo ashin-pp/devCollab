@@ -37,6 +37,7 @@ export const USECASE_TOKENS = {
     IGetBlockedChannelMembersUseCase: 'IGetBlockedChannelMembersUseCase',
     IGetChannelMembersUseCase: 'IGetChannelMembersUseCase',
     IGetChannelMessagesUseCase: 'IGetChannelMessagesUseCase',
+    IGetThreadRepliesUseCase: 'IGetThreadRepliesUseCase',
     IGetChannelRequestsUseCase: 'IGetChannelRequestsUseCase',
     IGetUnreadCountsUseCase: 'IGetUnreadCountsUseCase',
     IGetUnreadMessagesUseCase: 'IGetUnreadMessagesUseCase',

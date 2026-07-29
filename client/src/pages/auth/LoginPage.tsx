@@ -8,6 +8,7 @@ import { AuthService } from '../../api/auth/auth.service';
 import { setCredentials } from '../../store/slices/authSlice';
 import toast from 'react-hot-toast';
 import { isAxiosError } from 'axios';
+import { validateLoginCredentials } from '../../validation';
 
 export const LoginPage = () => {
 
@@ -33,10 +34,10 @@ export const LoginPage = () => {
     e.preventDefault();
     setError('');
 
-    if (!email.trim() || !password.trim()) {
-      const errMsg = 'Email and password cannot be empty or just spaces.';
-      setError(errMsg);
-      toast.error(errMsg);
+    const loginError = validateLoginCredentials(email, password);
+    if (loginError) {
+      setError(loginError);
+      toast.error(loginError);
       return;
     }
 

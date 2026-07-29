@@ -29,6 +29,25 @@ const formatConvTime = (dateStr: string) => {
   return format(d, 'MMM d');
 };
 
+const sortConversationsByLatest = (convs: Conversation[]): Conversation[] => {
+  return [...convs].sort((a, b) => {
+    const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
+    const bTime = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+    return bTime - aTime;
+  });
+};
+
+const bumpConversationToTop = (
+  convs: Conversation[],
+  conversationId: string,
+  patch: Partial<Conversation>
+): Conversation[] => {
+  const updated = convs.map(c =>
+    c.id === conversationId ? { ...c, ...patch } : c
+  );
+  return sortConversationsByLatest(updated);
+};
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 // ─── New Message Modal ────────────────────────────────────────────────────────
@@ -311,7 +330,7 @@ export const DMChatPage = () => {
     DMService.getConversations(workspaceId)
       .then(res => {
         const convs: Conversation[] = res.data?.data || [];
-        setConversations(convs);
+        setConversations(sortConversationsByLatest(convs));
 
         if (socket) {
           convs.forEach(c => socket.emit('join_conversation', c.id));
@@ -377,21 +396,23 @@ export const DMChatPage = () => {
     const handleDMReceived = (message: DirectMessage) => {
       if (message.conversationId !== activeConversation?.id) {
         setConversations(prev =>
-          prev.map(c =>
-            c.id === message.conversationId
-              ? { 
-                  ...c, 
-                  lastMessage: message.content, 
-                  lastMessageAt: message.createdAt,
-                  unreadCount: (c.unreadCount || 0) + (message.senderId !== currentUser.id ? 1 : 0)
-                }
-              : c
-          )
+          bumpConversationToTop(prev, message.conversationId, {
+            lastMessage: message.content || (message.messageType === 'image' ? 'Sent an image' : ''),
+            lastMessageAt: message.createdAt,
+            unreadCount: (prev.find(c => c.id === message.conversationId)?.unreadCount || 0)
+              + (message.senderId !== currentUser.id ? 1 : 0)
+          })
         );
         return;
       }
       // If it IS the active conversation
       setMessages(prev => (prev.find(m => m.id === message.id) ? prev : [...prev, message]));
+      setConversations(prev =>
+        bumpConversationToTop(prev, message.conversationId, {
+          lastMessage: message.content || (message.messageType === 'image' ? 'Sent an image' : ''),
+          lastMessageAt: message.createdAt
+        })
+      );
       if (message.senderId !== currentUser.id) {
         DMService.markAsSeen(activeConversation.id).catch(console.error);
         socket.emit('dm_seen', { conversationId: activeConversation.id, userId: currentUser.id });
@@ -438,8 +459,12 @@ export const DMChatPage = () => {
         };
         setConversations(prev => {
           const exists = prev.find(c => c.id === newConv.id);
-          if (exists) return prev;
-          return [{ ...newConv, otherUser: otherUserMapped }, ...prev];
+          if (exists) {
+            return bumpConversationToTop(prev, newConv.id, {
+              lastMessageAt: new Date().toISOString()
+            });
+          }
+          return sortConversationsByLatest([{ ...newConv, otherUser: otherUserMapped }, ...prev]);
         });
         setShowNewMsg(false);
         navigate(`/workspace/${workspaceId}/dm/${newConv.id}`);
@@ -500,11 +525,10 @@ export const DMChatPage = () => {
       const sentMessage = res.data?.data;
       setMessages(prev => [...prev, sentMessage]);
       setConversations(prev =>
-        prev.map(c =>
-          c.id === activeConversation.id
-            ? { ...c, lastMessage: content || (attachedImageUrl ? 'Sent an image' : ''), lastMessageAt: new Date().toISOString() }
-            : c
-        )
+        bumpConversationToTop(prev, activeConversation.id, {
+          lastMessage: cleanMessage || (attachedImageUrl ? 'Sent an image' : ''),
+          lastMessageAt: new Date().toISOString()
+        })
       );
       socket?.emit('new_dm', sentMessage);
     } catch (err) {

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { UserService } from '../../api/user/user.service';
+import { validateChangePassword } from '../../validation';
 
 interface ProfilePasswordModalProps {
   isOpen: boolean;
@@ -20,12 +21,9 @@ export const ProfilePasswordModal: React.FC<ProfilePasswordModalProps> = ({ isOp
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      toast.error("New passwords do not match");
-      return;
-    }
-    if (!passwordData.currentPassword || !passwordData.newPassword) {
-      toast.error("Please fill in all password fields");
+    const passwordError = validateChangePassword(passwordData);
+    if (passwordError) {
+      toast.error(passwordError);
       return;
     }
 

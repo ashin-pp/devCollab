@@ -6,6 +6,7 @@ import { AdminService } from '../../api/admin/admin.service';
 import { setCredentials } from '../../store/slices/authSlice';
 import toast from 'react-hot-toast';
 import { isAxiosError } from 'axios';
+import { validateLoginCredentials } from '../../validation';
 
 export const AdminLoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -20,6 +21,14 @@ export const AdminLoginPage = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    const loginError = validateLoginCredentials(email, password);
+    if (loginError) {
+      setError(loginError);
+      toast.error(loginError);
+      return;
+    }
+
     setIsLoading(true);
     try {
       const response = await AdminService.login({ email, password });

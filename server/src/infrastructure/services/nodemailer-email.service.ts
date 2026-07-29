@@ -8,18 +8,31 @@ export class NodemailerEmailService implements IEmailService {
     private _transporter;
 
     constructor() {
+        const user = process.env.EMAIL_USER?.trim();
+        const pass = process.env.EMAIL_APP_PASSWORD?.replace(/\s/g, '');
+
         this._transporter = nodemailer.createTransport({
-            service: 'gmail',
+            host: 'smtp.gmail.com',
+            port: 465,
+            secure: true,
             auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_APP_PASSWORD
+                user,
+                pass
             }
         });
     }
 
+    private getFromAddress(): string {
+        const user = process.env.EMAIL_USER?.trim();
+        if (!user) {
+            throw new Error("EMAIL_USER is not configured on the server");
+        }
+        return `"DevCollab" <${user}>`;
+    }
+
     async sendOtpEmail(email: string, otp: string): Promise<void> {
         const mailOptions = {
-            from: `"DevCollab" <${process.env.EMAIL_USER}>`,
+            from: this.getFromAddress(),
             to: email,
             subject: "Your DevCollab Verification Code",
             html: `
@@ -38,14 +51,14 @@ export class NodemailerEmailService implements IEmailService {
             logger.info(`OTP Email successfully sent to ${email}`);
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
-            logger.error(`Failed to send email to ${email}:`, { error: errorMessage });
+            logger.error(`Failed to send OTP email to ${email}: ${errorMessage}`);
             throw new Error("Failed to send email. Please try again later.");
         }
     }
 
     async sendWorkspaceInviteEmail(email: string, workspaceName: string, inviteLink: string): Promise<void> {
         const mailOptions = {
-            from: `"DevCollab" <${process.env.EMAIL_USER}>`,
+            from: this.getFromAddress(),
             to: email,
             subject: `You've been invited to join ${workspaceName} on DevCollab!`,
             html: `
@@ -66,8 +79,8 @@ export class NodemailerEmailService implements IEmailService {
             logger.info(`Workspace Invite Email successfully sent to ${email}`);
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
-            logger.error(`Failed to send invite email to ${email}:`, { error: errorMessage });
-            throw new Error("Failed to send invite email. Please try again later.");
+            logger.error(`Failed to send invite email to ${email}: ${errorMessage}`);
+            throw new Error(`Failed to send invite email: ${errorMessage}`);
         }
     }
 }

@@ -29,7 +29,11 @@ export const useWorkspaceChannels = (workspaceId?: string) => {
   return { channels, setChannels, loading, error, refetch: fetchChannels };
 };
 
-export const useChannelMembers = (workspaceId?: string, channelId?: string) => {
+export const useChannelMembers = (
+  workspaceId?: string,
+  channelId?: string,
+  enabled: boolean = true
+) => {
   const [members, setMembers] = useState<ChannelMemberData[]>([]);
   const [imageMap, setImageMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState<boolean>(true);
@@ -60,8 +64,15 @@ export const useChannelMembers = (workspaceId?: string, channelId?: string) => {
   }, [workspaceId, channelId]);
 
   useEffect(() => {
+    if (!enabled) {
+      setMembers([]);
+      setImageMap({});
+      setLoading(false);
+      setError(null);
+      return;
+    }
     fetchMembers();
-  }, [fetchMembers]);
+  }, [fetchMembers, enabled]);
 
   return { members, setMembers, imageMap, setImageMap, loading, error, refetch: fetchMembers };
 };

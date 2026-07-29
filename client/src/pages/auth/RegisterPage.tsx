@@ -8,6 +8,7 @@ import { AuthService } from '../../api/auth/auth.service';
 import { setCredentials } from '../../store/slices/authSlice';
 import toast from 'react-hot-toast';
 import { isAxiosError } from 'axios';
+import { validateRegisterForm } from '../../validation';
 
 export const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -34,37 +35,12 @@ export const RegisterPage = () => {
     setError('');
     setFieldErrors({});
 
-    let isValid = true;
-    const errors: { name?: string; email?: string; password?: string; confirmPassword?: string } = {};
-
-    if (!name.trim()) {
-      errors.name = "Full Name is required";
-      isValid = false;
-    }
-    
-    if (!email.trim()) {
-      errors.email = "Email is required";
-      isValid = false;
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      errors.email = "Please enter a valid email address";
-      isValid = false;
-    }
-
-    if (!password) {
-      errors.password = "Password is required";
-      isValid = false;
-    } else if (password.trim().length < 6) {
-      errors.password = "Password must be at least 6 characters";
-      isValid = false;
-    }
-
-    if (!confirmPassword) {
-      errors.confirmPassword = "Confirm Password is required";
-      isValid = false;
-    } else if (password !== confirmPassword) {
-      errors.confirmPassword = "Passwords do not match";
-      isValid = false;
-    }
+    const { isValid, errors } = validateRegisterForm({
+      name,
+      email,
+      password,
+      confirmPassword,
+    });
 
     if (!isValid) {
       setFieldErrors(errors);

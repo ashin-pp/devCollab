@@ -13,6 +13,7 @@ import { UserLayout } from '../../layouts/UserLayout';
 import { CreateWorkspaceModal } from '../../components/workspace/CreateWorkspaceModal';
 import { WorkspaceService } from '../../api/workspace/workspace.service';
 import type { Workspace } from '../../types/workspace.types';
+import { validateWorkspaceInviteCode } from '../../validation';
 
 export const DashboardPage = () => {
   const user = useSelector((state: RootState) => state.auth.user);
@@ -123,8 +124,9 @@ export const DashboardPage = () => {
   }, [location.search, inviteCode, handleVerifyCodeFromQuery]);
 
   const handleVerifyCode = async () => {
-    if (!inviteCode.trim()) {
-      setVerifyError('Please enter a workspace invite code');
+    const codeError = validateWorkspaceInviteCode(inviteCode);
+    if (codeError) {
+      setVerifyError(codeError);
       return;
     }
 
@@ -644,6 +646,10 @@ export const DashboardPage = () => {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSuccess={handleWorkspaceCreated}
+        existingWorkspaceNames={[
+          ...myWorkspaces.map((ws) => ws.name),
+          ...publicWorkspaces.map((ws) => ws.name),
+        ]}
       />
 
       {verificationResult && isFromEmailLink && (

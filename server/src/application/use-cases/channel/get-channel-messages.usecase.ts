@@ -10,9 +10,28 @@ export class GetChannelMessagesUseCase implements IGetChannelMessagesUseCase {
         @inject(REPOSITORY_TOKENS.IMessageRepository) private _messageRepository: IMessageRepository
     ) {}
 
-    async execute(payload: {channelId: string, page?: number, limit?: number}): Promise<Message[]> {
-        const { channelId, page = 1, limit = 50 } = payload;
+    async execute(payload: {
+        channelId: string;
+        page?: number;
+        limit?: number;
+        viewerId: string;
+    }): Promise<Message[]> {
+        const { channelId, page = 1, limit = 50, viewerId } = payload;
         const skip = (page - 1) * limit;
-        return await this._messageRepository.findByChannelId(channelId, limit, skip);
+        const messages = await this._messageRepository.findByChannelId(channelId, limit, skip);
+
+        const rootIds = messages
+            .map(m => m.id)
+            .filter((id): id is string => Boolean(id));
+
+        const replyCounts = await this._messageRepository.countVisibleRepliesByRootIds(rootIds, viewerId);
+
+        for (const message of messages) {
+            if (message.id) {
+                message.replyCount = replyCounts[message.id] || 0;
+            }
+        }
+
+        return messages;
     }
 }

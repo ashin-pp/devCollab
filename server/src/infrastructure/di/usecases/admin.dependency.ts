@@ -20,7 +20,6 @@ export function registerAdminUseCases() {
     container.register(USECASE_TOKENS.ICreateAdminUseCase, { useClass: CreateAdminUseCase });
     container.register(USECASE_TOKENS.IGetAllUsersUseCase, { useClass: GetAllUsersUseCase });
     container.register(USECASE_TOKENS.IGetAllWorkspacesUseCase, { useClass: GetAllWorkspacesUseCase });
-    container.register(USECASE_TOKENS.IGetWorkspaceMembersUseCase, { useClass: AdminGetWorkspaceMembersUseCase });
     container.register(USECASE_TOKENS.IToggleUserStatusUseCase, { useClass: ToggleUserStatusUseCase });
     container.register(USECASE_TOKENS.IToggleWorkspaceStatusUseCase, { useClass: ToggleWorkspaceStatusUseCase });
     container.register(USECASE_TOKENS.IUpdateWorkspaceMemberStatusUseCase, { useClass: UpdateWorkspaceMemberStatusUseCase });

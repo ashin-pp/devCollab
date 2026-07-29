@@ -57,7 +57,7 @@ export class ChannelController {
                         throw new AppError(ErrorMessage.UNAUTHORIZED, HttpStatusCode.UNAUTHORIZED);
                     }
         if (!name) {
-                        throw new AppError("Channel name is required", HttpStatusCode.BAD_REQUEST);
+                        throw new AppError(ErrorMessage.CHANNEL_NAME_EMPTY, HttpStatusCode.BAD_REQUEST);
                     }
         const channel = await this._createChannelUseCase.execute({workspaceId: workspaceId as string, name, description, createdBy: userId, privacy: privacy || 'public'});
         res.status(HttpStatusCode.CREATED).json({
@@ -250,6 +250,7 @@ export class ChannelController {
                         }
                     }
         res.status(HttpStatusCode.OK).json({
+                        success: result.success,
                         message: result.message,
                         status: result.status
                     });
@@ -282,10 +283,11 @@ export class ChannelController {
     markChannelAsRead = catchAsync(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
         const { channelId } = req.params;
         const userId = req.user?.id;
+        const readUpto = req.body?.readUpto ? new Date(req.body.readUpto) : undefined;
         if (!userId) {
                         throw new AppError(ErrorMessage.UNAUTHORIZED, HttpStatusCode.UNAUTHORIZED);
                     }
-        const result = await this._markChannelAsReadUseCase.execute({channelId: channelId as string, userId});
+        const result = await this._markChannelAsReadUseCase.execute({channelId: channelId as string, userId, readUpto});
         res.status(result.statusCode).json({
                         success: result.success,
                         message: result.message

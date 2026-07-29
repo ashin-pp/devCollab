@@ -107,7 +107,7 @@ export class WorkspaceController {
         const includeProfile = req.query.includeProfile === 'true';
         
         const page = parseInt(req.query.page as string) || 1;
-        const limit = parseInt(req.query.limit as string) || 10;
+        const limit = parseInt(req.query.limit as string) || 100;
         const search = req.query.search as string;
         const sortBy = req.query.sortBy as string;
         const sortOrder = req.query.sortOrder as 'asc' | 'desc';

@@ -4,7 +4,7 @@ import { UserService } from '../../api/user/user.service';
 import { useDispatch } from 'react-redux';
 import { updateUser } from '../../store/slices/authSlice';
 import toast from 'react-hot-toast';
-import { MAX_FILE_SIZE_BYTES } from '../../utils/constants';
+import { validateProfileImageFile } from '../../validation';
 
 interface ProfileImageUploadProps {
   profileImage: string;
@@ -20,13 +20,9 @@ export const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({ profileI
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file');
-      return;
-    }
-
-    if (file.size > MAX_FILE_SIZE_BYTES) {
-      toast.error('File size must be less than 5MB');
+    const fileError = validateProfileImageFile(file);
+    if (fileError) {
+      toast.error(fileError);
       return;
     }
 

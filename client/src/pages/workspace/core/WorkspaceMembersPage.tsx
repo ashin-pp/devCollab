@@ -10,6 +10,7 @@ import Swal from 'sweetalert2';
 
 import type { MemberData } from '../../../types/workspace.types';
 import { InviteMemberModal } from '../../../components/workspace/InviteMemberModal';
+import { getMemberAvatar, getMemberDisplayName, getMemberEmail, getMemberInitial } from '../../../utils/member.utils';
 
 export const WorkspaceMembersPage = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>();
@@ -124,8 +125,8 @@ export const WorkspaceMembersPage = () => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
-      member.user?.name?.toLowerCase().includes(query) ||
-      member.user?.email?.toLowerCase().includes(query)
+      getMemberDisplayName(member).toLowerCase().includes(query) ||
+      getMemberEmail(member).toLowerCase().includes(query)
     );
   });
 
@@ -133,8 +134,8 @@ export const WorkspaceMembersPage = () => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
-      member.user?.name?.toLowerCase().includes(query) ||
-      member.user?.email?.toLowerCase().includes(query)
+      getMemberDisplayName(member).toLowerCase().includes(query) ||
+      getMemberEmail(member).toLowerCase().includes(query)
     );
   });
 
@@ -226,23 +227,23 @@ export const WorkspaceMembersPage = () => {
                       onClick={() => handleViewProfile(member)}
                     >
                       <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-100 to-blue-50 border border-blue-100 flex items-center justify-center overflow-hidden shadow-inner">
-                        {member.user?.profileImage ? (
+                        {getMemberAvatar(member) ? (
                           <img 
-                            src={member.user.profileImage} 
-                            alt={member.user?.name || 'User'} 
+                            src={getMemberAvatar(member)} 
+                            alt={getMemberDisplayName(member)} 
                             className="w-full h-full object-cover"
                           />
                         ) : (
                           <span className="text-blue-600 font-bold text-lg">
-                            {member.user?.name ? member.user.name.charAt(0).toUpperCase() : 'U'}
+                            {getMemberInitial(member)}
                           </span>
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
                         <h3 className="font-bold text-slate-900 hover:text-blue-600 transition-colors">
-                          {member.user?.name || 'Unknown User'}
+                          {getMemberDisplayName(member)}
                         </h3>
-                        <p className="text-sm text-slate-500 truncate">{member.user?.email || 'No email provided'}</p>
+                        <p className="text-sm text-slate-500 truncate">{getMemberEmail(member) || 'No email provided'}</p>
                         {member.user?.bio && (
                           <p className="text-xs text-slate-400 mt-1 truncate">{member.user.bio}</p>
                         )}
@@ -301,24 +302,24 @@ export const WorkspaceMembersPage = () => {
                       onClick={() => handleViewProfile(member)}
                     >
                       <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-orange-100 to-orange-50 border border-orange-100 flex items-center justify-center overflow-hidden shadow-inner">
-                        {member.user?.profileImage ? (
+                        {getMemberAvatar(member) ? (
                           <img 
-                            src={member.user.profileImage} 
-                            alt={member.user?.name || 'User'} 
+                            src={getMemberAvatar(member)} 
+                            alt={getMemberDisplayName(member)} 
                             className="w-full h-full object-cover"
                           />
                         ) : (
                           <span className="text-orange-600 font-bold text-lg">
-                            {member.user?.name ? member.user.name.charAt(0).toUpperCase() : 'U'}
+                            {getMemberInitial(member)}
                           </span>
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
                         <h3 className="font-bold text-slate-900 hover:text-orange-600 transition-colors">
-                          {member.user?.name || 'Unknown User'}
+                          {getMemberDisplayName(member)}
                         </h3>
                         <p className="text-sm text-slate-500 truncate">
-                          {member.user?.email || 'No email provided'}
+                          {getMemberEmail(member) || 'No email provided'}
                         </p>
                         <span className="inline-flex items-center gap-1 mt-1 text-xs text-orange-600 font-medium bg-orange-100 px-2 py-0.5 rounded-md">
                           <Clock className="w-3 h-3" /> Pending Approval

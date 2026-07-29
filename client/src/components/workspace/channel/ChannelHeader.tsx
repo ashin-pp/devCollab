@@ -1,30 +1,11 @@
-import { useState } from 'react';
 import { Hash, Lock, ChevronDown, Users, Settings, LogOut, Star } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { ChannelService } from '../../../api/workspace/channel.service';
-import type { ChannelData, ChannelMember } from '../../../types/channel.types';
-import type { UserData } from '../../../types/workspace.types';
-import type { User } from '../../../types/auth.types';
-import type { AiTab } from './AiDashboardModal';
-
-interface ChannelHeaderProps {
-  currentChannel: ChannelData | null;
-  user: User | null;
-  pendingRequestsCount: number;
-  workspaceId: string;
-  channelId: string;
-  channelMembers: any[];
-  isChannelDropdownOpen: boolean;
-  setIsChannelDropdownOpen: (open: boolean) => void;
-  setShowMembersSidebar: (show: boolean) => void;
-  setShowThread: (show: boolean) => void;
-  setIsSettingsModalOpen: (open: boolean) => void;
-  navigate: (path: string) => void;
-  openAiDashboard: (tab: AiTab) => void;
-}
+import type { ChannelHeaderProps } from '../../../types/component.types';
 
 export const ChannelHeader = ({
   currentChannel,
+  isChannelMember,
   user,
   pendingRequestsCount,
   workspaceId,
@@ -33,7 +14,7 @@ export const ChannelHeader = ({
   isChannelDropdownOpen,
   setIsChannelDropdownOpen,
   setShowMembersSidebar,
-  setShowThread,
+  onCloseThread,
   setIsSettingsModalOpen,
   navigate,
   openAiDashboard
@@ -43,8 +24,9 @@ export const ChannelHeader = ({
       <div className="flex items-center gap-3">
         <div className="relative">
           <button
-            onClick={() => setIsChannelDropdownOpen(!isChannelDropdownOpen)}
-            className="font-bold text-slate-900 text-lg flex items-center hover:bg-slate-100 px-2 py-1 rounded transition-colors"
+            onClick={() => isChannelMember && setIsChannelDropdownOpen(!isChannelDropdownOpen)}
+            disabled={!isChannelMember}
+            className={`font-bold text-slate-900 text-lg flex items-center px-2 py-1 rounded transition-colors ${isChannelMember ? 'hover:bg-slate-100' : 'cursor-default'}`}
           >
             {currentChannel?.privacy === 'private' ? (
               <Lock className="w-5 h-5 text-orange-500 mr-1" />
@@ -66,10 +48,10 @@ export const ChannelHeader = ({
                 {pendingRequestsCount}
               </span>
             )}
-            <ChevronDown className="w-4 h-4 ml-1 text-slate-500" />
+            {isChannelMember && <ChevronDown className="w-4 h-4 ml-1 text-slate-500" />}
           </button>
 
-          {isChannelDropdownOpen && (
+          {isChannelMember && isChannelDropdownOpen && (
             <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-slate-200 shadow-lg rounded-xl z-50 overflow-hidden">
               <div className="p-3 border-b border-slate-100">
                 <div className="flex items-center gap-2 mb-1">
@@ -95,7 +77,7 @@ export const ChannelHeader = ({
               </div>
               <div className="py-1">
                 <button
-                  onClick={() => { setShowMembersSidebar(true); setShowThread(false); setIsChannelDropdownOpen(false); }}
+                  onClick={() => { setShowMembersSidebar(true); onCloseThread(); setIsChannelDropdownOpen(false); }}
                   className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-2 transition-colors"
                 >
                   <Users className="w-4 h-4" /> View Members
@@ -149,11 +131,14 @@ export const ChannelHeader = ({
             </div>
           )}
         </div>
-        <button className="text-slate-400 hover:text-yellow-500 transition-colors">
-          <Star className="w-4 h-4" />
-        </button>
+        {isChannelMember && (
+          <button className="text-slate-400 hover:text-yellow-500 transition-colors">
+            <Star className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
+      {isChannelMember && (
       <div className="flex items-center gap-6">
         <div className="hidden md:flex items-center gap-2">
           <button onClick={() => openAiDashboard('tasks')} className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-semibold rounded-md border border-blue-100 flex items-center gap-1 cursor-pointer hover:bg-blue-200 transition-colors">
@@ -172,7 +157,7 @@ export const ChannelHeader = ({
 
         <div className="flex items-center">
           <div
-            onClick={() => { setShowMembersSidebar(true); setShowThread(false); }}
+            onClick={() => { setShowMembersSidebar(true); onCloseThread(); }}
             className="flex items-center cursor-pointer hover:bg-slate-50 p-1.5 rounded-lg transition-colors border border-transparent hover:border-slate-200"
             title="View Channel Members"
           >
@@ -205,6 +190,7 @@ export const ChannelHeader = ({
           </div>
         </div>
       </div>
+      )}
     </header>
   );
 };

@@ -9,6 +9,8 @@ export interface IMessageDocument extends Document {
     image_url?: string;
     parent_message_id?: mongoose.Types.ObjectId;
     thread_root_id?: mongoose.Types.ObjectId;
+    reply_visibility?: 'everyone' | 'author';
+    visible_to_user_id?: mongoose.Types.ObjectId;
     is_edited: boolean;
     is_pinned: boolean;
     seen_by: mongoose.Types.ObjectId[];
@@ -31,6 +33,8 @@ const messageSchema = new Schema({
     image_url: { type: String },
     parent_message_id: { type: Schema.Types.ObjectId, ref: 'Message' },
     thread_root_id: { type: Schema.Types.ObjectId, ref: 'Message' },
+    reply_visibility: { type: String, enum: ['everyone', 'author'] },
+    visible_to_user_id: { type: Schema.Types.ObjectId, ref: 'User' },
     is_edited: { type: Boolean, default: false },
     is_pinned: { type: Boolean, default: false },
     seen_by: [{ type: Schema.Types.ObjectId, ref: 'User' }],
@@ -38,5 +42,8 @@ const messageSchema = new Schema({
 }, {
     timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
 });
+
+messageSchema.index({ channel_id: 1, thread_root_id: 1, created_at: -1 });
+messageSchema.index({ thread_root_id: 1, created_at: 1 });
 
 export const MessageModel = mongoose.model<IMessageDocument>('Message', messageSchema);

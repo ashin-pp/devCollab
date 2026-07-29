@@ -3,10 +3,14 @@ import type { IChannelMemberRepository } from "../../../application/interfaces/r
 import type { IChannelRepository } from "../../../application/interfaces/repositories/channel.repository.interface";
 import { ChannelMember } from "../../../domain/entities/channel-member.entity";
 import { Channel } from "../../../domain/entities/channel.entity";
+import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
+import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
+import { AppError } from "../../../domain/errors/AppError";
 import { CreateChannelRequestDto } from "../../dtos/channel/request/create-channel-request.dto";
 import { ChannelResponseDto } from "../../dtos/channel/response/channel.response.dto";
 import { ICreateChannelUseCase } from "../../interfaces/use-cases/channel/create-channel.usecase.interface";
 import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
+import { isValidChannelName, normalizeChannelName } from "../../../shared/utils/name-validation.util";
 
 @injectable()
 export class CreateChannelUseCase implements ICreateChannelUseCase {
@@ -16,11 +20,30 @@ export class CreateChannelUseCase implements ICreateChannelUseCase {
     ) {}
 
     async execute(payload: CreateChannelRequestDto): Promise<ChannelResponseDto> {
-        const { workspaceId, name, description, createdBy, privacy } = payload;
+        const { workspaceId, description, createdBy, privacy } = payload;
+        const name = normalizeChannelName(payload.name ?? '');
+
+        if (!name) {
+            throw new AppError(ErrorMessage.CHANNEL_NAME_EMPTY, HttpStatusCode.BAD_REQUEST);
+        }
+
+        if (!isValidChannelName(name)) {
+            throw new AppError(ErrorMessage.CHANNEL_NAME_INVALID, HttpStatusCode.BAD_REQUEST);
+        }
+
+        if (!workspaceId || !createdBy) {
+            throw new AppError(ErrorMessage.INVALID_CHANNEL_PARAMS, HttpStatusCode.BAD_REQUEST);
+        }
+
+        const existing = await this._channelRepository.findByWorkspaceAndName(workspaceId, name);
+        if (existing) {
+            throw new AppError(ErrorMessage.CHANNEL_NAME_EXISTS, HttpStatusCode.CONFLICT);
+        }
+
         const newChannel = new Channel(
             workspaceId,
             name,
-            description,
+            description?.trim() ?? '',
             createdBy,
             privacy,
             true

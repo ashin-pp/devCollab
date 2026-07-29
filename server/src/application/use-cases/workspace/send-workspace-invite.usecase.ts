@@ -4,6 +4,7 @@ import type { IUserRepository } from "../../../application/interfaces/repositori
 import type { IWorkspaceMemberRepository } from "../../../application/interfaces/repositories/workspace-member.repository.interface";
 import type { IWorkspaceRepository } from "../../../application/interfaces/repositories/workspace.repository.interface";
 import type { IEmailService } from "../../../application/interfaces/services/email.service.interface";
+import type { ICreateNotificationUseCase } from "../../interfaces/use-cases/notification/create-notification.usecase.interface";
 import { WorkspaceMember } from "../../../domain/entities/workspace-member.entity";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
@@ -11,7 +12,7 @@ import { MemberRole } from "../../../domain/enums/MemberRole";
 import { MemberStatus } from "../../../domain/enums/MemberStatus";
 import { WorkspacePrivacy } from "../../../domain/enums/WorkspacePrivacy";
 import { AppError } from "../../../domain/errors/AppError";
-import { CreateNotificationUseCase } from "../notification/create-notification.usecase";
+import { logger } from "../../../infrastructure/di/container";
 
 import { ISendWorkspaceInviteUseCase } from "../../interfaces/use-cases/workspace/send-workspace-invite.usecase.interface";
 import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
@@ -24,7 +25,7 @@ export class SendWorkspaceInviteUseCase implements ISendWorkspaceInviteUseCase {
         @inject(REPOSITORY_TOKENS.IWorkspaceMemberRepository) private _workspaceMemberRepository: IWorkspaceMemberRepository,
         @inject(REPOSITORY_TOKENS.IUserRepository) private _userRepository: IUserRepository,
         @inject(SERVICE_TOKENS.IEmailService) private _emailService: IEmailService,
-        @inject(CreateNotificationUseCase) private _createNotificationUseCase?: CreateNotificationUseCase
+        @inject(USECASE_TOKENS.ICreateNotificationUseCase) private _createNotificationUseCase: ICreateNotificationUseCase
     ) {}
 
     async execute(payload: {workspaceId: string, requesterId: string, targetEmail: string}): Promise<{ success: boolean; message: string }> {
@@ -76,22 +77,33 @@ export class SendWorkspaceInviteUseCase implements ISendWorkspaceInviteUseCase {
 
         const inviteLink = `${process.env.CLIENT_URL || 'http://localhost:5173'}/dashboard?inviteCode=${workspace.inviteCode}`;
 
-        await this._emailService.sendWorkspaceInviteEmail(
-            targetUser.email,
-            workspace.name,
-            inviteLink
-        );
+        // In-app notification first so the invite still reaches them even if SMTP fails
+        await this._createNotificationUseCase.execute({
+            userId: targetUser.id,
+            type: 'WORKSPACE_INVITE',
+            title: 'Workspace Invitation',
+            message: `You have been invited to join the workspace "${workspace.name}".`,
+            relatedId: workspace.id
+        }).catch(err => logger.error(`Failed to create invite notification: ${err instanceof Error ? err.message : String(err)}`));
 
-        if (this._createNotificationUseCase && targetUser.id) {
-            await this._createNotificationUseCase.execute({
-                userId: targetUser.id,
-                type: 'WORKSPACE_INVITE',
-                title: 'Workspace Invitation',
-                message: `You have been invited to join the workspace "${workspace.name}".`,
-                relatedId: workspace.id
-            });
+        let emailSent = true;
+        try {
+            await this._emailService.sendWorkspaceInviteEmail(
+                targetUser.email,
+                workspace.name,
+                inviteLink
+            );
+        } catch (error: unknown) {
+            emailSent = false;
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            logger.error(`Invite email failed for ${targetUser.email}, in-app invite still created: ${errorMessage}`);
         }
 
-        return { success: true, message: "Invitation sent successfully" };
+        return {
+            success: true,
+            message: emailSent
+                ? "Invitation sent successfully"
+                : "Invitation sent. The member will see it in their notifications."
+        };
     }
 }

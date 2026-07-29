@@ -18,11 +18,19 @@ export const createWorkerNode = (
     });
 
     return async (state: IAgentState, config?: any): Promise<{ messages: BaseMessage[] }> => {
-        const result = await agent.invoke(state, config);
+        let result;
+        try {
+            result = await agent.invoke(state, config);
+        } catch (error) {
+            console.error(`[WorkerNode] ${name} failed:`, error);
+            throw error;
+        }
+
         const lastMessage = result.messages[result.messages.length - 1];
 
         
         if (!lastMessage) {
+            console.warn(`[WorkerNode] ${name} returned no final message.`);
             return { messages: [] };
         }
 

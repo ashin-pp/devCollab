@@ -1,49 +1,84 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, Upload, Globe, Lock } from 'lucide-react';
 import { WorkspaceService } from '../../api/workspace/workspace.service';
 import type { CreateWorkspaceData } from '../../types/workspace.types';
 import type { CreateWorkspaceModalProps } from '../../types/component.types';
 import Swal from 'sweetalert2';
 import toast from 'react-hot-toast';
-import { MAX_WORKSPACE_ICON_SIZE_BYTES } from '../../utils/constants';
+import { validateWorkspaceName, validateWorkspaceTeamSize, validateWorkspaceIconFile, WORKSPACE_NAME_MAX } from '../../validation';
 
-export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({ isOpen, onClose, onSuccess }) => {
+export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({
+    isOpen,
+    onClose,
+    onSuccess,
+    existingWorkspaceNames = [],
+}) => {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [logo, setLogo] = useState('');
     const [privacy, setPrivacy] = useState<'public' | 'private'>('public');
     const [teamSize, setTeamSize] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [nameError, setNameError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!isOpen) {
+            setName('');
+            setDescription('');
+            setLogo('');
+            setPrivacy('public');
+            setTeamSize('');
+            setNameError(null);
+            setIsLoading(false);
+        }
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
+    const handleNameChange = (value: string) => {
+        setName(value);
+        setNameError(validateWorkspaceName(value, existingWorkspaceNames));
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
-        if (!name.trim()) {
-            Swal.fire('Error', 'Workspace Name is required', 'error');
+
+        const validationError = validateWorkspaceName(name, existingWorkspaceNames);
+        if (validationError) {
+            setNameError(validationError);
             return;
+        }
+
+        if (teamSize) {
+            const sizeError = validateWorkspaceTeamSize(teamSize);
+            if (sizeError) {
+                toast.error(sizeError);
+                return;
+            }
         }
 
         setIsLoading(true);
         try {
             const data: CreateWorkspaceData = {
-                name,
-                description,
+                name: name.trim(),
+                description: description.trim(),
                 logo,
                 privacy,
                 maxMembers: teamSize ? parseInt(teamSize, 10) : 50,
-                // Logo upload logic can be added here later
             };
 
             const response = await WorkspaceService.createWorkspace(data);
-            
+
             Swal.fire('Success', 'Workspace created successfully!', 'success');
             onSuccess(response.data);
             onClose();
         } catch (error: unknown) {
             const err = error as { response?: { data?: { message?: string } } };
-            Swal.fire('Error', err.response?.data?.message || 'Failed to create workspace', 'error');
+            const message = err.response?.data?.message || 'Failed to create workspace';
+            if (/already exists/i.test(message) || /name/i.test(message)) {
+                setNameError(message);
+            }
+            Swal.fire('Error', message, 'error');
         } finally {
             setIsLoading(false);
         }
@@ -53,13 +88,13 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({ isOp
         const file = e.target.files?.[0];
         if (!file) return;
 
-        if (!file.type.startsWith('image/')) {
-            Swal.fire('Error', 'Please select an image file', 'error');
-            return;
-        }
-
-        if (file.size > MAX_WORKSPACE_ICON_SIZE_BYTES) {
-            toast.error('Image must be less than 2MB');
+        const fileError = validateWorkspaceIconFile(file);
+        if (fileError) {
+            if (fileError.includes('image')) {
+                Swal.fire('Error', fileError, 'error');
+            } else {
+                toast.error(fileError);
+            }
             return;
         }
 
@@ -73,7 +108,6 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({ isOp
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
             <div className="bg-white rounded-xl shadow-xl w-full max-w-[480px] overflow-hidden max-h-[90vh] flex flex-col">
-                {/* Header */}
                 <div className="flex items-start justify-between p-6 border-b border-slate-100 shrink-0">
                     <div>
                         <h2 className="text-xl font-bold text-slate-900 mb-1">Create New Workspace</h2>
@@ -81,7 +115,7 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({ isOp
                             Set up a dedicated environment for your team's high-performance engineering workflow.
                         </p>
                     </div>
-                    <button 
+                    <button
                         onClick={onClose}
                         className="text-slate-400 hover:text-slate-600 transition-colors"
                     >
@@ -89,8 +123,7 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({ isOp
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto">
-                    {/* Logo Upload */}
+                <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto" noValidate>
                     <div className="flex items-center gap-4">
                         <label className="relative w-16 h-16 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center text-slate-400 cursor-pointer hover:bg-blue-50 hover:border-blue-200 hover:text-blue-500 transition-colors overflow-hidden">
                             {logo ? (
@@ -101,10 +134,10 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({ isOp
                                     <span className="text-[9px] font-bold tracking-wider uppercase">Upload</span>
                                 </>
                             )}
-                            <input 
-                                type="file" 
-                                accept="image/*" 
-                                className="hidden" 
+                            <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
                                 onChange={handleLogoChange}
                             />
                         </label>
@@ -114,35 +147,46 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({ isOp
                         </div>
                     </div>
 
-                    {/* Workspace Name */}
                     <div>
                         <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                            Workspace Name
+                            Workspace Name <span className="text-rose-500">*</span>
                         </label>
-                        <input 
-                            type="text" 
+                        <input
+                            type="text"
                             value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            placeholder="e.g. Engineering Squad Alpha" 
-                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            onChange={(e) => handleNameChange(e.target.value)}
+                            maxLength={WORKSPACE_NAME_MAX}
+                            placeholder="e.g. Engineering Squad Alpha"
+                            aria-invalid={!!nameError}
+                            className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 ${
+                                nameError
+                                    ? 'border-rose-400 focus:ring-rose-500 focus:border-rose-500'
+                                    : 'border-slate-300 focus:ring-blue-500 focus:border-blue-500'
+                            }`}
                         />
+                        {nameError ? (
+                            <p className="mt-1.5 text-xs font-medium text-rose-600">{nameError}</p>
+                        ) : (
+                            <p className="mt-1.5 text-[11px] text-slate-400">
+                                {name.trim().length}/{WORKSPACE_NAME_MAX} · Must be unique
+                            </p>
+                        )}
                     </div>
 
-                    {/* Workspace Description */}
                     <div>
                         <label className="block text-xs font-bold text-slate-700 mb-1.5">
                             Description
                         </label>
-                        <textarea 
+                        <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            placeholder="Briefly describe the purpose of this workspace..." 
+                            placeholder="Briefly describe the purpose of this workspace..."
                             rows={3}
+                            maxLength={500}
                             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
                         />
                     </div>
 
-                    {/* Privacy Settings */}
                     <div>
                         <label className="block text-xs font-bold text-slate-700 mb-1.5">
                             Privacy Settings
@@ -152,8 +196,8 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({ isOp
                                 type="button"
                                 onClick={() => setPrivacy('public')}
                                 className={`flex items-start gap-3 p-3 rounded-lg border text-left transition-colors ${
-                                    privacy === 'public' 
-                                        ? 'border-blue-500 bg-blue-50' 
+                                    privacy === 'public'
+                                        ? 'border-blue-500 bg-blue-50'
                                         : 'border-slate-200 bg-white hover:border-slate-300'
                                 }`}
                             >
@@ -168,8 +212,8 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({ isOp
                                 type="button"
                                 onClick={() => setPrivacy('private')}
                                 className={`flex items-start gap-3 p-3 rounded-lg border text-left transition-colors ${
-                                    privacy === 'private' 
-                                        ? 'border-blue-500 bg-blue-50' 
+                                    privacy === 'private'
+                                        ? 'border-blue-500 bg-blue-50'
                                         : 'border-slate-200 bg-white hover:border-slate-300'
                                 }`}
                             >
@@ -182,23 +226,23 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({ isOp
                         </div>
                     </div>
 
-                    {/* Team Size */}
                     <div>
                         <label className="block text-xs font-bold text-slate-700 mb-1.5">
                             Team Size
                         </label>
-                        <input 
-                            type="number" 
+                        <input
+                            type="number"
+                            min={1}
+                            max={10000}
                             value={teamSize}
                             onChange={(e) => setTeamSize(e.target.value)}
-                            placeholder="e.g. 15" 
+                            placeholder="e.g. 15"
                             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         />
                     </div>
 
-                    {/* Footer / Buttons */}
                     <div className="flex items-center justify-end gap-3 pt-2">
-                        <button 
+                        <button
                             type="button"
                             onClick={onClose}
                             disabled={isLoading}
@@ -206,9 +250,9 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({ isOp
                         >
                             Cancel
                         </button>
-                        <button 
+                        <button
                             type="submit"
-                            disabled={isLoading}
+                            disabled={isLoading || !!nameError || !name.trim()}
                             className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50"
                         >
                             {isLoading ? 'Creating...' : 'Create Workspace'}

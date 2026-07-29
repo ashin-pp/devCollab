@@ -40,6 +40,17 @@ export class WorkspaceRepository implements IWorkspaceRepository {
         return this._mapper.toDomain(workspace);
     }
 
+    async findByNameIgnoreCase(name: string): Promise<Workspace | null> {
+        const trimmed = name.trim();
+        if (!trimmed) return null;
+
+        const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const workspace = await WorkspaceModel.findOne({
+            name: { $regex: `^${escaped}$`, $options: 'i' },
+        });
+        return workspace ? this._mapper.toDomain(workspace) : null;
+    }
+
     async findAllByUserId(userId: string): Promise<Workspace[]> {
         const workspaces = await WorkspaceModel.find({ created_by: userId });
         return workspaces.map(w => this._mapper.toDomain(w));

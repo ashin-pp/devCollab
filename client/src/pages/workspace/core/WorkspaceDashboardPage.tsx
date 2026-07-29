@@ -3,12 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { WorkspaceLayout } from '../../../layouts/WorkspaceLayout';
 import type { RootState } from '../../../store';
-import { MessageSquare, Users, Hash, Info, ShieldCheck, Lock } from 'lucide-react';
+import { MessageSquare, Users, Hash, ShieldCheck, Lock, ArrowRight, BarChart3 } from 'lucide-react';
 import { WorkspacePollsList } from '../../../components/polls/WorkspacePollsList';
 import { useUserWorkspaces } from '../../../hooks/useWorkspaces';
 import { useWorkspaceChannels } from '../../../hooks/useChannels';
 import { WorkspaceService } from '../../../api/workspace/workspace.service';
 import type { WorkspaceData, MemberData } from '../../../types/workspace.types';
+import { getMemberAvatar, getMemberDisplayName, getMemberInitial } from '../../../utils/member.utils';
 
 export const WorkspaceDashboardPage = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>();
@@ -35,149 +36,220 @@ export const WorkspaceDashboardPage = () => {
     }
   }, [workspaceId]);
 
+  const firstName = user?.name?.split(' ')[0] || 'there';
+
   return (
     <WorkspaceLayout>
-      <div className="flex-1 h-full overflow-y-auto bg-[#F8FAFC] p-8">
-        
-        {/* Header Section */}
-        <div className="mb-8 flex items-end justify-between">
-          <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">
-              Welcome back, {user?.name?.split(' ')[0] || 'User'}! 👋
-            </h1>
-            <p className="text-slate-500 font-medium">
-              Here is what's happening in <span className="font-bold text-slate-700">{workspaceName}</span> today.
-            </p>
-          </div>
-          <button 
-            onClick={() => navigate(`/workspace/${workspaceId}/channels`)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-md shadow-blue-500/20"
-          >
-            <MessageSquare className="w-4 h-4" />
-            Go to Channels
-          </button>
-        </div>
+      <div className="flex-1 min-h-0 h-full overflow-y-auto bg-gradient-to-br from-slate-50 via-white to-blue-50/40">
+        <div className="max-w-[1400px] mx-auto p-6 lg:p-8 space-y-6">
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          {/* Main Content (Left) */}
-          <div className="lg:col-span-2 space-y-6">
-            
-            {/* Workspace Info Card */}
-            <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
-                  <Info className="w-5 h-5" />
+          {/* Hero */}
+          <section className="relative overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-sm">
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(37,99,235,0.12),_transparent_55%)]" />
+            <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-blue-500/10 blur-3xl" />
+            <div className="relative flex flex-col gap-6 p-6 sm:p-8 lg:flex-row lg:items-end lg:justify-between">
+              <div className="min-w-0">
+                <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-blue-600">
+                  {workspaceName}
+                </p>
+                <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
+                  Welcome back, {firstName}
+                </h1>
+                <p className="mt-2 max-w-xl text-sm sm:text-base text-slate-500 font-medium leading-relaxed">
+                  {workspace?.description?.trim()
+                    ? workspace.description
+                    : 'Jump into channels, check in with your team, and vote on active polls.'}
+                </p>
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 capitalize">
+                    {workspace?.privacy === 'private' ? (
+                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+                    ) : (
+                      <Users className="h-3.5 w-3.5 text-blue-500" />
+                    )}
+                    {workspace?.privacy || 'public'} workspace
+                  </span>
                 </div>
-                <h3 className="font-extrabold text-slate-900 text-lg">Workspace Info</h3>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Name</p>
-                  <p className="text-sm font-semibold text-slate-800">{workspace?.name}</p>
-                </div>
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Privacy</p>
-                  <p className="text-sm font-semibold text-slate-800 capitalize flex items-center gap-1.5">
-                    {workspace?.privacy === 'public' ? null : <ShieldCheck className="w-4 h-4 text-emerald-500" />}
-                    {workspace?.privacy}
-                  </p>
-                </div>
-                <div className="md:col-span-2 p-4 rounded-xl bg-slate-50 border border-slate-100">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Description</p>
-                  <p className="text-sm text-slate-700 leading-relaxed">{workspace?.description || 'No description provided.'}</p>
-                </div>
+
+              <div className="flex flex-wrap gap-3 shrink-0">
+                <button
+                  onClick={() => navigate(`/workspace/${workspaceId}/channels`)}
+                  className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700"
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  Open channels
+                </button>
+                <button
+                  onClick={() => navigate(`/workspace/${workspaceId}/polls`)}
+                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                >
+                  <BarChart3 className="h-4 w-4 text-indigo-500" />
+                  All polls
+                </button>
               </div>
             </div>
+          </section>
 
-            {/* Channels & Members Split */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
-              {/* Channels List */}
-              <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm flex flex-col h-[400px]">
-                <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Hash className="w-5 h-5 text-slate-400" />
-                    <h3 className="font-extrabold text-slate-900">Channels ({channels.length})</h3>
-                  </div>
+          {/* Stats */}
+          <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              {
+                label: 'Channels',
+                value: loadingChannels ? '—' : String(channels.length),
+                icon: Hash,
+                tint: 'bg-blue-50 text-blue-600',
+                onClick: () => navigate(`/workspace/${workspaceId}/channels`),
+              },
+              {
+                label: 'Members',
+                value: loadingMembers ? '—' : String(members.length),
+                icon: Users,
+                tint: 'bg-emerald-50 text-emerald-600',
+                onClick: () => navigate(`/workspace/${workspaceId}/members`),
+              },
+              {
+                label: 'Team polls',
+                value: 'Active',
+                icon: BarChart3,
+                tint: 'bg-indigo-50 text-indigo-600',
+                onClick: () => navigate(`/workspace/${workspaceId}/polls`),
+              },
+            ].map((stat) => (
+              <button
+                key={stat.label}
+                type="button"
+                onClick={stat.onClick}
+                className="group flex items-center gap-4 rounded-2xl border border-slate-200/70 bg-white p-4 text-left shadow-sm transition hover:border-blue-200 hover:shadow-md"
+              >
+                <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${stat.tint}`}>
+                  <stat.icon className="h-5 w-5" />
                 </div>
-                <div className="p-2 flex-1 overflow-y-auto">
-                  {loadingChannels ? (
-                    <div className="p-4 text-sm text-slate-500 text-center">Loading channels...</div>
-                  ) : channels.length > 0 ? (
-                    channels.map(channel => (
-                      <div 
-                        key={channel.id} 
-                        onClick={() => navigate(`/workspace/${workspaceId}/channels/${channel.id}`)}
-                        className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer group"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400">{stat.label}</p>
+                  <p className="text-2xl font-extrabold text-slate-900 tracking-tight">{stat.value}</p>
+                </div>
+                <ArrowRight className="h-4 w-4 text-slate-300 transition group-hover:text-blue-500 group-hover:translate-x-0.5" />
+              </button>
+            ))}
+          </section>
+
+          {/* Main grid */}
+          <section className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+
+            {/* Left column */}
+            <div className="xl:col-span-7 space-y-6 min-w-0">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                {/* Channels */}
+                <div className="flex flex-col rounded-2xl border border-slate-200/70 bg-white shadow-sm h-[380px] min-h-0 overflow-hidden">
+                  <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 shrink-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Hash className="h-4 w-4 text-slate-400 shrink-0" />
+                      <h3 className="font-extrabold text-slate-900 truncate">Channels</h3>
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-500">
+                        {channels.length}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => navigate(`/workspace/${workspaceId}/channels`)}
+                      className="text-xs font-bold text-blue-600 hover:text-blue-700"
+                    >
+                      View all
+                    </button>
+                  </div>
+                  <div className="flex-1 min-h-0 overflow-y-auto p-2 custom-scrollbar">
+                    {loadingChannels ? (
+                      <div className="p-6 text-center text-sm text-slate-500">Loading channels...</div>
+                    ) : channels.length > 0 ? (
+                      channels.map((channel) => (
+                        <button
+                          key={channel.id}
+                          type="button"
+                          onClick={() => navigate(`/workspace/${workspaceId}/channels/${channel.id}`)}
+                          className="flex w-full items-center gap-3 rounded-xl p-3 text-left transition hover:bg-slate-50 group"
+                        >
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition group-hover:bg-blue-100 group-hover:text-blue-600">
                             {channel.privacy === 'private' ? (
-                              <Lock className="w-4 h-4" />
+                              <Lock className="h-4 w-4" />
                             ) : (
-                              <Hash className="w-4 h-4" />
+                              <Hash className="h-4 w-4" />
                             )}
                           </div>
-                          <div>
-                            <p className="text-sm font-bold text-slate-800">{channel.name}</p>
-                            <p className="text-xs text-slate-500">{channel.privacy === 'private' ? 'Private' : 'Public'}</p>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-bold text-slate-800">{channel.name}</p>
+                            <p className="text-[11px] font-medium text-slate-500 capitalize">
+                              {channel.privacy === 'private' ? 'Private' : 'Public'}
+                            </p>
                           </div>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="p-4 text-sm text-slate-500 text-center">No channels found.</div>
-                  )}
-                </div>
-              </div>
-
-              {/* Members List */}
-              <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm flex flex-col h-[400px]">
-                <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Users className="w-5 h-5 text-slate-400" />
-                    <h3 className="font-extrabold text-slate-900">Members ({members.length})</h3>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="p-6 text-center text-sm text-slate-500">No channels yet.</div>
+                    )}
                   </div>
                 </div>
-                <div className="p-2 flex-1 overflow-y-auto">
-                  {loadingMembers ? (
-                    <div className="p-4 text-sm text-slate-500 text-center">Loading members...</div>
-                  ) : members.length > 0 ? (
-                    members.map(member => (
-                      <div 
-                        key={member.id} 
-                        className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors cursor-default"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          {member.user?.profileImage ? (
-                            <img src={member.user.profileImage} alt={member.user.name} className="w-8 h-8 rounded-full object-cover shrink-0" />
+
+                {/* Members */}
+                <div className="flex flex-col rounded-2xl border border-slate-200/70 bg-white shadow-sm h-[380px] min-h-0 overflow-hidden">
+                  <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 shrink-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Users className="h-4 w-4 text-slate-400 shrink-0" />
+                      <h3 className="font-extrabold text-slate-900 truncate">Members</h3>
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-500">
+                        {members.length}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => navigate(`/workspace/${workspaceId}/members`)}
+                      className="text-xs font-bold text-blue-600 hover:text-blue-700"
+                    >
+                      View all
+                    </button>
+                  </div>
+                  <div className="flex-1 min-h-0 overflow-y-auto p-2 custom-scrollbar">
+                    {loadingMembers ? (
+                      <div className="p-6 text-center text-sm text-slate-500">Loading members...</div>
+                    ) : members.length > 0 ? (
+                      members.map((member) => (
+                        <div
+                          key={member.id}
+                          className="flex items-center gap-3 rounded-xl p-3"
+                        >
+                          {getMemberAvatar(member) ? (
+                            <img
+                              src={getMemberAvatar(member)}
+                              alt={getMemberDisplayName(member)}
+                              className="h-9 w-9 shrink-0 rounded-full object-cover ring-2 ring-white"
+                            />
                           ) : (
-                            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-xs shrink-0">
-                              {member.user?.name?.charAt(0).toUpperCase()}
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-600 ring-2 ring-white">
+                              {getMemberInitial(member)}
                             </div>
                           )}
                           <div className="min-w-0">
-                            <p className="text-sm font-bold text-slate-800 truncate">{member.user?.name}</p>
-                            <p className="text-[11px] font-medium text-slate-500 capitalize">{member.role}</p>
+                            <p className="truncate text-sm font-bold text-slate-800">
+                              {getMemberDisplayName(member)}
+                            </p>
+                            <p className="text-[11px] font-medium capitalize text-slate-500">
+                              {member.role}
+                            </p>
                           </div>
                         </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="p-4 text-sm text-slate-500 text-center">No members found.</div>
-                  )}
+                      ))
+                    ) : (
+                      <div className="p-6 text-center text-sm text-slate-500">No members found.</div>
+                    )}
+                  </div>
                 </div>
               </div>
-
             </div>
-          </div>
 
-          {/* Right Sidebar (Polls) */}
-          <div className="lg:col-span-1">
-            <WorkspacePollsList workspaceId={workspaceId as string} />
-          </div>
-
+            {/* Polls sidebar — fixed height + internal scroll */}
+            <aside className="xl:col-span-5 min-w-0 xl:sticky xl:top-6">
+              <WorkspacePollsList workspaceId={workspaceId as string} />
+            </aside>
+          </section>
         </div>
       </div>
     </WorkspaceLayout>

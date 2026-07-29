@@ -1,19 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
-import EmojiPicker from 'emoji-picker-react';
 import { WorkspaceLayout } from '../../../layouts/WorkspaceLayout';
-import { Hash, Star, Bold, Italic, Code, Link as LinkIcon, List, Send, X, Smile, Plus, AtSign, ChevronDown, Users, Settings, LogOut, Lock, BarChart2, Image as ImageIcon, AlertCircle } from 'lucide-react';
+import { Hash, X, AlertCircle } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useParams, useNavigate } from 'react-router-dom';
-import Swal from 'sweetalert2';
 import type { RootState } from '../../../store/index';
 import { addPoll, updatePoll, removePoll } from '../../../store/slices/pollSlice';
 import { useSocket } from '../../../hooks/useSocket';
 import { MessageService } from '../../../api/workspace/message.service';
-import { format } from 'date-fns';
-
 import { ChannelService } from '../../../api/workspace/channel.service';
 import { useWorkspaceChannels, useChannelMembers } from '../../../hooks/useChannels';
 import { useChannelMessages } from '../../../hooks/useMessages';
+import { useChannelThread } from '../../../hooks/useChannelThread';
 import { useAiCommand } from '../../../hooks/useAi';
 import { ChannelMembersSidebar } from '../../../components/workspace/ChannelMembersSidebar';
 import { AddChannelMemberModal } from '../../../components/workspace/AddChannelMemberModal';
@@ -23,10 +20,12 @@ import { ChannelHeader } from '../../../components/workspace/channel/ChannelHead
 import { ChannelMessageList } from '../../../components/workspace/channel/ChannelMessageList';
 import { ChannelMessageInput } from '../../../components/workspace/channel/ChannelMessageInput';
 import { ChannelNotMemberView } from '../../../components/workspace/channel/ChannelNotMemberView';
+import { ThreadSidebar } from '../../../components/workspace/channel/ThreadSidebar';
 import { ChannelPollsList } from '../../../components/polls/ChannelPollsList';
 import { CreatePollModal } from '../../../components/polls/CreatePollModal';
 import { AiDashboardModal } from '../../../components/workspace/channel/AiDashboardModal';
 import type { AiTab } from '../../../components/workspace/channel/AiDashboardModal';
+import { getMessageId } from '../../../utils/message.utils';
 
 export const WorkspaceChannelPage = () => {
   const { workspaceId, channelId } = useParams<{ workspaceId: string, channelId: string }>();
@@ -36,15 +35,19 @@ export const WorkspaceChannelPage = () => {
 
   const [message, setMessage] = useState('');
   const textareaRef = useRef<HTMLDivElement>(null);
-  const [showThread, setShowThread] = useState(false);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [isChannelDropdownOpen, setIsChannelDropdownOpen] = useState(false);
 
-  const { channels, refetch: refetchChannels } = useWorkspaceChannels(workspaceId);
+  const { channels, setChannels, refetch: refetchChannels } = useWorkspaceChannels(workspaceId);
   const [currentChannel, setCurrentChannel] = useState<ChannelData | null>(null);
   const [isWorkspaceOwner, setIsWorkspaceOwner] = useState(false);
+  const [isJoiningChannel, setIsJoiningChannel] = useState(false);
+  const joinedChannelRef = useRef(false);
 
-  const { members: channelMembers, setMembers: setChannelMembers, imageMap: memberImagesMap, setImageMap: setMemberImagesMap, refetch: refetchMembers } = useChannelMembers(workspaceId, channelId);
+  const isChannelMember =
+    Boolean(currentChannel?.isMember) || joinedChannelRef.current;
+
+  const { members: channelMembers, setMembers: setChannelMembers, imageMap: memberImagesMap, setImageMap: setMemberImagesMap, refetch: refetchMembers } = useChannelMembers(workspaceId, channelId, isChannelMember);
 
   const {
     messages, setMessages, loading: isLoadingMessages, hasMore: hasMoreMessages,
@@ -72,25 +75,85 @@ export const WorkspaceChannelPage = () => {
   const { processCommand, isLoading: isProcessingAi } = useAiCommand();
 
   useEffect(() => {
+    joinedChannelRef.current = false;
+  }, [channelId]);
+
+  useEffect(() => {
     if (channels.length > 0 && channelId) {
       const channel = channels.find(c => c.id === channelId);
-      if (channel && (!currentChannel || currentChannel.id !== channel.id)) {
+      if (!channel) return;
+      if (!currentChannel || currentChannel.id !== channel.id) {
         setCurrentChannel(channel);
+        return;
+      }
+      const mergedIsMember = channel.isMember || joinedChannelRef.current;
+      if (
+        currentChannel.isMember !== mergedIsMember ||
+        currentChannel.hasPendingRequest !== channel.hasPendingRequest
+      ) {
+        setCurrentChannel(prev => prev ? {
+          ...prev,
+          isMember: mergedIsMember,
+          hasPendingRequest: channel.hasPendingRequest,
+        } : { ...channel, isMember: mergedIsMember });
       }
     }
-  }, [channels, channelId]);
+  }, [channels, channelId, currentChannel]);
 
   const socket = useSocket(workspaceId);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [initialUnreadCount, setInitialUnreadCount] = useState(0);
+  const [scrollToBottomSignal, setScrollToBottomSignal] = useState(0);
 
-  const fetchChannelData = () => {
+  const {
+    showThread,
+    threadRootMessage,
+    threadReplies,
+    isLoadingThread,
+    handleOpenThread,
+    handleCloseThread,
+    handleSendThreadReply,
+    handleThreadReplyReceived
+  } = useChannelThread({
+    workspaceId,
+    channelId,
+    user,
+    socket,
+    setMessages,
+    onOpenMembersClose: () => setShowMembersSidebar(false)
+  });
+
+  const handleMarkChannelAsRead = (readUpto?: string) => {
+    if (!workspaceId || !channelId) return;
+    ChannelService.markAsRead(workspaceId, channelId, readUpto)
+      .then(() => {
+        window.dispatchEvent(new CustomEvent('channel-read', { detail: { channelId } }));
+        setInitialUnreadCount(0);
+      })
+      .catch(err => console.error('Failed to mark channel as read', err));
+  };
+
+  const fetchChannelData = async (options?: { skipChannelListRefetch?: boolean }) => {
     if (currentChannel?.isActive === false) return;
-    
+    const canAccessChannel =
+      Boolean(currentChannel?.isMember) || joinedChannelRef.current;
+    if (!canAccessChannel) return;
+
     if (workspaceId && channelId) {
-      refetchChannels();
-      fetchMessages(1, true); // Fetch first page and reset
+      if (!options?.skipChannelListRefetch) {
+        refetchChannels();
+      }
       refetchMembers();
+
+      try {
+        const unreadRes = await ChannelService.getUnreadCounts(workspaceId);
+        const counts = unreadRes.data?.data || unreadRes.data || {};
+        setInitialUnreadCount(counts[channelId] || 0);
+      } catch {
+        setInitialUnreadCount(0);
+      }
+
+      await fetchMessages(1, true);
 
       import('../../../api/workspace/workspace.service').then(({ WorkspaceService }) => {
         WorkspaceService.getWorkspaceMembers(workspaceId, false)
@@ -129,45 +192,81 @@ export const WorkspaceChannelPage = () => {
     }
   };
 
+  const applyJoinedChannelState = async () => {
+    joinedChannelRef.current = true;
+    setCurrentChannel(prev => prev ? { ...prev, isMember: true, hasPendingRequest: false } : null);
+    setChannels(prev => prev.map(channel =>
+      channel.id === channelId
+        ? { ...channel, isMember: true, hasPendingRequest: false }
+        : channel
+    ));
+    await refetchMembers();
+    await fetchMessages(1, true);
+    if (workspaceId && channelId) {
+      try {
+        const unreadRes = await ChannelService.getUnreadCounts(workspaceId);
+        const counts = unreadRes.data?.data || unreadRes.data || {};
+        setInitialUnreadCount(counts[channelId] || 0);
+      } catch {
+        setInitialUnreadCount(0);
+      }
+    }
+    await refetchChannels();
+  };
+
   const handleJoinChannel = async () => {
-    if (!workspaceId || !channelId) return;
+    if (!workspaceId || !channelId || isJoiningChannel) return;
+    setIsJoiningChannel(true);
     try {
       const res = await ChannelService.joinChannel(workspaceId, channelId);
-      if (res.data?.success) {
-        if (res.data.status === 'pending') {
-          import('react-hot-toast').then(m => m.default.success('Join request sent to the channel creator'));
-          setCurrentChannel(prev => prev ? { ...prev, hasPendingRequest: true } : null);
-        } else {
-          import('react-hot-toast').then(m => m.default.success('Successfully joined the channel'));
-          setCurrentChannel(prev => prev ? { ...prev, isMember: true } : null);
-          fetchChannelData();
-        }
+      const payload = res.data || {};
+      const status = payload.status as string | undefined;
+      const joined =
+        payload.success === true ||
+        status === 'approved' ||
+        /successfully joined/i.test(String(payload.message || ''));
+
+      if (!joined && status !== 'pending') {
+        import('react-hot-toast').then(m => m.default.error(payload.message || 'Failed to join channel'));
+        return;
       }
+
+      if (status === 'pending') {
+        import('react-hot-toast').then(m => m.default.success('Join request sent to the channel creator'));
+        setCurrentChannel(prev => prev ? { ...prev, hasPendingRequest: true } : null);
+        setChannels(prev => prev.map(channel =>
+          channel.id === channelId ? { ...channel, hasPendingRequest: true } : channel
+        ));
+        return;
+      }
+
+      import('react-hot-toast').then(m => m.default.success('Successfully joined the channel'));
+      await applyJoinedChannelState();
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
-      import('react-hot-toast').then(m => m.default.error(err.response?.data?.message || 'Failed to join channel'));
+      const message = err.response?.data?.message || '';
+      if (/already.*channel member/i.test(message)) {
+        import('react-hot-toast').then(m => m.default.success('Successfully joined the channel'));
+        await applyJoinedChannelState();
+        return;
+      }
+      import('react-hot-toast').then(m => m.default.error(message || 'Failed to join channel'));
+    } finally {
+      setIsJoiningChannel(false);
     }
   };
 
   useEffect(() => {
-    if (!currentChannel) return; // Wait for channel data to load
+    if (!currentChannel) return;
     if (currentChannel.isActive === false) return;
+    if (!isChannelMember) return;
 
     fetchChannelData();
-
-    // Mark channel as read when user enters
-    if (workspaceId && channelId && currentChannel?.isActive !== false) {
-      ChannelService.markAsRead(workspaceId, channelId)
-        .then(() => {
-          // Emit event to parent to clear unread count
-          window.dispatchEvent(new CustomEvent('channel-read', { detail: { channelId } }));
-        })
-        .catch(err => console.error('Failed to mark channel as read', err));
-    }
-  }, [workspaceId, channelId, currentChannel?.id, currentChannel?.isActive]);
+  }, [workspaceId, channelId, currentChannel?.id, currentChannel?.isActive, isChannelMember]);
 
   useEffect(() => {
     if (!socket || !channelId || currentChannel?.isActive === false) return;
+    if (!isChannelMember) return;
 
     const joinChannel = () => {
       socket.emit('join_channel', channelId);
@@ -180,16 +279,16 @@ export const WorkspaceChannelPage = () => {
     socket.on('connect', joinChannel);
 
     const handleNewMessage = (newMsg: MessageData) => {
+      if (newMsg.threadRootId) return;
+
       setMessages(prev => {
-        const incomingId = newMsg.id || newMsg._id;
-        if (prev.some(m => (m.id || m._id) === incomingId)) return prev;
+        const incomingId = getMessageId(newMsg);
+        if (prev.some(m => getMessageId(m) === incomingId)) return prev;
         return [...prev, newMsg];
       });
-      scrollToBottom();
     };
 
     const handleTyping = (data: { userId: string, userName: string }) => {
-      // Don't show current user's typing indicator
       if (data.userId === user?.id) return;
 
       setTypingUsers(prev => {
@@ -203,9 +302,7 @@ export const WorkspaceChannelPage = () => {
     };
 
     const handleMemberRemoved = (data: { userId: string, userName: string, removedBy: string }) => {
-      // If current user was removed
       if (data.userId === user?.id) {
-        // Show immediate error notification
         import('react-hot-toast').then(m => {
           m.default.error(`You have been removed from this channel by ${data.removedBy}`, {
             duration: 4000,
@@ -213,19 +310,16 @@ export const WorkspaceChannelPage = () => {
           });
         });
 
-        // Redirect after short delay
         setTimeout(() => {
           navigate(`/workspace/${workspaceId}/channels`);
         }, 2000);
       } else {
-        // Update channel members list
         refetchMembers();
-
-        scrollToBottom();
       }
     };
 
     socket.on('message_received', handleNewMessage);
+    socket.on('thread_reply_received', handleThreadReplyReceived);
     socket.on('user_typing', handleTyping);
     socket.on('user_stopped_typing', handleStopTyping);
     socket.on('member_removed', handleMemberRemoved);
@@ -243,6 +337,7 @@ export const WorkspaceChannelPage = () => {
       socket.off('connect', joinChannel);
       socket.emit('leave_channel', channelId);
       socket.off('message_received', handleNewMessage);
+      socket.off('thread_reply_received', handleThreadReplyReceived);
       socket.off('user_typing', handleTyping);
       socket.off('user_stopped_typing', handleStopTyping);
       socket.off('member_removed', handleMemberRemoved);
@@ -250,17 +345,7 @@ export const WorkspaceChannelPage = () => {
       socket.off('poll_voted');
       socket.off('poll_deleted');
     };
-  }, [socket, channelId, user, navigate, workspaceId]);
-
-  function scrollToBottom() {
-    setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
-  }
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+  }, [socket, channelId, user, navigate, workspaceId, handleThreadReplyReceived, isChannelMember, currentChannel?.isActive]);
 
   const handleTyping = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(e.target.value);
@@ -330,7 +415,7 @@ export const WorkspaceChannelPage = () => {
                createdAt: new Date().toISOString()
              };
              setMessages(prev => [...prev, systemMsg]);
-             scrollToBottom();
+             setScrollToBottomSignal(prev => prev + 1);
           }
         } catch (err) {
           import('react-hot-toast').then(m => m.default.error('AI command failed'));
@@ -347,7 +432,12 @@ export const WorkspaceChannelPage = () => {
       }
       const mentionedUserIds = Array.from(mentionedUserIdsSet);
 
-      const res = await MessageService.sendMessage(workspaceId, channelId, cleanMessage, msgType, attachedImageUrl || undefined, mentionedUserIds);
+      const res = await MessageService.sendMessage(workspaceId, channelId, {
+        content: cleanMessage,
+        messageType: msgType,
+        imageUrl: attachedImageUrl || undefined,
+        mentionedUserIds
+      });
       const newMsg = res.data?.data;
 
       const newMsgObj = {
@@ -356,8 +446,8 @@ export const WorkspaceChannelPage = () => {
       };
 
       setMessages(prev => {
-        const msgId = newMsgObj.id || newMsgObj._id;
-        if (prev.some(m => (m.id || m._id) === msgId)) return prev;
+        const msgId = getMessageId(newMsgObj);
+        if (prev.some(m => getMessageId(m) === msgId)) return prev;
         return [...prev, newMsgObj];
       });
 
@@ -373,6 +463,7 @@ export const WorkspaceChannelPage = () => {
         socket.emit('stop_typing', { channelId, userId: user.id, userName: user.name });
       }
 
+      setScrollToBottomSignal(prev => prev + 1);
       setMessage('');
       if (document.queryCommandState('bold')) document.execCommand('bold', false, undefined);
       if (document.queryCommandState('italic')) document.execCommand('italic', false, undefined);
@@ -456,6 +547,7 @@ export const WorkspaceChannelPage = () => {
 
           <ChannelHeader
             currentChannel={currentChannel}
+            isChannelMember={isChannelMember}
             user={user}
             pendingRequestsCount={pendingRequestsCount}
             workspaceId={workspaceId as string}
@@ -464,7 +556,7 @@ export const WorkspaceChannelPage = () => {
             isChannelDropdownOpen={isChannelDropdownOpen}
             setIsChannelDropdownOpen={setIsChannelDropdownOpen}
             setShowMembersSidebar={setShowMembersSidebar}
-            setShowThread={setShowThread}
+            onCloseThread={handleCloseThread}
             setIsSettingsModalOpen={setIsSettingsModalOpen}
             navigate={navigate}
             openAiDashboard={openAiDashboard}
@@ -480,10 +572,11 @@ export const WorkspaceChannelPage = () => {
                 This channel has been blocked by a workspace admin or owner. You cannot view messages, send messages, or interact with this channel.
               </p>
             </div>
-          ) : currentChannel?.isMember === false ? (
+          ) : !isChannelMember && currentChannel ? (
             <ChannelNotMemberView
               currentChannel={currentChannel}
               handleJoinChannel={handleJoinChannel}
+              isJoining={isJoiningChannel}
             />
           ) : (
             <>
@@ -505,6 +598,7 @@ export const WorkspaceChannelPage = () => {
               )}
 
               <ChannelMessageList
+                key={channelId}
                 messages={messages}
                 user={user}
                 memberImagesMap={memberImagesMap}
@@ -512,8 +606,12 @@ export const WorkspaceChannelPage = () => {
                 isLoadingMessages={isLoadingMessages}
                 loadMoreMessages={loadMoreMessages}
                 totalMessages={totalMessages}
-                messagesEndRef={messagesEndRef}
                 setSelectedImage={setSelectedImage}
+                onOpenThread={handleOpenThread}
+                channelId={channelId}
+                initialUnreadCount={initialUnreadCount}
+                onMarkAsRead={handleMarkChannelAsRead}
+                scrollToBottomSignal={scrollToBottomSignal}
               />
 
               <ChannelMessageInput
@@ -547,8 +645,8 @@ export const WorkspaceChannelPage = () => {
           <ChannelMembersSidebar
             isOpen={showMembersSidebar}
             onClose={() => setShowMembersSidebar(false)}
-            workspaceId={workspaceId}
-            channelId={channelId}
+            workspaceId={workspaceId || ''}
+            channelId={channelId || ''}
             channelName={currentChannel?.name || 'channel'}
             channelCreatorId={currentChannel?.createdBy}
             channelPrivacy={currentChannel?.privacy}
@@ -575,103 +673,18 @@ export const WorkspaceChannelPage = () => {
         )}
 
         {showThread && (
-          <div className="w-[320px] md:w-[380px] bg-white flex flex-col shrink-0 border-l border-slate-200 shadow-[-10px_0_15px_-10px_rgba(0,0,0,0.05)] relative z-10">
-            <div className="h-14 border-b border-slate-200 flex items-center justify-between px-4 shrink-0">
-              <div>
-                <h3 className="font-bold text-slate-900 text-base">Thread</h3>
-                <p className="text-xs text-slate-500"># development</p>
-              </div>
-              <button
-                onClick={() => setShowThread(false)}
-                className="p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 rounded transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-5 space-y-6">
-
-              <div className="flex gap-3">
-                <div className="w-8 h-8 rounded-md bg-blue-100 flex items-center justify-center text-blue-700 font-bold shrink-0 text-xs">AL</div>
-                <div>
-                  <div className="flex items-baseline gap-2 mb-1">
-                    <span className="font-bold text-slate-900 text-sm">Alex Lee</span>
-                    <span className="text-[10px] text-slate-500">10:24 AM</span>
-                  </div>
-                  <div className="text-slate-700 text-sm leading-relaxed">
-                    I think I found the bottleneck in the validation loop. It looks like we're doing an unnecessary DB lookup inside the loop...
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 py-2">
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">3 Replies</div>
-                <div className="h-px bg-slate-200 flex-1"></div>
-              </div>
-
-              <div className="flex gap-3">
-                <div className="w-8 h-8 rounded-md bg-orange-100 flex items-center justify-center text-orange-700 font-bold shrink-0 text-xs">SM</div>
-                <div>
-                  <div className="flex items-baseline gap-2 mb-1">
-                    <span className="font-bold text-slate-900 text-sm">Sarah Miller</span>
-                    <span className="text-[10px] text-slate-500">10:28 AM</span>
-                  </div>
-                  <div className="text-slate-700 text-sm leading-relaxed">
-                    Checking the logs now. I see a few spikes in the staging environment as well.
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <div className="w-8 h-8 rounded-md bg-blue-100 flex items-center justify-center text-blue-700 font-bold shrink-0 text-xs">AL</div>
-                <div>
-                  <div className="flex items-baseline gap-2 mb-1">
-                    <span className="font-bold text-slate-900 text-sm">Alex Lee</span>
-                    <span className="text-[10px] text-slate-500">10:30 AM</span>
-                  </div>
-                  <div className="text-slate-700 text-sm leading-relaxed">
-                    I might have found it. Is this the block you're talking about?
-                  </div>
-                  <div className="bg-[#1e1e2e] rounded border border-slate-700 p-2 mt-2 font-mono text-xs text-slate-300">
-                    <span className="text-emerald-400">// middleware.go:84</span><br />
-                    <span className="text-red-400">time.Sleep(50 * ms)</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <div className="w-8 h-8 rounded-md bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold shrink-0 text-xs">JD</div>
-                <div>
-                  <div className="flex items-baseline gap-2 mb-1">
-                    <span className="font-bold text-slate-900 text-sm">Jordan Dale</span>
-                    <span className="text-[10px] text-slate-500">10:32 AM</span>
-                  </div>
-                  <div className="text-slate-700 text-sm leading-relaxed">
-                    Yes, exactly! That shouldn't be in prod.
-                  </div>
-                </div>
-              </div>
-
-            </div>
-
-            <div className="p-4 border-t border-slate-200">
-              <div className="border border-slate-300 rounded-xl overflow-hidden focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all">
-                <textarea
-                  placeholder="Reply to thread..."
-                  className="w-full resize-none p-3 min-h-[80px] text-sm focus:outline-none text-slate-700 placeholder:text-slate-400"
-                ></textarea>
-                <div className="px-3 py-2 flex items-center justify-between bg-slate-50 border-t border-slate-200">
-                  <div className="flex items-center">
-                    <button className="p-1 text-slate-400 hover:text-slate-600 rounded transition-colors"><Plus className="w-4 h-4" /></button>
-                    <button className="p-1 text-slate-400 hover:text-slate-600 rounded transition-colors"><Smile className="w-4 h-4" /></button>
-                  </div>
-                  <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded text-xs font-bold transition-colors">
-                    Reply
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <ThreadSidebar
+            isOpen={showThread}
+            onClose={handleCloseThread}
+            channelName={currentChannel?.name}
+            rootMessage={threadRootMessage}
+            replies={threadReplies}
+            loading={isLoadingThread}
+            user={user}
+            memberImagesMap={memberImagesMap}
+            onSendReply={handleSendThreadReply}
+            setSelectedImage={setSelectedImage}
+          />
         )}
 
       </div>

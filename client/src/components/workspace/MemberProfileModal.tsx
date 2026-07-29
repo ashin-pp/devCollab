@@ -1,6 +1,7 @@
 import { X, Mail, Calendar, Shield, User, MapPin, Phone, Globe, Briefcase, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import type { MemberData } from '../../types/workspace.types';
+import { getMemberDisplayName, getMemberEmail } from '../../utils/member.utils';
 
 interface MemberProfileModalProps {
   isOpen: boolean;
@@ -51,7 +52,7 @@ export const MemberProfileModal = ({ isOpen, onClose, member }: MemberProfileMod
           <div className="mb-6">
             <div className="flex items-center gap-3 mb-2">
               <h2 className="text-2xl font-bold text-slate-900">
-                {member.user?.name || 'Unknown User'}
+                {getMemberDisplayName(member)}
               </h2>
               {member.role === 'owner' && (
                 <span className="flex items-center gap-1 px-2 py-1 bg-purple-50 text-purple-700 text-xs font-bold uppercase tracking-wider rounded-full border border-purple-200">
@@ -71,7 +72,7 @@ export const MemberProfileModal = ({ isOpen, onClose, member }: MemberProfileMod
             
             <div className="flex items-center gap-2 text-slate-600 mb-1">
               <Mail className="w-4 h-4" />
-              <span className="text-sm">{member.user?.email || 'No email provided'}</span>
+              <span className="text-sm">{getMemberEmail(member) || 'No email provided'}</span>
             </div>
             
             {member.joinedAt && (

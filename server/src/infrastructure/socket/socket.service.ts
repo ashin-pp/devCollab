@@ -105,6 +105,22 @@ export class SocketService {
 
             socket.on('new_message', (message: Message) => {
                 logger.info(`Received new_message for channel ${message.channelId} from user ${user.id}`);
+
+                if (message.threadRootId) {
+                    if (message.replyVisibility === 'author') {
+                        const recipients = new Set<string>([message.senderId]);
+                        if (message.visibleToUserId) {
+                            recipients.add(message.visibleToUserId);
+                        }
+                        for (const recipientId of recipients) {
+                            this._io.to(`user:${recipientId}`).emit('thread_reply_received', message);
+                        }
+                    } else {
+                        this._io.to(`channel:${message.channelId}`).emit('thread_reply_received', message);
+                    }
+                    return;
+                }
+
                 this._io.to(`channel:${message.channelId}`).emit('message_received', message);
             });
 

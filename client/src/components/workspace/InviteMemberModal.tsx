@@ -3,6 +3,7 @@ import { X, Search, Mail, Loader2, User, Send, CheckCircle2 } from 'lucide-react
 import { UserService } from '../../api/user/user.service';
 import { WorkspaceService } from '../../api/workspace/workspace.service';
 import toast from 'react-hot-toast';
+import { validateInviteEmail } from '../../validation';
 
 interface InviteMemberModalProps {
   isOpen: boolean;
@@ -30,8 +31,9 @@ export const InviteMemberModal = ({ isOpen, onClose, workspaceId }: InviteMember
 
   const handleSearch = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!emailQuery.trim() || !emailQuery.includes('@')) {
-      toast.error('Please enter a valid email address');
+    const emailError = validateInviteEmail(emailQuery);
+    if (emailError) {
+      toast.error(emailError);
       return;
     }
 
@@ -63,9 +65,10 @@ export const InviteMemberModal = ({ isOpen, onClose, workspaceId }: InviteMember
 
     setIsSending(true);
     try {
-      await WorkspaceService.sendInviteEmail(workspaceId, searchResult.email);
+      const response = await WorkspaceService.sendInviteEmail(workspaceId, searchResult.email);
       setInviteSent(true);
-      toast.success(`Invitation sent to ${searchResult.email}`);
+      const msg = response?.message || `Invitation sent to ${searchResult.email}`;
+      toast.success(msg);
       setTimeout(() => {
         handleClose();
       }, 3000);

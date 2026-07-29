@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
+import { normalizeSkillToAdd } from '../../validation';
 
 interface ProfileSkillsProps {
   skills: string[];
@@ -10,8 +11,9 @@ export const ProfileSkills: React.FC<ProfileSkillsProps> = ({ skills, onSkillsCh
   const [newSkill, setNewSkill] = useState('');
 
   const addSkill = () => {
-    if (newSkill.trim() && !skills.includes(newSkill.trim())) {
-      onSkillsChange([...skills, newSkill.trim()]);
+    const skill = normalizeSkillToAdd(newSkill, skills);
+    if (skill) {
+      onSkillsChange([...skills, skill]);
     }
     setNewSkill('');
   };

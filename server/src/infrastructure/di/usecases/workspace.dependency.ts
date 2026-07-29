@@ -5,6 +5,7 @@ import { CreateWorkspaceUseCase } from "../../../application/use-cases/workspace
 import { DeleteWorkspaceUseCase } from "../../../application/use-cases/workspace/delete-workspace.usecase";
 import { GetPublicWorkspacesUseCase } from "../../../application/use-cases/workspace/get-public-workspaces.usecase";
 import { GetUserWorkspacesUseCase } from "../../../application/use-cases/workspace/get-user-workspaces.usecase";
+import { GetWorkspaceMembersUseCase } from "../../../application/use-cases/workspace/get-workspace-members.usecase";
 import { HandleJoinRequestUseCase } from "../../../application/use-cases/workspace/handle-join-request.usecase";
 import { JoinWorkspaceUseCase } from "../../../application/use-cases/workspace/join-workspace.usecase";
 import { RegenerateInviteCodeUseCase } from "../../../application/use-cases/workspace/regenerate-invite-code.usecase";
@@ -20,6 +21,7 @@ export function registerWorkspaceUseCases() {
     container.register(USECASE_TOKENS.IDeleteWorkspaceUseCase, { useClass: DeleteWorkspaceUseCase });
     container.register(USECASE_TOKENS.IGetPublicWorkspacesUseCase, { useClass: GetPublicWorkspacesUseCase });
     container.register(USECASE_TOKENS.IGetUserWorkspacesUseCase, { useClass: GetUserWorkspacesUseCase });
+    container.register(USECASE_TOKENS.IGetWorkspaceMembersUseCase, { useClass: GetWorkspaceMembersUseCase });
     container.register(USECASE_TOKENS.IHandleJoinRequestUseCase, { useClass: HandleJoinRequestUseCase });
     container.register(USECASE_TOKENS.IJoinWorkspaceUseCase, { useClass: JoinWorkspaceUseCase });
     container.register(USECASE_TOKENS.IRegenerateInviteCodeUseCase, { useClass: RegenerateInviteCodeUseCase });

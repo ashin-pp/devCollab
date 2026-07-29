@@ -5,6 +5,7 @@ import { AdminService } from '../../api/admin/admin.service';
 import toast from 'react-hot-toast';
 import { isAxiosError } from 'axios';
 import { OTP_RESEND_COOLDOWN_MS } from '../../utils/constants';
+import { validateAdminForgotEmail } from '../../validation';
 
 export const AdminForgotPasswordPage = () => {
   const [email, setEmail] = useState('');
@@ -13,7 +14,8 @@ export const AdminForgotPasswordPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return toast.error("Admin identifier required");
+    const emailError = validateAdminForgotEmail(email);
+    if (emailError) return toast.error(emailError);
 
     setIsLoading(true);
     try {

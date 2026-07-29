@@ -13,6 +13,8 @@ export class MessageMapper {
             raw.image_url,
             raw.parent_message_id?.toString(),
             raw.thread_root_id?.toString(),
+            raw.reply_visibility,
+            raw.visible_to_user_id?.toString(),
             raw.is_edited,
             raw.is_pinned,
             raw.seen_by.map((id: unknown) => String(id)),

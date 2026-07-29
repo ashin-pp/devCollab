@@ -5,7 +5,9 @@ import type { IChannelRepository } from "../../../application/interfaces/reposit
 import type { IMessageRepository } from "../../../application/interfaces/repositories/message.repository.interface";
 import type { IWorkspaceRepository } from "../../../application/interfaces/repositories/workspace.repository.interface";
 import { Message } from "../../../domain/entities/message.entity";
+import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
+import { ReplyVisibility } from "../../../domain/enums/ReplyVisibility";
 import { AppError } from "../../../domain/errors/AppError";
 import { SendMessageRequestDto } from "../../dtos/channel/request/send-message-request.dto";
 import { ISendMessageUseCase } from "../../interfaces/use-cases/channel/send-message.usecase.interface";
@@ -21,8 +23,20 @@ export class SendMessageUseCase implements ISendMessageUseCase {
         @inject(REPOSITORY_TOKENS.IChannelRepository) private _channelRepository: IChannelRepository,
         @inject(REPOSITORY_TOKENS.IWorkspaceRepository) private _workspaceRepository: IWorkspaceRepository
     ) {}
+
     async execute(payload: SendMessageRequestDto): Promise<Message> {
-        const { workspaceId, channelId, senderId, content, messageType = 'text', imageUrl, mentionedUserIds } = payload;
+        const {
+            workspaceId,
+            channelId,
+            senderId,
+            content,
+            messageType = 'text',
+            imageUrl,
+            mentionedUserIds,
+            parentMessageId,
+            replyVisibility
+        } = payload;
+
         const member = await this._channelMemberRepository.findByChannelAndUser(channelId, senderId);
         
         if (!member) {
@@ -37,19 +51,56 @@ export class SendMessageUseCase implements ISendMessageUseCase {
             throw new AppError("You do not have permission to send messages in this channel.", HttpStatusCode.FORBIDDEN);
         }
 
+        let resolvedParentMessageId: string | undefined;
+        let threadRootId: string | undefined;
+        let resolvedVisibility = replyVisibility;
+        let visibleToUserId: string | undefined;
+
+        if (parentMessageId) {
+            const parentMessage = await this._messageRepository.findById(parentMessageId);
+            if (!parentMessage || parentMessage.channelId !== channelId) {
+                throw new AppError(ErrorMessage.PARENT_MESSAGE_NOT_FOUND, HttpStatusCode.NOT_FOUND);
+            }
+
+            // Flat threads: always attach replies to the root message
+            threadRootId = parentMessage.threadRootId || parentMessage.id;
+            resolvedParentMessageId = threadRootId;
+
+            const rootMessage = parentMessage.threadRootId
+                ? await this._messageRepository.findById(parentMessage.threadRootId)
+                : parentMessage;
+
+            if (!rootMessage) {
+                throw new AppError(ErrorMessage.PARENT_MESSAGE_NOT_FOUND, HttpStatusCode.NOT_FOUND);
+            }
+
+            const visibility = replyVisibility || ReplyVisibility.EVERYONE;
+            if (visibility !== ReplyVisibility.EVERYONE && visibility !== ReplyVisibility.AUTHOR) {
+                throw new AppError(ErrorMessage.INVALID_REPLY_VISIBILITY, HttpStatusCode.BAD_REQUEST);
+            }
+
+            resolvedVisibility = visibility;
+            if (visibility === ReplyVisibility.AUTHOR) {
+                visibleToUserId = rootMessage.senderId;
+            }
+        }
+
         const newMessage = new Message(
             workspaceId,
             channelId,
             senderId,
             content,
             messageType,
-            undefined, // senderName
-            imageUrl
+            undefined,
+            imageUrl,
+            resolvedParentMessageId,
+            threadRootId,
+            resolvedVisibility,
+            visibleToUserId
         );
 
         const savedMessage = await this._messageRepository.create(newMessage);
 
-        // Send notifications to mentioned users
         if (mentionedUserIds && mentionedUserIds.length > 0) {
             const channel = await this._channelRepository.findById(channelId);
             const channelName = channel ? channel.name : 'a channel';

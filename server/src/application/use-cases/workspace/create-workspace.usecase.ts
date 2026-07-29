@@ -13,6 +13,7 @@ import { CreateWorkspaceRequestDto } from "../../dtos/workspace/request/create-w
 import { WorkspaceResponseDto } from "../../dtos/workspace/response/workspace.response.dto";
 import { ICreateWorkspaceUseCase } from "../../interfaces/use-cases/workspace/create-workspace.usecase.interface";
 import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
+import { isValidWorkspaceName } from "../../../shared/utils/name-validation.util";
 
 @injectable()
 export class CreateWorkspaceUseCase implements ICreateWorkspaceUseCase {
@@ -22,17 +23,28 @@ export class CreateWorkspaceUseCase implements ICreateWorkspaceUseCase {
     ) { }
 
     async execute(payload: CreateWorkspaceRequestDto): Promise<WorkspaceResponseDto> {
-        if (!payload.name || !payload.createdBy) {
+        const name = payload.name?.trim() ?? '';
+
+        if (!name || !payload.createdBy) {
             throw new AppError(ErrorMessage.WORKSPACE_NAME_REQUIRED, HttpStatusCode.BAD_REQUEST);
+        }
+
+        if (!isValidWorkspaceName(name)) {
+            throw new AppError(ErrorMessage.WORKSPACE_NAME_INVALID, HttpStatusCode.BAD_REQUEST);
+        }
+
+        const existing = await this._workspaceRepository.findByNameIgnoreCase(name);
+        if (existing) {
+            throw new AppError(ErrorMessage.WORKSPACE_NAME_EXISTS, HttpStatusCode.CONFLICT);
         }
 
         const inviteCode = crypto.randomBytes(4).toString('hex').toUpperCase();
 
         const newWorkspace = new Workspace(
-            payload.name,
+            name,
             inviteCode,
             payload.createdBy,
-            payload.description,
+            payload.description?.trim(),
             payload.logo,
             (payload.privacy as WorkspacePrivacy) ?? WorkspacePrivacy.PRIVATE,
             payload.maxMembers

@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthService } from '../../api/auth/auth.service';
 import toast from 'react-hot-toast';
 import { isAxiosError } from 'axios';
+import { isDigitOnly, validateOtp } from '../../validation';
 
 export const VerifyOtpForgotPage = () => {
   const getInitialTimer = () => {
@@ -48,7 +49,7 @@ export const VerifyOtpForgotPage = () => {
   }, [resendTimer]);
 
   const handleChange = (index: number, value: string) => {
-    if (value && !/^\d+$/.test(value)) return;
+    if (value && !isDigitOnly(value)) return;
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
@@ -86,8 +87,9 @@ export const VerifyOtpForgotPage = () => {
   const handleContinue = async (e: React.FormEvent) => {
     e.preventDefault();
     const otpString = otp.join('');
-    if (otpString.length !== 4) {
-      setError("Please enter all 4 digits.");
+    const otpError = validateOtp(otp);
+    if (otpError) {
+      setError(otpError);
       return;
     }
 

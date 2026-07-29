@@ -6,6 +6,7 @@ import { AuthService } from '../../api/auth/auth.service';
 import { setCredentials } from '../../store/slices/authSlice';
 import toast from 'react-hot-toast';
 import { isAxiosError } from 'axios';
+import { isDigitOnly, validateOtp } from '../../validation';
 
 export const OtpVerificationPage = () => {
   const getInitialTimer = () => {
@@ -55,7 +56,7 @@ export const OtpVerificationPage = () => {
   }, [resendTimer]);
 
   const handleChange = (index: number, value: string) => {
-    if (value && !/^\d+$/.test(value)) return;
+    if (value && !isDigitOnly(value)) return;
 
     const newOtp = [...otp];
     newOtp[index] = value;
@@ -97,8 +98,9 @@ export const OtpVerificationPage = () => {
     e.preventDefault();
     const otpString = otp.join('');
     
-    if (otpString.length !== 4) {
-      setError("Please enter all 4 digits.");
+    const otpError = validateOtp(otp);
+    if (otpError) {
+      setError(otpError);
       return;
     }
 

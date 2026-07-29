@@ -1,4 +1,8 @@
+import type { ReplyVisibilityType } from "../enums/ReplyVisibility";
+
 export class Message {
+    public replyCount?: number;
+
     constructor(
         public workspaceId: string,
         public channelId: string,
@@ -9,6 +13,8 @@ export class Message {
         public imageUrl?: string,
         public parentMessageId?: string,
         public threadRootId?: string,
+        public replyVisibility?: ReplyVisibilityType,
+        public visibleToUserId?: string,
         public isEdited: boolean = false,
         public isPinned: boolean = false,
         public seenBy: string[] = [],

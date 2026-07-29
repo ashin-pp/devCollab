@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { UserService } from '../../api/user/user.service';
+import { validateEmailChangeOtp, validateNewEmail } from '../../validation';
 
 interface ProfileEmailModalProps {
   isOpen: boolean;
@@ -38,8 +39,9 @@ export const ProfileEmailModal: React.FC<ProfileEmailModalProps> = ({ isOpen, on
   };
 
   const handleRequestEmailChange = async () => {
-    if (!newEmailToChange.trim() || newEmailToChange === currentEmail) {
-      toast.error("Please enter a valid new email address");
+    const emailError = validateNewEmail(newEmailToChange, currentEmail);
+    if (emailError) {
+      toast.error(emailError);
       return;
     }
     setEmailChangeLoading(true);
@@ -57,8 +59,9 @@ export const ProfileEmailModal: React.FC<ProfileEmailModalProps> = ({ isOpen, on
   };
 
   const handleVerifyEmailChange = async () => {
-    if (!emailOtp.trim()) {
-      toast.error("Please enter the OTP");
+    const otpError = validateEmailChangeOtp(emailOtp);
+    if (otpError) {
+      toast.error(otpError);
       return;
     }
     setEmailChangeLoading(true);

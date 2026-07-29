@@ -9,6 +9,7 @@ import { UpdateWorkspaceRequestDto } from "../../dtos/workspace/request/update-w
 import { WorkspaceResponseDto } from "../../dtos/workspace/response/workspace.response.dto";
 import { IUpdateWorkspaceUseCase } from "../../interfaces/use-cases/workspace/update-workspace.usecase.interface";
 import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
+import { isValidWorkspaceName } from "../../../shared/utils/name-validation.util";
 
 @injectable()
 export class UpdateWorkspaceUseCase implements IUpdateWorkspaceUseCase {
@@ -18,7 +19,9 @@ export class UpdateWorkspaceUseCase implements IUpdateWorkspaceUseCase {
     ) {}
 
     async execute(payload: UpdateWorkspaceRequestDto): Promise<WorkspaceResponseDto> {
-        const { workspaceId, ownerId, data } = payload;
+        const { workspaceId, ownerId } = payload;
+        let { data } = payload;
+
         const workspace = await this._workspaceRepository.findById(workspaceId);
         if (!workspace) {
             throw new AppError(ErrorMessage.WORKSPACE_NOT_FOUND, HttpStatusCode.NOT_FOUND);
@@ -29,9 +32,23 @@ export class UpdateWorkspaceUseCase implements IUpdateWorkspaceUseCase {
             throw new AppError(ErrorMessage.UNAUTHORIZED_ROLE, HttpStatusCode.FORBIDDEN);
         }
 
+        if (data.name !== undefined) {
+            const name = data.name.trim();
+            if (!isValidWorkspaceName(name)) {
+                throw new AppError(ErrorMessage.WORKSPACE_NAME_INVALID, HttpStatusCode.BAD_REQUEST);
+            }
+
+            const existing = await this._workspaceRepository.findByNameIgnoreCase(name);
+            if (existing && existing.id !== workspaceId) {
+                throw new AppError(ErrorMessage.WORKSPACE_NAME_EXISTS, HttpStatusCode.CONFLICT);
+            }
+
+            data = { ...data, name };
+        }
+
         const updatedWorkspace = await this._workspaceRepository.update(workspaceId, data);
         if (!updatedWorkspace) {
-            throw new AppError(ErrorMessage.FAILED_TO_CREATE_WORKSPACE, HttpStatusCode.INTERNAL_SERVER);
+            throw new AppError(ErrorMessage.FAILED_TO_UPDATE_WORKSPACE, HttpStatusCode.INTERNAL_SERVER);
         }
 
         return {

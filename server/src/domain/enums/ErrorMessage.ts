@@ -26,6 +26,8 @@ export const ErrorMessage = {
 
     // Workspace
     WORKSPACE_NAME_REQUIRED: "Workspace name and creator ID are required",
+    WORKSPACE_NAME_INVALID: "Workspace name must be 2–50 characters",
+    WORKSPACE_NAME_EXISTS: "A workspace with this name already exists",
     WORKSPACE_NOT_FOUND: "Workspace not found",
     WORKSPACE_INACTIVE: "This workspace deactivated by admin",
     WORKSPACE_FULL: "Workspace has reached its maximum member limit",
@@ -78,6 +80,8 @@ export const ErrorMessage = {
     CHANNEL_MEMBER_NOT_FOUND: "Member not found in channel",
     CANNOT_VIEW_CHANNEL_MEMBERS: "You do not have permission to view members of this channel",
     CHANNEL_NAME_EMPTY: "Channel name cannot be empty",
+    CHANNEL_NAME_INVALID: "Channel name must be 2–80 characters and use letters, numbers, hyphens, or underscores",
+    CHANNEL_NAME_EXISTS: "A channel with this name already exists in this workspace",
     FAILED_TO_UPDATE_CHANNEL: "Failed to update channel",
     FAILED_TO_DELETE_CHANNEL: "Failed to delete channel",
     CANNOT_DELETE_GENERAL_CHANNEL: "The general channel cannot be deleted",
@@ -88,4 +92,7 @@ export const ErrorMessage = {
     ONLY_CREATOR_MANAGES_REQUESTS: "Only the channel creator can manage requests",
     ALREADY_CHANNEL_MEMBER: "User is already a member of this channel",
     CHANNEL_JOIN_REQUEST_PENDING: "Join request is already pending",
+    PARENT_MESSAGE_NOT_FOUND: "Parent message not found",
+    INVALID_THREAD_REPLY: "Cannot reply to a message that is already a thread reply",
+    INVALID_REPLY_VISIBILITY: "Reply visibility must be everyone or author",
 } as const;

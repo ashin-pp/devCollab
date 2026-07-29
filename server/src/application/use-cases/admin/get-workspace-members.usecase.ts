@@ -40,7 +40,7 @@ export class AdminGetWorkspaceMembersUseCase implements IAdminGetWorkspaceMember
         if (params.sortBy) {
             sort = { [params.sortBy]: params.sortOrder === 'desc' ? -1 : 1 };
         } else {
-            sort = { joinedAt: -1 };
+            sort = { joined_at: -1 };
         }
 
         const { data: members, total } = await this._workspaceMemberRepository.findPaginated(query, page, limit, sort);

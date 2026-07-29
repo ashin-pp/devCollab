@@ -4,9 +4,10 @@ import type { ChannelData } from '../../../types/channel.types';
 interface ChannelNotMemberViewProps {
   currentChannel: ChannelData;
   handleJoinChannel: () => void;
+  isJoining?: boolean;
 }
 
-export const ChannelNotMemberView = ({ currentChannel, handleJoinChannel }: ChannelNotMemberViewProps) => {
+export const ChannelNotMemberView = ({ currentChannel, handleJoinChannel, isJoining = false }: ChannelNotMemberViewProps) => {
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-6 bg-slate-50">
       <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${currentChannel.privacy === 'private' ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'}`}>
@@ -43,10 +44,11 @@ export const ChannelNotMemberView = ({ currentChannel, handleJoinChannel }: Chan
       ) : (
         <button
           onClick={handleJoinChannel}
-          className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-sm flex items-center gap-2"
+          disabled={isJoining}
+          className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-sm flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
         >
           <Plus className="w-5 h-5" />
-          {currentChannel.privacy === 'private' ? 'Request to Join' : 'Join Channel'}
+          {isJoining ? 'Joining…' : currentChannel.privacy === 'private' ? 'Request to Join' : 'Join Channel'}
         </button>
       )}
     </div>

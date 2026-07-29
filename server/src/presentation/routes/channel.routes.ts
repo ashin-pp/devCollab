@@ -30,5 +30,6 @@ router.get('/:workspaceId/channels/unread-counts', authMiddleware, channelContro
 // Message Routes
 router.post('/:workspaceId/channels/:channelId/messages', authMiddleware, checkChannelActive, messageController.sendMessage);
 router.get('/:workspaceId/channels/:channelId/messages', authMiddleware, checkChannelActive, messageController.getChannelMessages);
+router.get('/:workspaceId/channels/:channelId/messages/:messageId/thread', authMiddleware, checkChannelActive, messageController.getThreadReplies);
 
 export default router;
