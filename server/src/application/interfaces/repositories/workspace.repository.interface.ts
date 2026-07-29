@@ -11,5 +11,6 @@ export interface IWorkspaceRepository {
     findAll(): Promise<Workspace[]>;
     findPublicWorkspaces(): Promise<Workspace[]>;
     findByIds(ids: string[]): Promise<Workspace[]>;
+    findByPendingInviteEmail(email: string): Promise<Workspace[]>;
     findPaginated(query: Record<string, unknown>, page: number, limit: number, sort?: Record<string, 1 | -1>): Promise<{ data: Workspace[]; total: number }>;
 }

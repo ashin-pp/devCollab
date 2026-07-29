@@ -13,7 +13,8 @@ export class Workspace {
         public id?: string,
         public createdAt?: Date,
         public updatedAt?: Date,
-        private _currentMemberCount: number = 0
+        private _currentMemberCount: number = 0,
+        public pendingInviteEmails: string[] = []
     ) {}
 
     public canAddMember(): boolean {

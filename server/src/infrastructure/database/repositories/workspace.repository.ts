@@ -17,6 +17,7 @@ export class WorkspaceRepository implements IWorkspaceRepository {
             privacy: workspace.privacy,
             max_members: workspace.maxMembers,
             is_active: workspace.isActive,
+            pending_invite_emails: workspace.pendingInviteEmails ?? [],
         });
 
         return this._mapper.toDomain(createdWorkspace);
@@ -80,6 +81,9 @@ export class WorkspaceRepository implements IWorkspaceRepository {
         if (workspaceData.maxMembers !== undefined) {
             updateData.max_members = workspaceData.maxMembers;
         }
+        if (workspaceData.pendingInviteEmails !== undefined) {
+            updateData.pending_invite_emails = workspaceData.pendingInviteEmails;
+        }
 
         const updatedWorkspace = await WorkspaceModel.findByIdAndUpdate(
             id,
@@ -111,6 +115,13 @@ export class WorkspaceRepository implements IWorkspaceRepository {
     async findByIds(ids: string[]): Promise<Workspace[]> {
         const workspaces = await WorkspaceModel.find({ _id: { $in: ids } });
         return workspaces.map(w => this._mapper.toDomain(w));
+    }
+
+    async findByPendingInviteEmail(email: string): Promise<Workspace[]> {
+        const normalized = email.toLowerCase().trim();
+        if (!normalized) return [];
+        const workspaces = await WorkspaceModel.find({ pending_invite_emails: normalized });
+        return workspaces.map((w) => this._mapper.toDomain(w));
     }
 
     async setSession(_session: unknown): Promise<void> {

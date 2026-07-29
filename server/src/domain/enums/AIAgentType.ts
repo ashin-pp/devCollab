@@ -4,5 +4,6 @@ export enum AIAgentType {
     TASK = 'task',
     NOTIFY = 'notify',
     REMIND = 'remind',
-    INFO = 'info'
+    INFO = 'info',
+    SCHEDULE = 'schedule',
 }

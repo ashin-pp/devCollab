@@ -87,6 +87,7 @@ export const USECASE_TOKENS = {
     // Workspace
     IBlockWorkspaceMemberUseCase: 'IBlockWorkspaceMemberUseCase',
     ICreateWorkspaceUseCase: 'ICreateWorkspaceUseCase',
+    IClaimPendingWorkspaceInvitesUseCase: 'IClaimPendingWorkspaceInvitesUseCase',
     IDeleteWorkspaceUseCase: 'IDeleteWorkspaceUseCase',
     IGetPublicWorkspacesUseCase: 'IGetPublicWorkspacesUseCase',
     IGetUserWorkspacesUseCase: 'IGetUserWorkspacesUseCase',

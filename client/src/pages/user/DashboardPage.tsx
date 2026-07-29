@@ -14,6 +14,7 @@ import { CreateWorkspaceModal } from '../../components/workspace/CreateWorkspace
 import { WorkspaceService } from '../../api/workspace/workspace.service';
 import type { Workspace } from '../../types/workspace.types';
 import { validateWorkspaceInviteCode } from '../../validation';
+import { clearPendingInvite, getPendingInviteCode } from '../../utils/pendingInvite';
 
 export const DashboardPage = () => {
   const user = useSelector((state: RootState) => state.auth.user);
@@ -26,6 +27,7 @@ export const DashboardPage = () => {
   const [verifyError, setVerifyError] = useState('');
   const [joinMessage, setJoinMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [isFromEmailLink, setIsFromEmailLink] = useState(false);
+  const invitePromptHandled = useRef(false);
 
   const [myWorkspaces, setMyWorkspaces] = useState<Workspace[]>([]);
   const [publicWorkspaces, setPublicWorkspaces] = useState<Workspace[]>([]);
@@ -39,9 +41,13 @@ export const DashboardPage = () => {
     }, 0);
   }, [searchQuery]);
 
+  const approvedWorkspaces = myWorkspaces.filter(
+    (ws) => !ws.memberStatus || ws.memberStatus === 'approved'
+  );
+
   const unjoinedPublicWorkspaces = publicWorkspaces.filter(
     publicWs =>
-      !myWorkspaces.some(myWs => myWs.id === publicWs.id) &&
+      !approvedWorkspaces.some(myWs => myWs.id === publicWs.id) &&
       publicWs.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -51,8 +57,8 @@ export const DashboardPage = () => {
     );
   };
 
-  const myCreatedWorkspaces = myWorkspaces.filter(ws => ws.createdBy === user?.id);
-  const myJoinedWorkspaces = myWorkspaces.filter(ws => ws.createdBy !== user?.id);
+  const myCreatedWorkspaces = approvedWorkspaces.filter(ws => ws.createdBy === user?.id);
+  const myJoinedWorkspaces = approvedWorkspaces.filter(ws => ws.createdBy !== user?.id);
 
   const myCreatedChunks = chunkArray(myCreatedWorkspaces, 4);
   const myJoinedChunks = chunkArray(myJoinedWorkspaces, 4);
@@ -67,22 +73,16 @@ export const DashboardPage = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchWorkspaces = async () => {
-      try {
-        const [myRes, publicRes] = await Promise.all([
-          WorkspaceService.getUserWorkspaces(),
-          WorkspaceService.getPublicWorkspaces()
-        ]);
-        setMyWorkspaces(myRes.data || []);
-        setPublicWorkspaces(publicRes.data || []);
-      } catch (error) {
-        console.error("Error fetching workspaces", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchWorkspaces();
+  const openInviteModalForWorkspace = useCallback((workspace: Workspace) => {
+    setInviteCode(workspace.inviteCode || '');
+    setIsFromEmailLink(true);
+    setVerificationResult({
+      id: workspace.id,
+      name: workspace.name,
+      description: workspace.description,
+      privacy: workspace.privacy,
+      inviteCode: workspace.inviteCode,
+    });
   }, []);
 
   const handleVerifyCodeFromQuery = useCallback(async (code: string) => {
@@ -93,16 +93,20 @@ export const DashboardPage = () => {
       const response = await WorkspaceService.verifyInviteCode(code);
       setVerificationResult(response.data);
 
-      // Check if already a member (e.g., auto-added via email invite)
       const myRes = await WorkspaceService.getUserWorkspaces();
-      const workspaces = myRes.data || [];
+      const workspaces = (myRes.data || []) as Workspace[];
       setMyWorkspaces(workspaces);
 
-      const isMember = workspaces.some((ws: Workspace) => ws.id === response.data.id);
-      if (isMember) {
+      const membership = workspaces.find((ws) => ws.id === response.data.id);
+      if (membership?.memberStatus === 'approved') {
         setInviteCode('');
         setVerificationResult(null);
+        clearPendingInvite();
         navigate(`/workspace/${response.data.id}/dashboard`);
+        return;
+      }
+      if (membership?.memberStatus === 'invited') {
+        openInviteModalForWorkspace(membership);
       }
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
@@ -110,18 +114,48 @@ export const DashboardPage = () => {
     } finally {
       setIsJoining(false);
     }
-  }, [navigate]);
+  }, [navigate, openInviteModalForWorkspace]);
 
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const code = params.get('inviteCode');
-    if (code && !inviteCode) {
-      setTimeout(() => {
-        setInviteCode(code);
-        handleVerifyCodeFromQuery(code);
-      }, 0);
-    }
-  }, [location.search, inviteCode, handleVerifyCodeFromQuery]);
+    const fetchWorkspaces = async () => {
+      try {
+        const [myRes, publicRes] = await Promise.all([
+          WorkspaceService.getUserWorkspaces(),
+          WorkspaceService.getPublicWorkspaces()
+        ]);
+        const workspaces = (myRes.data || []) as Workspace[];
+        setMyWorkspaces(workspaces);
+        setPublicWorkspaces(publicRes.data || []);
+
+        if (!invitePromptHandled.current) {
+          invitePromptHandled.current = true;
+          const params = new URLSearchParams(location.search);
+          const pendingCode = params.get('inviteCode') || getPendingInviteCode();
+          const invited = workspaces.filter((ws) => ws.memberStatus === 'invited');
+
+          if (invited.length > 0) {
+            const match = pendingCode
+              ? invited.find((ws) => ws.inviteCode === pendingCode) || invited[0]
+              : invited[0];
+            openInviteModalForWorkspace(match);
+            clearPendingInvite();
+            if (pendingCode) {
+              navigate(location.pathname, { replace: true });
+            }
+          } else if (pendingCode) {
+            setInviteCode(pendingCode);
+            await handleVerifyCodeFromQuery(pendingCode);
+            clearPendingInvite();
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching workspaces", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchWorkspaces();
+  }, [handleVerifyCodeFromQuery, location.pathname, location.search, navigate, openInviteModalForWorkspace]);
 
   const handleVerifyCode = async () => {
     const codeError = validateWorkspaceInviteCode(inviteCode);
@@ -136,7 +170,17 @@ export const DashboardPage = () => {
     try {
       const response = await WorkspaceService.verifyInviteCode(inviteCode);
       await new Promise(resolve => setTimeout(resolve, 1500));
-      setVerificationResult(response.data);
+
+      const myRes = await WorkspaceService.getUserWorkspaces();
+      const workspaces = (myRes.data || []) as Workspace[];
+      setMyWorkspaces(workspaces);
+      const membership = workspaces.find((ws) => ws.id === response.data.id);
+
+      if (membership?.memberStatus === 'invited') {
+        openInviteModalForWorkspace(membership);
+      } else {
+        setVerificationResult(response.data);
+      }
     } catch (error: unknown) {
       await new Promise(resolve => setTimeout(resolve, 1500));
       const err = error as { response?: { data?: { message?: string } } };
@@ -149,28 +193,66 @@ export const DashboardPage = () => {
   const handleJoinWorkspace = async () => {
     setIsJoining(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 800)); // small loader feeling
-      const response = await WorkspaceService.joinWorkspace({ inviteCode, isFromEmailLink });
+      await new Promise(resolve => setTimeout(resolve, 800));
+      const code = inviteCode || String(verificationResult?.inviteCode || '');
+      const response = await WorkspaceService.joinWorkspace({
+        inviteCode: code,
+        isFromEmailLink,
+      });
 
       if (response.data?.status === 'pending') {
         toast.success('Join request sent! Waiting for owner approval.');
         setJoinMessage({ type: 'success', text: 'Join request sent! Waiting for owner approval.' });
         setTimeout(() => setJoinMessage(null), 5000);
+        setInviteCode('');
+        setVerificationResult(null);
+        setIsFromEmailLink(false);
+      } else if (response.data?.status === 'invited') {
+        toast.success('Invitation ready — accept to join.');
+        const myRes = await WorkspaceService.getUserWorkspaces();
+        setMyWorkspaces(myRes.data || []);
+        setIsFromEmailLink(true);
       } else {
         toast.success('Successfully joined the workspace!');
-        setJoinMessage({ type: 'success', text: 'Successfully joined the workspace!' });
-        setTimeout(() => {
-          setJoinMessage(null);
-          navigate(`/workspace/${response.data.workspaceId}/dashboard`);
-        }, 1000);
+        clearPendingInvite();
+        setInviteCode('');
+        setVerificationResult(null);
+        setIsFromEmailLink(false);
+        navigate(`/workspace/${response.data.workspaceId}/dashboard`);
       }
-      setInviteCode('');
-      setVerificationResult(null);
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
       toast.error(err.response?.data?.message || 'Failed to join workspace');
       setJoinMessage({ type: 'error', text: err.response?.data?.message || 'Failed to join workspace' });
       setTimeout(() => setJoinMessage(null), 5000);
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
+  const handleDeclineInvite = async () => {
+    if (!user?.id || !verificationResult?.id) {
+      setVerificationResult(null);
+      setInviteCode('');
+      setIsFromEmailLink(false);
+      navigate(location.pathname, { replace: true });
+      clearPendingInvite();
+      return;
+    }
+
+    setIsJoining(true);
+    try {
+      await WorkspaceService.removeMember(String(verificationResult.id), user.id);
+      toast.success('Invitation declined');
+      setMyWorkspaces((prev) => prev.filter((ws) => ws.id !== verificationResult.id));
+      setVerificationResult(null);
+      setInviteCode('');
+      setIsFromEmailLink(false);
+      clearPendingInvite();
+      navigate(location.pathname, { replace: true });
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || 'Failed to decline invitation');
     } finally {
       setIsJoining(false);
     }
@@ -567,7 +649,7 @@ export const DashboardPage = () => {
                       >
                         Cancel
                       </button>
-                      {myWorkspaces.some(ws => ws.id === verificationResult.id) ? (
+                      {approvedWorkspaces.some(ws => ws.id === verificationResult.id) ? (
                         <button
                           onClick={() => navigate(`/workspace/${verificationResult.id}/dashboard`)}
                           className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg text-xs font-bold transition-colors shadow-sm"
@@ -657,7 +739,12 @@ export const DashboardPage = () => {
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-8 relative">
               <button 
-                onClick={() => { setVerificationResult(null); setInviteCode(''); navigate(location.pathname, { replace: true }); }} 
+                onClick={() => {
+                  setVerificationResult(null);
+                  setInviteCode('');
+                  setIsFromEmailLink(false);
+                  navigate(location.pathname, { replace: true });
+                }} 
                 className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors bg-slate-100 hover:bg-slate-200 rounded-full p-2"
               >
                 <X className="w-4 h-4" />
@@ -686,7 +773,7 @@ export const DashboardPage = () => {
               )}
 
               <div className="flex flex-col gap-3">
-                {myWorkspaces.some(ws => ws.id === verificationResult.id) ? (
+                {approvedWorkspaces.some(ws => ws.id === verificationResult.id) ? (
                   <button
                     onClick={() => navigate(`/workspace/${String(verificationResult.id)}/dashboard`)}
                     className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-xl text-sm font-bold transition-colors shadow-sm"
@@ -703,8 +790,9 @@ export const DashboardPage = () => {
                   </button>
                 )}
                 <button
-                  onClick={() => { setVerificationResult(null); setInviteCode(''); navigate(location.pathname, { replace: true }); }}
-                  className="w-full bg-white hover:bg-slate-50 text-slate-600 py-3 rounded-xl text-sm font-bold transition-colors border border-transparent hover:border-slate-200"
+                  onClick={handleDeclineInvite}
+                  disabled={isJoining}
+                  className="w-full bg-white hover:bg-slate-50 text-slate-600 py-3 rounded-xl text-sm font-bold transition-colors border border-transparent hover:border-slate-200 disabled:opacity-50"
                 >
                   Decline
                 </button>

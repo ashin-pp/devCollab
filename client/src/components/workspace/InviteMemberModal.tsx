@@ -26,6 +26,7 @@ export const InviteMemberModal = ({ isOpen, onClose, workspaceId }: InviteMember
   const [searchResult, setSearchResult] = useState<UserSearchResult | null>(null);
   const [searchAttempted, setSearchAttempted] = useState(false);
   const [inviteSent, setInviteSent] = useState(false);
+  const [unregisteredEmail, setUnregisteredEmail] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -40,6 +41,7 @@ export const InviteMemberModal = ({ isOpen, onClose, workspaceId }: InviteMember
     setIsSearching(true);
     setSearchAttempted(true);
     setSearchResult(null);
+    setUnregisteredEmail(null);
     setInviteSent(false);
 
     try {
@@ -47,28 +49,39 @@ export const InviteMemberModal = ({ isOpen, onClose, workspaceId }: InviteMember
       if (response.success && response.data) {
         setSearchResult(response.data);
       } else {
-        setSearchResult(null);
+        setUnregisteredEmail(emailQuery.trim().toLowerCase());
       }
     } catch (error: unknown) {
-      const err = error as { response?: { status?: number, data?: { message?: string } } };
-      if (err.response?.status !== 404) {
-        toast.error(err.response?.data?.message || 'Failed to search for user');
+      const err = error as {
+        response?: {
+          status?: number;
+          data?: { message?: string; error?: { message?: string } };
+        };
+      };
+      const apiMessage = err.response?.data?.message || err.response?.data?.error?.message || '';
+      const looksLikeMissingUser =
+        err.response?.status === 404 ||
+        /not found|no user|does not exist/i.test(apiMessage);
+
+      if (looksLikeMissingUser) {
+        setUnregisteredEmail(emailQuery.trim().toLowerCase());
+      } else {
+        toast.error(apiMessage || 'Failed to search for user');
+        setSearchResult(null);
       }
-      setSearchResult(null);
     } finally {
       setIsSearching(false);
     }
   };
 
-  const handleSendInvite = async () => {
-    if (!searchResult || !workspaceId) return;
+  const handleSendInvite = async (email: string) => {
+    if (!workspaceId || !email) return;
 
     setIsSending(true);
     try {
-      const response = await WorkspaceService.sendInviteEmail(workspaceId, searchResult.email);
+      const response = await WorkspaceService.sendInviteEmail(workspaceId, email);
       setInviteSent(true);
-      const msg = response?.message || `Invitation sent to ${searchResult.email}`;
-      toast.success(msg);
+      toast.success(response?.message || `Invitation sent to ${email}`);
       setTimeout(() => {
         handleClose();
       }, 3000);
@@ -83,10 +96,29 @@ export const InviteMemberModal = ({ isOpen, onClose, workspaceId }: InviteMember
   const handleClose = () => {
     setEmailQuery('');
     setSearchResult(null);
+    setUnregisteredEmail(null);
     setSearchAttempted(false);
     setInviteSent(false);
     onClose();
   };
+
+  const renderInviteActions = (email: string) => (
+    inviteSent ? (
+      <div className="flex items-center justify-center gap-2 w-full py-2 bg-emerald-50 text-emerald-600 font-bold text-sm rounded-lg border border-emerald-200">
+        <CheckCircle2 className="w-4 h-4" />
+        Invitation Sent
+      </div>
+    ) : (
+      <button
+        onClick={() => handleSendInvite(email)}
+        disabled={isSending}
+        className="w-full py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-sm rounded-lg transition-colors flex items-center justify-center gap-2"
+      >
+        {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+        {isSending ? 'Sending...' : 'Send Invitation Link'}
+      </button>
+    )
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
@@ -94,7 +126,7 @@ export const InviteMemberModal = ({ isOpen, onClose, workspaceId }: InviteMember
         <div className="flex items-center justify-between p-6 border-b border-slate-100">
           <div>
             <h2 className="text-xl font-bold text-slate-900">Invite Member</h2>
-            <p className="text-sm text-slate-500 mt-1">Search for a user by email to send an invite.</p>
+            <p className="text-sm text-slate-500 mt-1">Search by email — registered or new users can be invited.</p>
           </div>
           <button
             onClick={handleClose}
@@ -150,29 +182,30 @@ export const InviteMemberModal = ({ isOpen, onClose, workspaceId }: InviteMember
                     <p className="text-sm text-slate-500 truncate">{searchResult.email}</p>
                   </div>
                 </div>
-
-                {inviteSent ? (
-                  <div className="flex items-center justify-center gap-2 w-full py-2 bg-emerald-50 text-emerald-600 font-bold text-sm rounded-lg border border-emerald-200">
-                    <CheckCircle2 className="w-4 h-4" />
-                    Invitation Sent
+                {renderInviteActions(searchResult.email)}
+              </div>
+            ) : unregisteredEmail ? (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 animate-in slide-in-from-bottom-2">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-full bg-white border border-amber-100 flex items-center justify-center shrink-0">
+                    <Mail className="w-5 h-5 text-amber-500" />
                   </div>
-                ) : (
-                  <button
-                    onClick={handleSendInvite}
-                    disabled={isSending}
-                    className="w-full py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-sm rounded-lg transition-colors flex items-center justify-center gap-2"
-                  >
-                    {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                    {isSending ? 'Sending...' : 'Send Invitation Link'}
-                  </button>
-                )}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-slate-900">No account yet</h3>
+                    <p className="text-sm text-slate-600 mt-1 break-all">{unregisteredEmail}</p>
+                    <p className="text-xs text-slate-500 mt-2">
+                      We’ll email an invite link. They can create an account and join this workspace from that link.
+                    </p>
+                  </div>
+                </div>
+                {renderInviteActions(unregisteredEmail)}
               </div>
             ) : searchAttempted ? (
               <div className="flex flex-col items-center justify-center text-slate-400 py-6 bg-slate-50/50 rounded-xl border border-slate-100 border-dashed">
                 <User className="w-8 h-8 text-slate-300 mb-2" />
-                <p className="text-sm font-medium text-slate-600">User not found</p>
+                <p className="text-sm font-medium text-slate-600">Couldn’t look up that email</p>
                 <p className="text-xs text-center mt-1 px-4">
-                  We couldn't find a user with this public email. Make sure they have a DevCollab account.
+                  Try again, or check the address and search once more.
                 </p>
               </div>
             ) : (
@@ -180,7 +213,7 @@ export const InviteMemberModal = ({ isOpen, onClose, workspaceId }: InviteMember
                 <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-3">
                   <Mail className="w-6 h-6 text-slate-300" />
                 </div>
-                <p className="text-sm text-center">Search for an email to invite them directly to this workspace.</p>
+                <p className="text-sm text-center">Search for an email to invite them to this workspace.</p>
               </div>
             )}
           </div>

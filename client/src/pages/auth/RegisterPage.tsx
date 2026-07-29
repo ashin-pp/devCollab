@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Box, Hash, Sparkles, RefreshCw, User, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { useGoogleLogin } from '@react-oauth/google';
 import type { TokenResponse } from '@react-oauth/google';
@@ -9,6 +9,11 @@ import { setCredentials } from '../../store/slices/authSlice';
 import toast from 'react-hot-toast';
 import { isAxiosError } from 'axios';
 import { validateRegisterForm } from '../../validation';
+import {
+  getPendingInviteEmail,
+  pathAfterAuth,
+  stashPendingInviteFromSearch,
+} from '../../utils/pendingInvite';
 
 export const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -28,7 +33,16 @@ export const RegisterPage = () => {
   }>({});
 
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
+
+  useEffect(() => {
+    stashPendingInviteFromSearch(location.search);
+    const invitedEmail = new URLSearchParams(location.search).get('email') || getPendingInviteEmail();
+    if (invitedEmail && !email) {
+      setEmail(invitedEmail);
+    }
+  }, [location.search]);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,7 +96,7 @@ export const RegisterPage = () => {
         accessToken: response.data.accessToken
       }));
       toast.success("Login successful!");
-      navigate('/dashboard');
+      navigate(pathAfterAuth());
     } catch (err: unknown) {
       if (isAxiosError(err)) {
         toast.error(err.response?.data?.error?.message || err.response?.data?.message || "Google authentication failed");

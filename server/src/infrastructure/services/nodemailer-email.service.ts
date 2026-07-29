@@ -72,7 +72,7 @@ export class NodemailerEmailService implements IEmailService {
                     <a href="${inviteLink}" style="display: inline-block; padding: 12px 24px; background-color: #4F46E5; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 16px;">
                         Join Workspace
                     </a>
-                    <p style="margin-top: 24px; font-size: 14px; color: #666;">If you don't have an account, you will be prompted to create one first.</p>
+                    <p style="margin-top: 24px; font-size: 14px; color: #666;">If you don't have a DevCollab account yet, use the link to create one — then you'll be able to join this workspace.</p>
                 </div>
             `
         };
