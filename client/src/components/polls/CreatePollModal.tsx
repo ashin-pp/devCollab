@@ -5,6 +5,12 @@ import type { AppDispatch, RootState } from '../../store';
 import { pollApi } from '../../api/poll/poll.service';
 import { addPoll } from '../../store/slices/pollSlice';
 import toast from 'react-hot-toast';
+import {
+  getValidPollOptions,
+  POLL_MAX_OPTIONS,
+  POLL_MIN_OPTIONS,
+  validateCreatePoll,
+} from '../../validation';
 
 interface CreatePollModalProps {
   isOpen: boolean;
@@ -24,13 +30,13 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClos
   if (!isOpen) return null;
 
   const handleAddOption = () => {
-    if (options.length < 10) {
+    if (options.length < POLL_MAX_OPTIONS) {
       setOptions([...options, '']);
     }
   };
 
   const handleRemoveOption = (index: number) => {
-    if (options.length > 2) {
+    if (options.length > POLL_MIN_OPTIONS) {
       setOptions(options.filter((_, i) => i !== index));
     }
   };
@@ -43,26 +49,13 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClos
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!question.trim()) {
-      toast.error('Question is required');
+    const pollError = validateCreatePoll({ question, options, startsAt, expiresAt });
+    if (pollError) {
+      toast.error(pollError);
       return;
     }
 
-    const validOptions = options.filter(opt => opt.trim());
-    if (validOptions.length < 2) {
-      toast.error('At least two valid options are required');
-      return;
-    }
-
-    if (expiresAt && new Date(expiresAt).getTime() <= Date.now()) {
-      toast.error('Expiry time must be in the future');
-      return;
-    }
-
-    if (startsAt && expiresAt && new Date(startsAt).getTime() >= new Date(expiresAt).getTime()) {
-      toast.error('Expiry time must be after start time');
-      return;
-    }
+    const validOptions = getValidPollOptions(options);
 
     try {
       setLoading(true);
@@ -137,7 +130,7 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClos
                     placeholder={`Option ${index + 1}`}
                     className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl shadow-sm focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm font-medium text-slate-900 transition-all outline-none placeholder:text-slate-400"
                   />
-                  {options.length > 2 && (
+                  {options.length > POLL_MIN_OPTIONS && (
                     <button
                       type="button"
                       onClick={() => handleRemoveOption(index)}
@@ -150,7 +143,7 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClos
               ))}
             </div>
             
-            {options.length < 10 && (
+            {options.length < POLL_MAX_OPTIONS && (
               <button
                 type="button"
                 onClick={handleAddOption}

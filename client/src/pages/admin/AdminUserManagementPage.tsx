@@ -1,6 +1,7 @@
 import { AdminLayout } from '../../layouts/AdminLayout';
-import { Search, ChevronDown, SlidersHorizontal, ChevronLeft, ChevronRight, Users, Activity, Ban, Loader2, User as UserIcon } from 'lucide-react';
+import { Search, ChevronDown, SlidersHorizontal, ChevronLeft, ChevronRight, Users, Activity, Ban, Loader2, User as UserIcon, ArrowUp, ArrowDown } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { AdminService } from '../../api/admin/admin.service';
 import toast from 'react-hot-toast';
 import { isAxiosError } from 'axios';
@@ -9,25 +10,55 @@ import Swal from 'sweetalert2';
 import type { User } from '../../types/auth.types';
 
 export const AdminUserManagementPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('ALL'); // ALL, ACTIVE, BLOCKED
-  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchParams.get('search') || '');
+  const [filterStatus, setFilterStatus] = useState(searchParams.get('filter') || 'ALL'); // ALL, ACTIVE, BLOCKED
+  
+  const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1'));
+  const [sortBy, setSortBy] = useState(searchParams.get('sortBy') || 'createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>((searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc');
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalUsers, setTotalUsers] = useState(0);
   const itemsPerPage = 5;
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
 
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      const response = await AdminService.getUsers();
-      const mappedUsers = (response.data || []).map((user: User) => ({
+      let filterQuery = undefined;
+      if (filterStatus === 'ACTIVE') filterQuery = 'active';
+      if (filterStatus === 'BLOCKED') filterQuery = 'blocked';
+
+      const response = await AdminService.getUsers({
+        page: currentPage,
+        limit: itemsPerPage,
+        search: debouncedSearchTerm || undefined,
+        filter: filterQuery,
+        sortBy,
+        sortOrder
+      });
+      
+      const responseData = response.data.data || response.data; // fallback for non-paginated just in case
+      const mappedUsers = (Array.isArray(responseData) ? responseData : []).map((user: User) => ({
         ...user,
         isBlocked: user.status === 'blocked'
-      }))
+      }));
 
       setUsers(mappedUsers);
+      setTotalPages(response.data.totalPages || 1);
+      setTotalUsers(response.data.total || mappedUsers.length);
     } catch (err: unknown) {
       let errMsg = 'Failed to fetch users';
       if (isAxiosError(err)) {
@@ -44,7 +75,35 @@ export const AdminUserManagementPage = () => {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [currentPage, debouncedSearchTerm, filterStatus, sortBy, sortOrder]);
+
+  // Sync state to URL
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (currentPage > 1) params.set('page', currentPage.toString());
+    if (debouncedSearchTerm) params.set('search', debouncedSearchTerm);
+    if (filterStatus !== 'ALL') params.set('filter', filterStatus);
+    if (sortBy !== 'createdAt') params.set('sortBy', sortBy);
+    if (sortOrder !== 'desc') params.set('sortOrder', sortOrder);
+    setSearchParams(params, { replace: true });
+  }, [currentPage, debouncedSearchTerm, filterStatus, sortBy, sortOrder, setSearchParams]);
+
+  const handleSort = (column: string) => {
+    if (sortBy === column) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(column);
+      setSortOrder('desc');
+    }
+    setCurrentPage(1);
+  };
+
+  const SortIcon = ({ column }: { column: string }) => {
+    if (sortBy !== column) return null;
+    return sortOrder === 'asc' 
+      ? <ArrowUp className="w-3 h-3 inline ml-1 text-amber-500" /> 
+      : <ArrowDown className="w-3 h-3 inline ml-1 text-amber-500" />;
+  };
 
   const handleToggleStatus = async (userId: string, currentStatus: boolean) => {
     try {
@@ -75,27 +134,11 @@ export const AdminUserManagementPage = () => {
     }
   };
 
-  const totalUsers = users.length;
   const blockedUsers = users.filter(u => u.isBlocked).length;
-
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.id.toLowerCase().includes(searchTerm.toLowerCase());
-
-    let matchesFilter = true;
-    if (filterStatus === 'ACTIVE') matchesFilter = !user.isBlocked;
-    if (filterStatus === 'BLOCKED') matchesFilter = user.isBlocked;
-
-    return matchesSearch && matchesFilter;
-  });
-
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-  const paginatedUsers = filteredUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterStatus]);
+  }, [debouncedSearchTerm, filterStatus]);
 
   return (
     <AdminLayout>
@@ -144,11 +187,11 @@ export const AdminUserManagementPage = () => {
           <table className="w-full text-left text-sm">
             <thead className="text-[10px] text-slate-500 font-bold tracking-widest uppercase border-b border-[#30363d] bg-[#0d1117]">
               <tr>
-                <th className="px-6 py-4">USER</th>
+                <th className="px-6 py-4 cursor-pointer hover:text-amber-500 transition-colors" onClick={() => handleSort('name')}>USER <SortIcon column="name" /></th>
                 <th className="px-6 py-4">ROLE</th>
-                <th className="px-6 py-4">JOIN DATE</th>
+                <th className="px-6 py-4 cursor-pointer hover:text-amber-500 transition-colors" onClick={() => handleSort('createdAt')}>JOIN DATE <SortIcon column="createdAt" /></th>
                 <th className="px-6 py-4">LAST ACTIVE</th>
-                <th className="px-6 py-4">STATUS</th>
+                <th className="px-6 py-4 cursor-pointer hover:text-amber-500 transition-colors" onClick={() => handleSort('status')}>STATUS <SortIcon column="status" /></th>
                 <th className="px-6 py-4 text-right">ACTIONS</th>
               </tr>
             </thead>
@@ -166,14 +209,14 @@ export const AdminUserManagementPage = () => {
                     {error}
                   </td>
                 </tr>
-              ) : paginatedUsers.length === 0 ? (
+              ) : users.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-slate-500 font-mono text-xs tracking-widest uppercase">
                     NO_USERS_FOUND
                   </td>
                 </tr>
               ) : (
-                paginatedUsers.map(user => (
+                users.map(user => (
                   <tr key={user.id} className={`hover:bg-[#0d1117]/50 transition-colors group ${user.isBlocked ? 'bg-red-500/5' : ''}`}>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -193,7 +236,7 @@ export const AdminUserManagementPage = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 font-mono text-xs text-slate-400">
-                      {new Date(user.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '_').toUpperCase()}
+                      {user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '_').toUpperCase() : 'N/A'}
                     </td>
                     <td className="px-6 py-4 font-mono text-xs text-slate-300 font-bold">
                       {user.isVerified ? 'VERIFIED' : 'PENDING'}
@@ -206,7 +249,7 @@ export const AdminUserManagementPage = () => {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button
-                        onClick={() => handleToggleStatus(user.id, user.isBlocked)}
+                        onClick={() => handleToggleStatus(user.id, !!user.isBlocked)}
                         className={`text-[10px] font-bold px-3 py-1.5 rounded transition-colors uppercase tracking-widest ${user.isBlocked
                           ? 'text-black bg-amber-500 hover:bg-amber-400 border border-amber-500'
                           : 'text-slate-400 border border-[#30363d] hover:bg-[#30363d]'
@@ -224,7 +267,7 @@ export const AdminUserManagementPage = () => {
 
         <div className="bg-[#0d1117] border-t border-[#30363d] p-4 flex items-center justify-between">
           <div className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
-            DISPLAYING: [ {Math.min((currentPage - 1) * itemsPerPage + 1, filteredUsers.length)} - {Math.min(currentPage * itemsPerPage, filteredUsers.length)} ] OF {filteredUsers.length} ENTRIES
+            DISPLAYING: [ {totalUsers === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, totalUsers)} ] OF {totalUsers} ENTRIES
           </div>
           <div className="flex gap-1">
             <button
@@ -280,7 +323,7 @@ export const AdminUserManagementPage = () => {
           <div className="absolute top-4 right-4 text-[#30363d] group-hover:text-red-500/30 transition-colors">
             <Ban className="w-8 h-8" />
           </div>
-          <div className="text-[10px] font-bold text-slate-400 group-hover:text-red-400 transition-colors tracking-widest uppercase mb-4">BLOCKED_ACCOUNTS</div>
+          <div className="text-[10px] font-bold text-slate-400 group-hover:text-red-400 transition-colors tracking-widest uppercase mb-4">BLOCKED (PAGE)</div>
           <div className="text-3xl font-bold text-white tracking-wider">{blockedUsers}</div>
         </div>
       </div>

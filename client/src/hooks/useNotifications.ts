@@ -1,7 +1,7 @@
 import { useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState } from '../store';
-import { setNotifications, markAsRead, markAllAsRead } from '../store/slices/notificationSlice';
+import { setNotifications, markAsRead, markAllAsRead, clearAllNotifications } from '../store/slices/notificationSlice';
 import { NotificationService } from '../api/notification/notification.service';
 import toast from 'react-hot-toast';
 
@@ -47,11 +47,24 @@ export const useNotifications = () => {
         }
     };
 
+    const handleClearAllNotifications = async () => {
+        try {
+            const response = await NotificationService.clearAllNotifications();
+            if (response.success) {
+                dispatch(clearAllNotifications());
+                toast.success('All notifications cleared');
+            }
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Failed to clear notifications');
+        }
+    };
+
     return {
         notifications,
         unreadCount,
         markAsRead: handleMarkAsRead,
         markAllAsRead: handleMarkAllAsRead,
+        clearAllNotifications: handleClearAllNotifications,
         fetchNotifications
     };
 };

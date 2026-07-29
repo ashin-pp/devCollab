@@ -2,13 +2,15 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { WorkspaceService } from '../../../api/workspace/workspace.service';
 import { WorkspaceLayout } from '../../../layouts/WorkspaceLayout';
-import { Users, UserCheck, UserX, Clock, Loader2, Search } from 'lucide-react';
+import { Users, UserCheck, UserX, Clock, Loader2, Search, UserPlus } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../../store/index';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 
 import type { MemberData } from '../../../types/workspace.types';
+import { InviteMemberModal } from '../../../components/workspace/InviteMemberModal';
+import { getMemberAvatar, getMemberDisplayName, getMemberEmail, getMemberInitial } from '../../../utils/member.utils';
 
 export const WorkspaceMembersPage = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>();
@@ -19,6 +21,7 @@ export const WorkspaceMembersPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'approved' | 'pending'>('approved');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -30,7 +33,7 @@ export const WorkspaceMembersPage = () => {
     try {
       setIsLoading(true);
       const data = await WorkspaceService.getWorkspaceMembers(workspaceId, false);
-      setMembers(data.data);
+      setMembers(Array.isArray(data.data) ? data.data : data.data?.data || []);
     } catch {
       toast.error('Failed to load members');
     } finally {
@@ -122,8 +125,8 @@ export const WorkspaceMembersPage = () => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
-      member.user?.name?.toLowerCase().includes(query) ||
-      member.user?.email?.toLowerCase().includes(query)
+      getMemberDisplayName(member).toLowerCase().includes(query) ||
+      getMemberEmail(member).toLowerCase().includes(query)
     );
   });
 
@@ -131,8 +134,8 @@ export const WorkspaceMembersPage = () => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
-      member.user?.name?.toLowerCase().includes(query) ||
-      member.user?.email?.toLowerCase().includes(query)
+      getMemberDisplayName(member).toLowerCase().includes(query) ||
+      getMemberEmail(member).toLowerCase().includes(query)
     );
   });
 
@@ -166,16 +169,27 @@ export const WorkspaceMembersPage = () => {
               </p>
             </div>
             
-            {/* Search Input */}
-            <div className="relative">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Search members..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-64 bg-slate-50 border border-slate-200 text-sm rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400"
-              />
+            {/* Search Input and Add Member */}
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search members..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-64 bg-slate-50 border border-slate-200 text-sm rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400"
+                />
+              </div>
+              {isOwner && (
+                <button 
+                  onClick={() => setIsInviteModalOpen(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-sm hover:bg-blue-700 transition-colors"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Invite Member
+                </button>
+              )}
             </div>
           </div>
 
@@ -213,23 +227,23 @@ export const WorkspaceMembersPage = () => {
                       onClick={() => handleViewProfile(member)}
                     >
                       <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-100 to-blue-50 border border-blue-100 flex items-center justify-center overflow-hidden shadow-inner">
-                        {member.user?.profileImage ? (
+                        {getMemberAvatar(member) ? (
                           <img 
-                            src={member.user.profileImage} 
-                            alt={member.user?.name || 'User'} 
+                            src={getMemberAvatar(member)} 
+                            alt={getMemberDisplayName(member)} 
                             className="w-full h-full object-cover"
                           />
                         ) : (
                           <span className="text-blue-600 font-bold text-lg">
-                            {member.user?.name ? member.user.name.charAt(0).toUpperCase() : 'U'}
+                            {getMemberInitial(member)}
                           </span>
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
                         <h3 className="font-bold text-slate-900 hover:text-blue-600 transition-colors">
-                          {member.user?.name || 'Unknown User'}
+                          {getMemberDisplayName(member)}
                         </h3>
-                        <p className="text-sm text-slate-500 truncate">{member.user?.email || 'No email provided'}</p>
+                        <p className="text-sm text-slate-500 truncate">{getMemberEmail(member) || 'No email provided'}</p>
                         {member.user?.bio && (
                           <p className="text-xs text-slate-400 mt-1 truncate">{member.user.bio}</p>
                         )}
@@ -288,24 +302,24 @@ export const WorkspaceMembersPage = () => {
                       onClick={() => handleViewProfile(member)}
                     >
                       <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-orange-100 to-orange-50 border border-orange-100 flex items-center justify-center overflow-hidden shadow-inner">
-                        {member.user?.profileImage ? (
+                        {getMemberAvatar(member) ? (
                           <img 
-                            src={member.user.profileImage} 
-                            alt={member.user?.name || 'User'} 
+                            src={getMemberAvatar(member)} 
+                            alt={getMemberDisplayName(member)} 
                             className="w-full h-full object-cover"
                           />
                         ) : (
                           <span className="text-orange-600 font-bold text-lg">
-                            {member.user?.name ? member.user.name.charAt(0).toUpperCase() : 'U'}
+                            {getMemberInitial(member)}
                           </span>
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
                         <h3 className="font-bold text-slate-900 hover:text-orange-600 transition-colors">
-                          {member.user?.name || 'Unknown User'}
+                          {getMemberDisplayName(member)}
                         </h3>
                         <p className="text-sm text-slate-500 truncate">
-                          {member.user?.email || 'No email provided'}
+                          {getMemberEmail(member) || 'No email provided'}
                         </p>
                         <span className="inline-flex items-center gap-1 mt-1 text-xs text-orange-600 font-medium bg-orange-100 px-2 py-0.5 rounded-md">
                           <Clock className="w-3 h-3" /> Pending Approval
@@ -355,6 +369,14 @@ export const WorkspaceMembersPage = () => {
 
         </div>
       </div>
+      
+      {workspaceId && (
+        <InviteMemberModal
+          isOpen={isInviteModalOpen}
+          onClose={() => setIsInviteModalOpen(false)}
+          workspaceId={workspaceId}
+        />
+      )}
     </WorkspaceLayout>
   );
 };

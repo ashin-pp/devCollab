@@ -58,6 +58,7 @@ export const API_ENDPOINTS = {
     UNREAD_COUNTS: (workspaceId: string) => `/workspaces/${workspaceId}/channels/unread-counts`,
     DM_UNREAD_COUNTS: (workspaceId: string) => `/workspaces/${workspaceId}/dm/unread-counts`,
     MESSAGES: (workspaceId: string, channelId: string) => `/workspaces/${workspaceId}/channels/${channelId}/messages`,
+    THREAD: (workspaceId: string, channelId: string, messageId: string) => `/workspaces/${workspaceId}/channels/${channelId}/messages/${messageId}/thread`,
   },
 
   // DM endpoints
@@ -102,6 +103,7 @@ export const API_ENDPOINTS = {
     BASE: '/notifications',
     MARK_READ: (id: string) => `/notifications/${id}/read`,
     MARK_ALL_READ: '/notifications/mark-all-read',
+    CLEAR_ALL: '/notifications/clear-all',
   },
 
   // AI endpoints

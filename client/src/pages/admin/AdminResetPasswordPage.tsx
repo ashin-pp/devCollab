@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { AdminService } from '../../api/admin/admin.service';
 import toast from 'react-hot-toast';
 import { isAxiosError } from 'axios';
+import { validateAdminResetPassword } from '../../validation';
 
 export const AdminResetPasswordPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -27,8 +28,8 @@ export const AdminResetPasswordPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPassword || !confirmPassword) return toast.error("Please fill all fields");
-    if (newPassword !== confirmPassword) return toast.error("Security keys do not match");
+    const passwordError = validateAdminResetPassword(newPassword, confirmPassword);
+    if (passwordError) return toast.error(passwordError);
 
     setIsLoading(true);
     try {

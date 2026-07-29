@@ -55,13 +55,17 @@ export interface Workspace {
   id: string;
   name: string;
   description?: string;
+  logo?: string;
   privacy: 'public' | 'private';
   isActive: boolean;
   maxMembers: number;
   createdAt: string;
+  createdBy: string;
+  inviteCode?: string;
   memberCount: number;
   ownerName: string;
   ownerEmail: string;
+  memberStatus?: string;
 }
 
 export interface WorkspaceMember {

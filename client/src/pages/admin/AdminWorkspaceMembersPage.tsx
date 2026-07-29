@@ -1,7 +1,7 @@
 import { AdminLayout } from '../../layouts/AdminLayout';
-import { Search, ChevronDown, SlidersHorizontal, ChevronLeft, ChevronRight, Users, UserCheck, Ban, Loader2, User as UserIcon, ArrowLeft } from 'lucide-react';
+import { Search, ChevronDown, SlidersHorizontal, ChevronLeft, ChevronRight, Users, UserCheck, Ban, Loader2, User as UserIcon, ArrowLeft, ArrowUp, ArrowDown } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { AdminService } from '../../api/admin/admin.service';
 import toast from 'react-hot-toast';
 import { isAxiosError } from 'axios';
@@ -13,22 +13,54 @@ import type { WorkspaceMember } from '../../types/workspace.types';
 export const AdminWorkspaceMembersPage = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('ALL'); // ALL, APPROVED, PENDING, BLOCKED
-  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchParams.get('search') || '');
+  const [filterStatus, setFilterStatus] = useState(searchParams.get('filter') || 'ALL'); // ALL, APPROVED, PENDING, BLOCKED
+  
+  const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1'));
+  const [sortBy, setSortBy] = useState(searchParams.get('sortBy') || 'joinedAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>((searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc');
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalMembers, setTotalMembers] = useState(0);
   const itemsPerPage = 5;
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
 
   const fetchMembers = async () => {
     if (!workspaceId) return;
     setIsLoading(true);
     try {
-      const response = await AdminService.getWorkspaceMembers(workspaceId);
-      setMembers(response.data || []);
+      let filterQuery = undefined;
+      if (filterStatus === 'APPROVED') filterQuery = 'approved';
+      if (filterStatus === 'PENDING') filterQuery = 'pending';
+      if (filterStatus === 'BLOCKED') filterQuery = 'blocked';
+
+      const response = await AdminService.getWorkspaceMembers(workspaceId, {
+        page: currentPage,
+        limit: itemsPerPage,
+        search: debouncedSearchTerm || undefined,
+        filter: filterQuery,
+        sortBy,
+        sortOrder
+      });
+      
+      const responseData = response.data.data || response.data;
+      const mappedMembers = Array.isArray(responseData) ? responseData : [];
+
+      setMembers(mappedMembers);
+      setTotalPages(response.data.totalPages || 1);
+      setTotalMembers(response.data.total || mappedMembers.length);
     } catch (err: unknown) {
       let errMsg = 'Failed to fetch members';
       if (isAxiosError(err)) {
@@ -45,7 +77,35 @@ export const AdminWorkspaceMembersPage = () => {
 
   useEffect(() => {
     fetchMembers();
-  }, [workspaceId]);
+  }, [workspaceId, currentPage, debouncedSearchTerm, filterStatus, sortBy, sortOrder]);
+
+  // Sync state to URL
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (currentPage > 1) params.set('page', currentPage.toString());
+    if (debouncedSearchTerm) params.set('search', debouncedSearchTerm);
+    if (filterStatus !== 'ALL') params.set('filter', filterStatus);
+    if (sortBy !== 'joinedAt') params.set('sortBy', sortBy);
+    if (sortOrder !== 'desc') params.set('sortOrder', sortOrder);
+    setSearchParams(params, { replace: true });
+  }, [currentPage, debouncedSearchTerm, filterStatus, sortBy, sortOrder, setSearchParams]);
+
+  const handleSort = (column: string) => {
+    if (sortBy === column) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(column);
+      setSortOrder('desc');
+    }
+    setCurrentPage(1);
+  };
+
+  const SortIcon = ({ column }: { column: string }) => {
+    if (sortBy !== column) return null;
+    return sortOrder === 'asc' 
+      ? <ArrowUp className="w-3 h-3 inline ml-1 text-amber-500" /> 
+      : <ArrowDown className="w-3 h-3 inline ml-1 text-amber-500" />;
+  };
 
   const handleUpdateStatus = async (userId: string, newStatus: string) => {
     if (!workspaceId) return;
@@ -77,29 +137,12 @@ export const AdminWorkspaceMembersPage = () => {
     }
   };
 
-  const totalMembers = members.length;
   const approvedMembers = members.filter(m => m.status === 'approved').length;
   const blockedMembers = members.filter(m => m.status === 'blocked').length;
 
-  const filteredMembers = members.filter(member => {
-    const matchesSearch = member.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      member.userEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      member.userId.toLowerCase().includes(searchTerm.toLowerCase());
-
-    let matchesFilter = true;
-    if (filterStatus === 'APPROVED') matchesFilter = member.status === 'approved';
-    if (filterStatus === 'PENDING') matchesFilter = member.status === 'pending';
-    if (filterStatus === 'BLOCKED') matchesFilter = member.status === 'blocked';
-
-    return matchesSearch && matchesFilter;
-  });
-
-  const totalPages = Math.ceil(filteredMembers.length / itemsPerPage);
-  const paginatedMembers = filteredMembers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterStatus]);
+  }, [debouncedSearchTerm, filterStatus]);
 
   return (
     <AdminLayout>
@@ -160,9 +203,9 @@ export const AdminWorkspaceMembersPage = () => {
             <thead className="text-[10px] text-slate-500 font-bold tracking-widest uppercase border-b border-[#30363d] bg-[#0d1117]">
               <tr>
                 <th className="px-6 py-4">MEMBER</th>
-                <th className="px-6 py-4">ROLE</th>
-                <th className="px-6 py-4">JOIN DATE</th>
-                <th className="px-6 py-4">STATUS</th>
+                <th className="px-6 py-4 cursor-pointer hover:text-amber-500 transition-colors" onClick={() => handleSort('role')}>ROLE <SortIcon column="role" /></th>
+                <th className="px-6 py-4 cursor-pointer hover:text-amber-500 transition-colors" onClick={() => handleSort('joinedAt')}>JOIN DATE <SortIcon column="joinedAt" /></th>
+                <th className="px-6 py-4 cursor-pointer hover:text-amber-500 transition-colors" onClick={() => handleSort('status')}>STATUS <SortIcon column="status" /></th>
                 <th className="px-6 py-4 text-right">ACTIONS</th>
               </tr>
             </thead>
@@ -180,14 +223,14 @@ export const AdminWorkspaceMembersPage = () => {
                     {error}
                   </td>
                 </tr>
-              ) : paginatedMembers.length === 0 ? (
+              ) : members.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center text-slate-500 font-mono text-xs tracking-widest uppercase">
                     NO_MEMBERS_FOUND
                   </td>
                 </tr>
               ) : (
-                paginatedMembers.map(member => (
+                members.map(member => (
                   <tr key={member.id} className={`hover:bg-[#0d1117]/50 transition-colors group ${member.status === 'blocked' ? 'bg-red-500/5' : ''}`}>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -245,7 +288,7 @@ export const AdminWorkspaceMembersPage = () => {
 
         <div className="bg-[#0d1117] border-t border-[#30363d] p-4 flex items-center justify-between">
           <div className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
-            DISPLAYING: [ {Math.min((currentPage - 1) * itemsPerPage + 1, filteredMembers.length) || 0} - {Math.min(currentPage * itemsPerPage, filteredMembers.length)} ] OF {filteredMembers.length} ENTRIES
+            DISPLAYING: [ {totalMembers === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, totalMembers)} ] OF {totalMembers} ENTRIES
           </div>
           <div className="flex gap-1">
             <button
@@ -293,7 +336,7 @@ export const AdminWorkspaceMembersPage = () => {
           <div className="absolute top-4 right-4 text-emerald-500/20 group-hover:text-emerald-500/40 transition-colors">
             <UserCheck className="w-8 h-8" />
           </div>
-          <div className="text-[10px] font-bold text-emerald-500 tracking-widest uppercase mb-4">APPROVED</div>
+          <div className="text-[10px] font-bold text-emerald-500 tracking-widest uppercase mb-4">APPROVED (PAGE)</div>
           <div className="text-3xl font-bold text-emerald-500 tracking-wider">{approvedMembers}</div>
         </div>
 
@@ -301,7 +344,7 @@ export const AdminWorkspaceMembersPage = () => {
           <div className="absolute top-4 right-4 text-[#30363d] group-hover:text-red-500/30 transition-colors">
             <Ban className="w-8 h-8" />
           </div>
-          <div className="text-[10px] font-bold text-slate-400 group-hover:text-red-400 transition-colors tracking-widest uppercase mb-4">BLOCKED</div>
+          <div className="text-[10px] font-bold text-slate-400 group-hover:text-red-400 transition-colors tracking-widest uppercase mb-4">BLOCKED (PAGE)</div>
           <div className="text-3xl font-bold text-white tracking-wider">{blockedMembers}</div>
         </div>
       </div>

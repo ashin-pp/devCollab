@@ -44,8 +44,8 @@ export const ChannelService = {
     updateRequest: (workspaceId: string, channelId: string, userId: string, action: 'approve' | 'reject') => {
         return api.patch(API_ENDPOINTS.CHANNELS.REQUEST(workspaceId, channelId, userId), { action });
     },
-    markAsRead: (workspaceId: string, channelId: string) => {
-        return api.post(API_ENDPOINTS.CHANNELS.READ(workspaceId, channelId));
+    markAsRead: (workspaceId: string, channelId: string, readUpto?: string) => {
+        return api.post(API_ENDPOINTS.CHANNELS.READ(workspaceId, channelId), readUpto ? { readUpto } : {});
     },
     getUnreadCounts: (workspaceId: string) => {
         return api.get(API_ENDPOINTS.CHANNELS.UNREAD_COUNTS(workspaceId));

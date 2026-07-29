@@ -50,7 +50,7 @@ export const WorkspaceSettingsPage = () => {
       }
 
       const membersData = await WorkspaceService.getWorkspaceMembers(workspaceId, false);
-      setMembers(membersData.data);
+      setMembers(Array.isArray(membersData.data) ? membersData.data : membersData.data?.data || []);
 
       // Fetch channels count for this workspace
       const channelsData = await ChannelService.getWorkspaceChannels(workspaceId);

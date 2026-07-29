@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
-import { Bell, Check, CheckCircle2 } from 'lucide-react';
+import { Bell, Check, CheckCircle2, Trash2 } from 'lucide-react';
 import { useNotifications } from '../../hooks/useNotifications';
 import type { Notification } from '../../types/notification.types';
 import { formatDistanceToNow } from 'date-fns';
 
 export const NotificationBell = () => {
-    const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+    const { notifications, unreadCount, markAsRead, markAllAsRead, clearAllNotifications } = useNotifications();
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -46,15 +46,28 @@ export const NotificationBell = () => {
                 <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-200 z-50 overflow-hidden flex flex-col">
                     <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
                         <h3 className="font-bold text-slate-800">Notifications</h3>
-                        {unreadCount > 0 && (
-                            <button
-                                onClick={markAllAsRead}
-                                className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-                            >
-                                <CheckCircle2 className="w-3.5 h-3.5" /> Mark all read
-                            </button>
-                        )}
+                        <div className="flex items-center gap-3">
+                            {unreadCount > 0 && (
+                                <button
+                                    onClick={markAllAsRead}
+                                    className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 transition-colors"
+                                    title="Mark all as read"
+                                >
+                                    <CheckCircle2 className="w-3.5 h-3.5" /> Mark read
+                                </button>
+                            )}
+                            {notifications.length > 0 && (
+                                <button
+                                    onClick={clearAllNotifications}
+                                    className="text-xs text-red-500 hover:text-red-600 font-medium flex items-center gap-1 transition-colors"
+                                    title="Clear all notifications"
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" /> Clear all
+                                </button>
+                            )}
+                        </div>
                     </div>
+
                     
                     <div className="max-h-96 overflow-y-auto">
                         {notifications.length === 0 ? (

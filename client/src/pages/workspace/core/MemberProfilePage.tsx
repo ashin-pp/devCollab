@@ -14,6 +14,7 @@ import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 
 import type { MemberData } from '../../../types/workspace.types';
+import { getMemberDisplayName, getMemberEmail } from '../../../utils/member.utils';
 
 export const MemberProfilePage = () => {
   const { workspaceId, userId } = useParams<{ workspaceId: string; userId: string }>();
@@ -38,7 +39,7 @@ export const MemberProfilePage = () => {
       
       // Fetch workspace members with full profile data
       const membersData = await WorkspaceService.getWorkspaceMembers(workspaceId, true);
-      const allMembers = membersData.data || [];
+      const allMembers = Array.isArray(membersData.data) ? membersData.data : membersData.data?.data || [];
       
       // Find the specific member
       const targetMember = allMembers.find((m: MemberData) => m.userId === userId);
@@ -241,7 +242,7 @@ export const MemberProfilePage = () => {
               <div className="flex-1">
                 <div className="flex items-center gap-4 mb-2">
                   <h1 className="text-4xl font-bold text-slate-900">
-                    {member.user?.name || 'Unknown User'}
+                    {getMemberDisplayName(member)}
                   </h1>
                   {member.role === 'owner' && (
                     <span className="flex items-center gap-2 px-3 py-2 bg-purple-50 text-purple-700 text-sm font-bold uppercase tracking-wider rounded-full border border-purple-200">
@@ -262,7 +263,7 @@ export const MemberProfilePage = () => {
                 <div className="flex flex-wrap items-center gap-6 text-slate-600 mb-4">
                   <div className="flex items-center gap-2">
                     <Mail className="w-5 h-5" />
-                    <span>{member.user?.email || 'No email provided'}</span>
+                    <span>{getMemberEmail(member) || 'No email provided'}</span>
                   </div>
                   
                   {member.joinedAt && (

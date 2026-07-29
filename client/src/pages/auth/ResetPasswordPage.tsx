@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthService } from '../../api/auth/auth.service';
 import toast from 'react-hot-toast';
 import { isAxiosError } from 'axios';
+import { validateResetPassword } from '../../validation';
 
 export const ResetPasswordPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -24,13 +25,9 @@ export const ResetPasswordPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newPassword.trim() || newPassword.trim().length < 6) {
-      toast.error('Password must be at least 6 characters');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      toast.error('Passwords do not match');
+    const passwordError = validateResetPassword(newPassword, confirmPassword);
+    if (passwordError) {
+      toast.error(passwordError);
       return;
     }
 

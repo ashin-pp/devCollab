@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { AuthService } from '../../api/auth/auth.service';
 import toast from 'react-hot-toast';
 import { isAxiosError } from 'axios';
+import { validateForgotPasswordEmail } from '../../validation';
 
 export const ForgotPasswordPage = () => {
   const [email, setEmail] = useState('');
@@ -12,8 +13,9 @@ export const ForgotPasswordPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) {
-      toast.error('Please enter your email address');
+    const emailError = validateForgotPasswordEmail(email);
+    if (emailError) {
+      toast.error(emailError);
       return;
     }
     
