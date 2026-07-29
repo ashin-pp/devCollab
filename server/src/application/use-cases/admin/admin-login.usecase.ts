@@ -3,6 +3,8 @@ import type { IAdminRepository } from "../../../application/interfaces/repositor
 import type { IHashService } from "../../../application/interfaces/services/hash.service.interface";
 import type { IJwtService } from "../../../application/interfaces/services/jwt.service.interface";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
+import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
+import { AppError } from "../../../domain/errors/AppError";
 import { LoginUserRequestDto } from "../../dtos/auth/request/login-user.dto";
 
 import { AdminAuthResponseDto } from "../../dtos/admin/response/admin-auth.response.dto";
@@ -21,16 +23,16 @@ export class AdminLoginUseCase implements IAdminLoginUseCase {
     async execute(data: LoginUserRequestDto): Promise<AdminAuthResponseDto> {
         const admin = await this._adminRepository.findByEmail(data.email);
         if (!admin || !admin.password || !data.password) {
-            throw new Error(ErrorMessage.INVALID_CREDENTIALS);
+            throw new AppError(ErrorMessage.INVALID_CREDENTIALS, HttpStatusCode.UNAUTHORIZED);
         }
 
         const isMatch = await this._hashService.compare(data.password, admin.password);
         if (!isMatch) {
-            throw new Error(ErrorMessage.INVALID_CREDENTIALS);
+            throw new AppError(ErrorMessage.INVALID_CREDENTIALS, HttpStatusCode.UNAUTHORIZED);
         }
 
         if (!admin.id) {
-            throw new Error(ErrorMessage.USER_NOT_FOUND);
+            throw new AppError(ErrorMessage.ADMIN_NOT_FOUND, HttpStatusCode.NOT_FOUND);
         }
 
         const role = 'admin';

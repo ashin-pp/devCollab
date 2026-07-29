@@ -3,6 +3,8 @@ import type { IUserRepository } from "../../../application/interfaces/repositori
 import type { IHashService } from "../../../application/interfaces/services/hash.service.interface";
 import { User } from "../../../domain/entities/user.entity";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
+import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
+import { AppError } from "../../../domain/errors/AppError";
 import type { RegisterUserRequestDto } from "../../dtos/auth/request/register-user.dto";
 import type { UserResponseDto } from "../../dtos/auth/response/user.response.dto";
 import { IRegisterUserUseCase } from "../../interfaces/use-cases/auth/register-user.usecase.interface";
@@ -19,18 +21,18 @@ export class RegisterUserUseCase implements IRegisterUserUseCase {
     async execute(data: RegisterUserRequestDto): Promise<UserResponseDto> {
         const existingUser = await this._userRepository.findByEmail(data.email);
         if (existingUser) {
-            throw new Error(ErrorMessage.EMAIL_ALREADY_EXISTS);
+            throw new AppError(ErrorMessage.EMAIL_ALREADY_EXISTS, HttpStatusCode.CONFLICT);
         }
 
         if (data.password !== undefined) {
             if (data.password.trim().length < 6) {
-                throw new Error(ErrorMessage.PASSWORD_TOO_SHORT);
+                throw new AppError(ErrorMessage.PASSWORD_TOO_SHORT, HttpStatusCode.BAD_REQUEST);
             }
             if (data.password !== data.confirmPassword) {
-                throw new Error(ErrorMessage.PASSWORDS_DO_NOT_MATCH);
+                throw new AppError(ErrorMessage.PASSWORDS_DO_NOT_MATCH, HttpStatusCode.BAD_REQUEST);
             }
         } else if (data.confirmPassword !== undefined) {
-             throw new Error(ErrorMessage.PASSWORDS_DO_NOT_MATCH);
+             throw new AppError(ErrorMessage.PASSWORDS_DO_NOT_MATCH, HttpStatusCode.BAD_REQUEST);
         }
 
         let hashedPassword = data.password;

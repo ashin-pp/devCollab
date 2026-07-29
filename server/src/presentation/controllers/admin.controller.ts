@@ -39,7 +39,7 @@ export class AdminController {
 
   public createAdmin = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         await this._createAdminUseCase.execute(req.body);
-        const response = ApiResponse.success("Admin created successfully");
+        const response = ApiResponse.success(SuccessMessage.ADMIN_CREATED);
         res.status(HttpStatusCode.CREATED).json(response);
         })
 
@@ -70,7 +70,7 @@ export class AdminController {
 
   public verifyResetOtp = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         await this._verifyResetOtpUseCase.execute({ email: req.body.email, otp: req.body.otp });
-        const response = ApiResponse.success("OTP verified successfully");
+        const response = ApiResponse.success(SuccessMessage.OTP_VERIFIED);
         res.status(HttpStatusCode.OK).json(response);
         })
 
@@ -92,8 +92,8 @@ export class AdminController {
 
   public refresh = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         const refreshToken = req.cookies?.adminRefreshToken;
-        const { admin, accessToken } = await this._adminRefreshTokenUseCase.execute(refreshToken);
-        const response = ApiResponse.success(SuccessMessage.LOGIN_SUCCESS, { 
+        const { admin, accessToken } = await this._adminRefreshTokenUseCase.execute({ refreshToken });
+        const response = ApiResponse.success(SuccessMessage.TOKEN_REFRESHED, { 
                 admin: {
                   id: admin.id,
                   email: admin.email,
@@ -113,14 +113,14 @@ export class AdminController {
         const sortOrder = req.query.sortOrder as 'asc' | 'desc';
 
         const users = await this._getAllUsersUseCase.execute({ page, limit, search, filter, sortBy, sortOrder });
-        const response = ApiResponse.success("Users fetched successfully", users);
+        const response = ApiResponse.success(SuccessMessage.USERS_FETCHED, users);
         res.status(HttpStatusCode.OK).json(response);
         })
 
   public toggleUserStatus = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         const id = req.params.id as string;
         const newStatus = await this._toggleUserStatusUseCase.execute({userId: id});
-        const response = ApiResponse.success(`User status changed to ${newStatus}`);
+        const response = ApiResponse.success(SuccessMessage.USER_STATUS_UPDATED, { status: newStatus });
         res.status(HttpStatusCode.OK).json(response);
         })
 
@@ -133,7 +133,7 @@ export class AdminController {
         const sortOrder = req.query.sortOrder as 'asc' | 'desc';
 
         const workspaces = await this._getAllWorkspacesUseCase.execute({ params: { page, limit, search, filter, sortBy, sortOrder } });
-        const response = ApiResponse.success("Workspaces fetched successfully", workspaces);
+        const response = ApiResponse.success(SuccessMessage.WORKSPACES_FETCHED, workspaces);
         res.status(HttpStatusCode.OK).json(response);
         })
 
@@ -155,7 +155,7 @@ export class AdminController {
         const sortOrder = req.query.sortOrder as 'asc' | 'desc';
 
         const members = await this._adminGetWorkspaceMembersUseCase.execute({ workspaceId, params: { page, limit, search, filter, sortBy, sortOrder } });
-        const response = ApiResponse.success("Workspace members fetched successfully", members);
+        const response = ApiResponse.success(SuccessMessage.WORKSPACE_MEMBERS_FETCHED, members);
         res.status(HttpStatusCode.OK).json(response);
         })
 

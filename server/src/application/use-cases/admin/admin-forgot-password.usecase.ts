@@ -4,6 +4,8 @@ import type { IAdminRepository } from "../../../application/interfaces/repositor
 import type { IOtpRepository } from "../../../application/interfaces/repositories/otp.repository.interface";
 import { AppConstants } from "../../../domain/constants";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
+import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
+import { AppError } from "../../../domain/errors/AppError";
 import { IAdminForgotPasswordUseCase } from "../../interfaces/use-cases/admin/admin-forgot-password.usecase.interface";
 import type { ISendOtpUseCase } from "../../interfaces/use-cases/auth/send-otp.usecase.interface";
 import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
@@ -20,14 +22,14 @@ export class AdminForgotPasswordUseCase implements IAdminForgotPasswordUseCase {
         const admin = await this._adminRepository.findByEmail(email);
         
         if (!admin) {
-            throw new Error(ErrorMessage.USER_NOT_FOUND);
+            throw new AppError(ErrorMessage.ADMIN_NOT_FOUND, HttpStatusCode.NOT_FOUND);
         }
 
         const latestOtp = await this._otpRepository.findLatestOtpByEmail(email);
         if (latestOtp && latestOtp.createdAt) {
              const timeDiff = Date.now() - latestOtp.createdAt.getTime();
              if (timeDiff < AppConstants.OTP_RESEND_COOLDOWN_MS) {
-                 throw new Error(ErrorMessage.OTP_COOLDOWN);
+                 throw new AppError(ErrorMessage.OTP_COOLDOWN, HttpStatusCode.BAD_REQUEST);
              }
         }
 

@@ -1,6 +1,8 @@
 import { inject, injectable } from 'tsyringe';
 import type { IOtpRepository } from "../../../application/interfaces/repositories/otp.repository.interface";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
+import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
+import { AppError } from "../../../domain/errors/AppError";
 import { IVerifyResetOtpUseCase } from "../../interfaces/use-cases/auth/verify-reset-otp.usecase.interface";
 import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
@@ -15,11 +17,11 @@ export class VerifyResetOtpUseCase implements IVerifyResetOtpUseCase {
         const otpRecord = await this._otpRepository.findValidOtpByEmail(email, otp);
 
         if (!otpRecord) {
-            throw new Error(ErrorMessage.INVALID_OTP);
+            throw new AppError(ErrorMessage.INVALID_OTP, HttpStatusCode.BAD_REQUEST);
         }
 
         if (otpRecord.isExpired()) {
-            throw new Error(ErrorMessage.EXPIRED_OTP);
+            throw new AppError(ErrorMessage.EXPIRED_OTP, HttpStatusCode.BAD_REQUEST);
         }
     }
 }

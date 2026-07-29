@@ -3,7 +3,9 @@ import type { IUserRepository } from "../../../application/interfaces/repositori
 import type { IHashService } from "../../../application/interfaces/services/hash.service.interface";
 import type { IJwtService } from "../../../application/interfaces/services/jwt.service.interface";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
+import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { UserStatus } from "../../../domain/enums/UserStatus";
+import { AppError } from "../../../domain/errors/AppError";
 import { LoginUserRequestDto } from "../../dtos/auth/request/login-user.dto";
 import { AuthResponseDto } from "../../dtos/auth/response/auth.response.dto";
 import { ILoginUserUseCase } from "../../interfaces/use-cases/auth/login-user.usecase.interface";
@@ -21,20 +23,20 @@ export class LoginUserUseCase implements ILoginUserUseCase {
     async execute(payload: LoginUserRequestDto): Promise<AuthResponseDto> {
         const user = await this._userRepository.findByEmail(payload.email);
         if (!user || !user.password || !payload.password) {
-            throw new Error(ErrorMessage.INVALID_CREDENTIALS);
+            throw new AppError(ErrorMessage.INVALID_CREDENTIALS, HttpStatusCode.UNAUTHORIZED);
         }
 
         const isMatch = await this._hashService.compare(payload.password, user.password);
         if (!isMatch) {
-            throw new Error(ErrorMessage.INVALID_CREDENTIALS);
+            throw new AppError(ErrorMessage.INVALID_CREDENTIALS, HttpStatusCode.UNAUTHORIZED);
         }
 
         if (!user.isVerified) {
-            throw new Error(ErrorMessage.EMAIL_NOT_VERIFIED);
+            throw new AppError(ErrorMessage.EMAIL_NOT_VERIFIED, HttpStatusCode.FORBIDDEN);
         }
 
         if (user.status === UserStatus.BLOCKED) {
-            throw new Error(ErrorMessage.USER_BLOCKED);
+            throw new AppError(ErrorMessage.USER_BLOCKED, HttpStatusCode.FORBIDDEN);
         }
 
         const role = 'user';

@@ -87,7 +87,7 @@ export class AuthController {
 
   public verifyResetOtp = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         await this._verifyResetOtpUseCase.execute({ email: req.body.email, otp: req.body.otp });
-        const response = ApiResponse.success("OTP verified");
+        const response = ApiResponse.success(SuccessMessage.OTP_VERIFIED);
         res.status(HttpStatusCode.OK).json(response);
         })
 
@@ -100,7 +100,7 @@ export class AuthController {
   public refresh = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         const refreshToken = req.cookies?.refreshToken;
         const { user, accessToken } = await this._refreshTokenUseCase.execute({refreshToken});
-        const response = ApiResponse.success("Token refreshed successfully", { user, accessToken });
+        const response = ApiResponse.success(SuccessMessage.TOKEN_REFRESHED, { user, accessToken });
         res.status(HttpStatusCode.OK).json(response);
         })
 }

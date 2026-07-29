@@ -26,8 +26,8 @@ export const AdminSidebar = () => {
     if (result.isConfirmed) {
       try {
         await AdminService.logout();
-      } catch (err) {
-        console.error("Admin logout error", err);
+      } catch {
+        // Local logout must still complete if the server session is already unavailable.
       } finally {
         dispatch(logout());
         navigate('/admin/login', { replace: true });

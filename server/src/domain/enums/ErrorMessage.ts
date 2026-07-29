@@ -14,9 +14,12 @@ export const ErrorMessage = {
     UNAUTHORIZED: "Unauthorized or invalid token",
     NO_TOKEN_PROVIDED: "No token provided",
     NO_REFRESH_TOKEN: "No refresh token provided",
+    INVALID_OR_EXPIRED_REFRESH_TOKEN: "Invalid or expired refresh token",
+    INVALID_OR_EXPIRED_ACCESS_TOKEN: "Invalid or expired access token",
     INVALID_GOOGLE_TOKEN: "Invalid Google Token",
     INVALID_GOOGLE_TOKEN_PAYLOAD: "Invalid Google Token payload",
     OTP_COOLDOWN: "Please wait 1 minute before requesting a new OTP.",
+    EMAIL_SEND_FAILED: "Failed to send email. Please try again later.",
     ADMIN_NOT_FOUND: "Admin not found",
 
     // User

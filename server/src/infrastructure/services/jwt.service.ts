@@ -2,6 +2,9 @@ import { injectable } from 'tsyringe';
 import jwt from "jsonwebtoken";
 import { IJwtService } from "../../application/interfaces/services/jwt.service.interface";
 import { envConfig } from "../../config/envConfig";
+import { ErrorMessage } from "../../domain/enums/ErrorMessage";
+import { HttpStatusCode } from "../../domain/enums/HttpStatusCode";
+import { AppError } from "../../domain/errors/AppError";
 
 @injectable()
 export class JwtService implements IJwtService {
@@ -24,7 +27,7 @@ export class JwtService implements IJwtService {
         try {
             return jwt.verify(token, this._refreshSecret as string) as { id: string; role: string };
         } catch (_error) {
-            throw new Error("Invalid or expired refresh token");
+            throw new AppError(ErrorMessage.INVALID_OR_EXPIRED_REFRESH_TOKEN, HttpStatusCode.UNAUTHORIZED);
         }
     }
 
@@ -32,7 +35,7 @@ export class JwtService implements IJwtService {
         try {
             return jwt.verify(token, this._accessSecret as string) as { id: string; role: string };
         } catch (_error) {
-            throw new Error("Invalid or expired access token");
+            throw new AppError(ErrorMessage.INVALID_OR_EXPIRED_ACCESS_TOKEN, HttpStatusCode.UNAUTHORIZED);
         }
     }
 }

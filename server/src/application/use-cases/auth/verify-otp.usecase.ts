@@ -2,6 +2,8 @@ import { inject, injectable } from 'tsyringe';
 import type { IOtpRepository } from "../../../application/interfaces/repositories/otp.repository.interface";
 import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
+import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
+import { AppError } from "../../../domain/errors/AppError";
 import { VerifyOtpRequestDto } from "../../dtos/auth/request/verify-otp.dto";
 
 import { IVerifyOtpUseCase } from "../../interfaces/use-cases/auth/verify-otp.usecase.interface";
@@ -18,11 +20,11 @@ export class VerifyOtpUseCase implements IVerifyOtpUseCase {
         const otpRecord = await this._otpRepository.findValidOtpByEmail(payload.email, payload.otp);
 
         if (!otpRecord) {
-            throw new Error(ErrorMessage.INVALID_OTP);
+            throw new AppError(ErrorMessage.INVALID_OTP, HttpStatusCode.BAD_REQUEST);
         }
 
         if (otpRecord.isExpired()) {
-            throw new Error(ErrorMessage.EXPIRED_OTP);
+            throw new AppError(ErrorMessage.EXPIRED_OTP, HttpStatusCode.BAD_REQUEST);
         }
 
         otpRecord.markAsUsed();
@@ -32,7 +34,7 @@ export class VerifyOtpUseCase implements IVerifyOtpUseCase {
 
         const user = await this._userRepository.findByEmail(payload.email);
         if (!user) {
-            throw new Error(ErrorMessage.USER_NOT_FOUND);
+            throw new AppError(ErrorMessage.USER_NOT_FOUND, HttpStatusCode.NOT_FOUND);
         }
 
         user.isVerified = true;

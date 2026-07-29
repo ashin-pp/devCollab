@@ -63,8 +63,8 @@ export const UserLayout = ({ children }: UserLayoutProps) => {
     if (result.isConfirmed) {
       try {
         await AuthService.logout();
-      } catch (err) {
-        console.error("Logout error", err);
+      } catch {
+        // Local logout must still complete if the server session is already unavailable.
       } finally {
         dispatch(logout());
         navigate('/login', { replace: true });

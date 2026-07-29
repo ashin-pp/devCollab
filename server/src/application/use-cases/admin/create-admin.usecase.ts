@@ -3,6 +3,8 @@ import type { IAdminRepository } from "../../../application/interfaces/repositor
 import type { IHashService } from "../../../application/interfaces/services/hash.service.interface";
 import { Admin } from "../../../domain/entities/admin.entity";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
+import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
+import { AppError } from "../../../domain/errors/AppError";
 import { RegisterUserRequestDto } from "../../dtos/auth/request/register-user.dto";
 
 import { AdminResponseDto } from "../../dtos/admin/response/admin.response.dto";
@@ -20,15 +22,15 @@ export class CreateAdminUseCase implements ICreateAdminUseCase {
     async execute(data: RegisterUserRequestDto): Promise<AdminResponseDto> {
         const existingAdmin = await this._adminRepository.findByEmail(data.email);
         if (existingAdmin) {
-            throw new Error(ErrorMessage.EMAIL_ALREADY_EXISTS);
+            throw new AppError(ErrorMessage.EMAIL_ALREADY_EXISTS, HttpStatusCode.CONFLICT);
         }
 
         if (!data.password || data.password.trim().length < 6) {
-            throw new Error(ErrorMessage.PASSWORD_TOO_SHORT);
+            throw new AppError(ErrorMessage.PASSWORD_TOO_SHORT, HttpStatusCode.BAD_REQUEST);
         }
 
         if (data.password !== data.confirmPassword) {
-            throw new Error(ErrorMessage.PASSWORDS_DO_NOT_MATCH);
+            throw new AppError(ErrorMessage.PASSWORDS_DO_NOT_MATCH, HttpStatusCode.BAD_REQUEST);
         }
 
         const hashedPassword = await this._hashService.hash(data.password!);

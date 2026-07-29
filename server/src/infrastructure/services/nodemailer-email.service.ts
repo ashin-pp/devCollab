@@ -1,6 +1,9 @@
 import { injectable } from 'tsyringe';
 import nodemailer from "nodemailer";
 import { IEmailService } from "../../application/interfaces/services/email.service.interface";
+import { ErrorMessage } from "../../domain/enums/ErrorMessage";
+import { HttpStatusCode } from "../../domain/enums/HttpStatusCode";
+import { AppError } from "../../domain/errors/AppError";
 import { logger } from "../../infrastructure/di/container";
 
 @injectable()
@@ -52,7 +55,7 @@ export class NodemailerEmailService implements IEmailService {
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             logger.error(`Failed to send OTP email to ${email}: ${errorMessage}`);
-            throw new Error("Failed to send email. Please try again later.");
+            throw new AppError(ErrorMessage.EMAIL_SEND_FAILED, HttpStatusCode.INTERNAL_SERVER);
         }
     }
 
