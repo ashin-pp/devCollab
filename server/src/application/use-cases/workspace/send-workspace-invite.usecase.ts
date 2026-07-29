@@ -10,6 +10,7 @@ import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { MemberRole } from "../../../domain/enums/MemberRole";
 import { MemberStatus } from "../../../domain/enums/MemberStatus";
+import { SuccessMessage } from "../../../domain/enums/SuccessMessage";
 import { WorkspacePrivacy } from "../../../domain/enums/WorkspacePrivacy";
 import { AppError } from "../../../domain/errors/AppError";
 import { logger } from "../../../infrastructure/di/container";
@@ -34,6 +35,8 @@ export class SendWorkspaceInviteUseCase implements ISendWorkspaceInviteUseCase {
             throw new AppError(ErrorMessage.INVITE_FIELDS_REQUIRED, HttpStatusCode.BAD_REQUEST);
         }
 
+        const normalizedEmail = targetEmail.toLowerCase().trim();
+
         const workspace = await this._workspaceRepository.findById(workspaceId);
         if (!workspace || !workspace.id) {
             throw new AppError(ErrorMessage.WORKSPACE_NOT_FOUND, HttpStatusCode.NOT_FOUND);
@@ -48,9 +51,36 @@ export class SendWorkspaceInviteUseCase implements ISendWorkspaceInviteUseCase {
             throw new AppError(ErrorMessage.ONLY_OWNER_CAN_INVITE_PRIVATE, HttpStatusCode.FORBIDDEN);
         }
 
-        const targetUser = await this._userRepository.findByEmail(targetEmail.toLowerCase());
+        const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+        const targetUser = await this._userRepository.findByEmail(normalizedEmail);
+
+        // Unregistered user: store pending email invite and send join/register link
         if (!targetUser || !targetUser.id) {
-            throw new AppError(ErrorMessage.USER_NOT_FOUND_WITH_EMAIL, HttpStatusCode.NOT_FOUND);
+            const pendingEmails = workspace.pendingInviteEmails ?? [];
+            if (!pendingEmails.includes(normalizedEmail)) {
+                await this._workspaceRepository.update(workspace.id, {
+                    pendingInviteEmails: [...pendingEmails, normalizedEmail]
+                });
+            }
+
+            const inviteLink = `${clientUrl}/register?inviteCode=${workspace.inviteCode}&email=${encodeURIComponent(normalizedEmail)}`;
+
+            try {
+                await this._emailService.sendWorkspaceInviteEmail(
+                    normalizedEmail,
+                    workspace.name,
+                    inviteLink
+                );
+            } catch (error: unknown) {
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                logger.error(`Invite email failed for unregistered address ${normalizedEmail}: ${errorMessage}`);
+                throw new AppError(ErrorMessage.EMAIL_SEND_FAILED, HttpStatusCode.INTERNAL_SERVER);
+            }
+
+            return {
+                success: true,
+                message: SuccessMessage.WORKSPACE_INVITE_EMAIL_SENT
+            };
         }
 
         const existingMember = await this._workspaceMemberRepository.findByWorkspaceAndUser(workspace.id, targetUser.id);
@@ -75,9 +105,16 @@ export class SendWorkspaceInviteUseCase implements ISendWorkspaceInviteUseCase {
             await this._workspaceMemberRepository.create(newMember);
         }
 
-        const inviteLink = `${process.env.CLIENT_URL || 'http://localhost:5173'}/dashboard?inviteCode=${workspace.inviteCode}`;
+        // Drop from pending list if they registered after an earlier email invite
+        const pendingEmails = workspace.pendingInviteEmails ?? [];
+        if (pendingEmails.includes(normalizedEmail)) {
+            await this._workspaceRepository.update(workspace.id, {
+                pendingInviteEmails: pendingEmails.filter((email) => email !== normalizedEmail)
+            });
+        }
 
-        // In-app notification first so the invite still reaches them even if SMTP fails
+        const inviteLink = `${clientUrl}/dashboard?inviteCode=${workspace.inviteCode}`;
+
         await this._createNotificationUseCase.execute({
             userId: targetUser.id,
             type: 'WORKSPACE_INVITE',
@@ -102,8 +139,8 @@ export class SendWorkspaceInviteUseCase implements ISendWorkspaceInviteUseCase {
         return {
             success: true,
             message: emailSent
-                ? "Invitation sent successfully"
-                : "Invitation sent. The member will see it in their notifications."
+                ? SuccessMessage.WORKSPACE_INVITE_SENT
+                : SuccessMessage.WORKSPACE_INVITE_IN_APP_ONLY
         };
     }
 }

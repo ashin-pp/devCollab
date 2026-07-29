@@ -71,9 +71,11 @@ export class WorkspaceController {
                         isFromEmailLink
                     };
         const member = await this._joinWorkspaceUseCase.execute(joinData);
-        const successMessage = member.status === 'pending' 
+        const successMessage = member.status === 'pending'
                         ? SuccessMessage.WORKSPACE_JOIN_REQUESTED
-                        : SuccessMessage.WORKSPACE_JOINED;
+                        : member.status === 'invited'
+                            ? SuccessMessage.WORKSPACE_INVITE_PENDING_ACCEPT
+                            : SuccessMessage.WORKSPACE_JOINED;
         const response = ApiResponse.success(successMessage, member);
         res.status(HttpStatusCode.CREATED).json(response);
         });

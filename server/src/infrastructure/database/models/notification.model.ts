@@ -14,7 +14,7 @@ export interface INotificationDocument extends Document {
 const NotificationSchema: Schema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    type: { type: String, required: true, enum: ['POLL_CREATED', 'JOIN_REQUEST_APPROVED', 'WORKSPACE_INVITE', 'GENERAL', 'WORKSPACE', 'CHANNEL', 'DIRECT_MESSAGE', 'MENTION'] },
+    type: { type: String, required: true, enum: ['POLL_CREATED', 'JOIN_REQUEST', 'JOIN_REQUEST_APPROVED', 'WORKSPACE_INVITE', 'GENERAL', 'WORKSPACE', 'CHANNEL', 'DIRECT_MESSAGE', 'MENTION'] },
     title: { type: String, required: true },
     message: { type: String, required: true },
     relatedId: { type: String },

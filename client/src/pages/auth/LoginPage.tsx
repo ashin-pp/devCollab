@@ -9,6 +9,7 @@ import { setCredentials } from '../../store/slices/authSlice';
 import toast from 'react-hot-toast';
 import { isAxiosError } from 'axios';
 import { validateLoginCredentials } from '../../validation';
+import { pathAfterAuth, stashPendingInviteFromSearch } from '../../utils/pendingInvite';
 
 export const LoginPage = () => {
 
@@ -23,6 +24,8 @@ export const LoginPage = () => {
   const location = useLocation();
 
   useEffect(() => {
+    stashPendingInviteFromSearch(location.search);
+
     if (location.state?.error) {
       setError(location.state.error);
       toast.error(location.state.error);
@@ -50,7 +53,7 @@ export const LoginPage = () => {
         accessToken: response.data.accessToken
       }));
       toast.success('Successfully logged in!');
-      navigate('/dashboard');
+      navigate(pathAfterAuth());
 
     } catch (err: unknown) {
       let errMsg = 'Login failed. Please try again.';
@@ -75,7 +78,7 @@ export const LoginPage = () => {
         accessToken: response.data.accessToken
       }));
       toast.success('Successfully logged in with Google!');
-      navigate('/dashboard');
+      navigate(pathAfterAuth());
     } catch (err: unknown) {
       if (isAxiosError(err)) {
         toast.error(err.response?.data?.error?.message || err.response?.data?.message || "Google authentication failed");
@@ -246,7 +249,12 @@ export const LoginPage = () => {
 
           <div className="mt-8 text-center">
             <span className="text-xs text-slate-500 font-medium">Don't have an account? </span>
-            <a href="/register" className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors">Sign up for free</a>
+            <a
+              href={location.search ? `/register${location.search}` : '/register'}
+              className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
+            >
+              Sign up for free
+            </a>
           </div>
         </div>
       </div>

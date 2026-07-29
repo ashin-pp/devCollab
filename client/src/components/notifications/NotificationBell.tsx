@@ -22,6 +22,7 @@ export const NotificationBell = () => {
     const getIcon = (type: string) => {
         switch (type) {
             case 'POLL_CREATED': return '📊';
+            case 'JOIN_REQUEST': return '👋';
             case 'JOIN_REQUEST_APPROVED': return '✅';
             case 'WORKSPACE_INVITE': return '📩';
             default: return '🔔';

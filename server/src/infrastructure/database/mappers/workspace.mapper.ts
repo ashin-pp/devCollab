@@ -18,7 +18,9 @@ export class WorkspaceMapper implements IMapper<Workspace, IWorkspaceModel> {
             persistence.is_active,
             persistence._id ? persistence._id.toString() : undefined,
             persistence.created_at,
-            persistence.updated_at
+            persistence.updated_at,
+            0,
+            persistence.pending_invite_emails ?? []
         );
     }
 
@@ -31,6 +33,7 @@ export class WorkspaceMapper implements IMapper<Workspace, IWorkspaceModel> {
             privacy: domain.privacy,
             max_members: domain.maxMembers,
             is_active: domain.isActive,
+            pending_invite_emails: domain.pendingInviteEmails,
         };
 
         if (domain.createdBy) {

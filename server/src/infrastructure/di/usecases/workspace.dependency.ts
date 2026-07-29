@@ -1,6 +1,7 @@
 import { container } from 'tsyringe';
 import { USECASE_TOKENS } from "../usecase.tokens";
 import { BlockWorkspaceMemberUseCase } from "../../../application/use-cases/workspace/block-workspace-member.usecase";
+import { ClaimPendingWorkspaceInvitesUseCase } from "../../../application/use-cases/workspace/claim-pending-workspace-invites.usecase";
 import { CreateWorkspaceUseCase } from "../../../application/use-cases/workspace/create-workspace.usecase";
 import { DeleteWorkspaceUseCase } from "../../../application/use-cases/workspace/delete-workspace.usecase";
 import { GetPublicWorkspacesUseCase } from "../../../application/use-cases/workspace/get-public-workspaces.usecase";
@@ -17,6 +18,7 @@ import { VerifyInviteCodeUseCase } from "../../../application/use-cases/workspac
 
 export function registerWorkspaceUseCases() {
     container.register(USECASE_TOKENS.IBlockWorkspaceMemberUseCase, { useClass: BlockWorkspaceMemberUseCase });
+    container.register(USECASE_TOKENS.IClaimPendingWorkspaceInvitesUseCase, { useClass: ClaimPendingWorkspaceInvitesUseCase });
     container.register(USECASE_TOKENS.ICreateWorkspaceUseCase, { useClass: CreateWorkspaceUseCase });
     container.register(USECASE_TOKENS.IDeleteWorkspaceUseCase, { useClass: DeleteWorkspaceUseCase });
     container.register(USECASE_TOKENS.IGetPublicWorkspacesUseCase, { useClass: GetPublicWorkspacesUseCase });

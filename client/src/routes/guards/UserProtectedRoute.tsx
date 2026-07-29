@@ -1,15 +1,21 @@
-import { Navigate, Outlet, useNavigate } from 'react-router-dom';
+import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import type { RootState } from '../../store';
 import { useEffect } from 'react';
 import { api } from '../../api/axios';
 import { isAxiosError } from 'axios';
 import { logout } from '../../store/slices/authSlice';
+import { stashPendingInviteFromSearch } from '../../utils/pendingInvite';
 
 export const UserProtectedRoute = () => {
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    stashPendingInviteFromSearch(location.search);
+  }, [location.search]);
 
   useEffect(() => {
     if (!isAuthenticated || user?.role !== 'user') return;
@@ -41,7 +47,7 @@ export const UserProtectedRoute = () => {
   }, [dispatch, navigate, isAuthenticated, user]);
 
   if (!isAuthenticated || user?.role !== 'user') {
-    return <Navigate to="/login" replace />;
+    return <Navigate to={`/login${location.search}`} replace state={{ from: location }} />;
   }
 
   return <Outlet />;

@@ -1,6 +1,8 @@
 import { inject, injectable } from 'tsyringe';
+import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
 import type { IWorkspaceMemberRepository } from "../../../application/interfaces/repositories/workspace-member.repository.interface";
 import type { IWorkspaceRepository } from "../../../application/interfaces/repositories/workspace.repository.interface";
+import type { ICreateNotificationUseCase } from "../../interfaces/use-cases/notification/create-notification.usecase.interface";
 import { WorkspaceMember } from "../../../domain/entities/workspace-member.entity";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
@@ -8,16 +10,20 @@ import { MemberRole } from "../../../domain/enums/MemberRole";
 import { MemberStatus } from "../../../domain/enums/MemberStatus";
 import { WorkspacePrivacy } from "../../../domain/enums/WorkspacePrivacy";
 import { AppError } from "../../../domain/errors/AppError";
+import { logger } from "../../../infrastructure/di/container";
 import { JoinWorkspaceRequestDto } from "../../dtos/workspace/request/join-workspace.dto";
 import { WorkspaceMemberResponseDto } from "../../dtos/workspace/response/workspace-member.response.dto";
 import { IJoinWorkspaceUseCase } from "../../interfaces/use-cases/workspace/join-workspace.usecase.interface";
 import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
+import { USECASE_TOKENS } from "../../../infrastructure/di/usecase.tokens";
 
 @injectable()
 export class JoinWorkspaceUseCase implements IJoinWorkspaceUseCase {
     constructor(
         @inject(REPOSITORY_TOKENS.IWorkspaceRepository) private _workspaceRepository: IWorkspaceRepository,
-        @inject(REPOSITORY_TOKENS.IWorkspaceMemberRepository) private _workspaceMemberRepository: IWorkspaceMemberRepository
+        @inject(REPOSITORY_TOKENS.IWorkspaceMemberRepository) private _workspaceMemberRepository: IWorkspaceMemberRepository,
+        @inject(REPOSITORY_TOKENS.IUserRepository) private _userRepository: IUserRepository,
+        @inject(USECASE_TOKENS.ICreateNotificationUseCase) private _createNotificationUseCase: ICreateNotificationUseCase
     ) { }
 
     async execute(payload: JoinWorkspaceRequestDto): Promise<WorkspaceMemberResponseDto> {
@@ -56,8 +62,8 @@ export class JoinWorkspaceUseCase implements IJoinWorkspaceUseCase {
                     workspaceId: mem.workspaceId,
                     userId: mem.userId,
                     role: mem.role,
-                    status: mem.status,
-                    joinedAt: mem.joinedAt as Date as Date
+                    status: MemberStatus.APPROVED,
+                    joinedAt: mem.joinedAt as Date
                 };
             }
             if (existingMember.status === MemberStatus.PENDING) {
@@ -66,13 +72,18 @@ export class JoinWorkspaceUseCase implements IJoinWorkspaceUseCase {
             throw new AppError(ErrorMessage.ALREADY_WORKSPACE_MEMBER, HttpStatusCode.CONFLICT);
         }
 
-        if (workspace.privacy === WorkspacePrivacy.PRIVATE && payload.isFromEmailLink) {
-            throw new AppError(ErrorMessage.INVITE_LINK_EXPIRED, HttpStatusCode.FORBIDDEN);
-        }
+        const user = await this._userRepository.findById(payload.userId);
+        const userEmail = user?.email?.toLowerCase().trim();
+        const pendingEmails = workspace.pendingInviteEmails ?? [];
+        const hasPendingEmailInvite = !!userEmail && pendingEmails.includes(userEmail);
 
-        const initialStatus = workspace.privacy === WorkspacePrivacy.PRIVATE
-            ? MemberStatus.PENDING
-            : MemberStatus.APPROVED;
+        // An already-claimed email invite falls back to a normal join request rather than failing
+        const initialStatus =
+            hasPendingEmailInvite
+                ? (payload.isFromEmailLink ? MemberStatus.APPROVED : MemberStatus.INVITED)
+                : workspace.privacy !== WorkspacePrivacy.PRIVATE
+                    ? MemberStatus.APPROVED
+                    : MemberStatus.PENDING;
 
         const newMember = new WorkspaceMember(
             workspace.id,
@@ -83,13 +94,34 @@ export class JoinWorkspaceUseCase implements IJoinWorkspaceUseCase {
 
         const createdMember = await this._workspaceMemberRepository.create(newMember);
 
+        if (hasPendingEmailInvite && userEmail) {
+            await this._workspaceRepository.update(workspace.id, {
+                pendingInviteEmails: pendingEmails.filter((email) => email !== userEmail)
+            });
+        }
+
+        if (createdMember.status === MemberStatus.PENDING && workspace.createdBy) {
+            const requesterName = user?.name || userEmail || 'A user';
+            await this._createNotificationUseCase.execute({
+                userId: workspace.createdBy,
+                type: 'JOIN_REQUEST',
+                title: 'New Join Request',
+                message: `${requesterName} requested to join your workspace "${workspace.name}".`,
+                relatedId: workspace.id
+            }).catch((err: unknown) =>
+                logger.error(
+                    `Failed to notify owner of join request: ${err instanceof Error ? err.message : String(err)}`
+                )
+            );
+        }
+
         return {
             id: createdMember.id as string,
             workspaceId: createdMember.workspaceId,
             userId: createdMember.userId,
             role: createdMember.role,
             status: createdMember.status,
-            joinedAt: createdMember.joinedAt as Date as Date
+            joinedAt: createdMember.joinedAt as Date
         };
     }
 }

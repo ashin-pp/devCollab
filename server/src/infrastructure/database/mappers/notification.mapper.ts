@@ -8,7 +8,7 @@ export class NotificationMapper implements IMapper<Notification, INotificationDo
         return {
             id: doc._id.toString(),
             userId: doc.userId.toString(),
-            type: doc.type as 'POLL_CREATED' | 'JOIN_REQUEST_APPROVED' | 'WORKSPACE_INVITE' | 'GENERAL',
+            type: doc.type as Notification['type'],
             title: doc.title,
             message: doc.message,
             relatedId: doc.relatedId,

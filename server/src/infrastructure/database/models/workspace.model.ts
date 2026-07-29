@@ -9,6 +9,7 @@ export interface IWorkspaceModel extends Document {
     privacy: 'public' | 'private';
     max_members: number;
     is_active: boolean;
+    pending_invite_emails: string[];
     created_at: Date;
     updated_at: Date;
 }
@@ -21,7 +22,8 @@ const WorkspaceSchema: Schema = new Schema({
     created_by: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     privacy: { type: String, enum: ['public', 'private'], default: 'private' },
     max_members: { type: Number, default: 50 },
-    is_active: { type: Boolean, default: true }
+    is_active: { type: Boolean, default: true },
+    pending_invite_emails: { type: [String], default: [] }
 }, {
     timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
 });

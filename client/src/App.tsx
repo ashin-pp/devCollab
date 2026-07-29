@@ -8,6 +8,12 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import './index.css';
 import { Toaster } from 'react-hot-toast';
 
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+if (!googleClientId) {
+  console.error('VITE_GOOGLE_CLIENT_ID is not set — Google sign-in will fail with invalid_client.');
+}
+
 function App() {
   const dispatch = useDispatch();
   const [isInitializing, setIsInitializing] = useState(true);
@@ -45,7 +51,7 @@ function App() {
   }
 
   return (
-    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || "dummy-client-id"}>
+    <GoogleOAuthProvider clientId={googleClientId ?? ''}>
       <Toaster position="top-right" />
       <AppRoutes />
     </GoogleOAuthProvider>

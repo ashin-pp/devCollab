@@ -7,6 +7,7 @@ import { setCredentials } from '../../store/slices/authSlice';
 import toast from 'react-hot-toast';
 import { isAxiosError } from 'axios';
 import { isDigitOnly, validateOtp } from '../../validation';
+import { pathAfterAuth } from '../../utils/pendingInvite';
 
 export const OtpVerificationPage = () => {
   const getInitialTimer = () => {
@@ -117,7 +118,7 @@ export const OtpVerificationPage = () => {
           accessToken: response.data.accessToken
         }));
         toast.success("Account verified successfully!");
-        navigate('/dashboard');
+        navigate(pathAfterAuth());
       } else {
         toast.success('Email successfully verified!');
         navigate('/login');
