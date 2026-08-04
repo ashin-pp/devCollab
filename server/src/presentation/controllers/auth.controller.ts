@@ -69,14 +69,14 @@ export class AuthController {
         })
 
   public googleAuth = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        const { user, accessToken, refreshToken } = await this._googleAuthUseCase.execute(req.body);
+        const { user, accessToken, refreshToken, isNewUser } = await this._googleAuthUseCase.execute(req.body);
         res.cookie('refreshToken', refreshToken, {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',
                 sameSite: 'strict',
                 maxAge: envConfig.refreshCookieMaxAge
               });
-        const response = ApiResponse.success(SuccessMessage.LOGIN_SUCCESS, { user, accessToken });
+        const response = ApiResponse.success(SuccessMessage.LOGIN_SUCCESS, { user, accessToken, isNewUser });
         res.status(HttpStatusCode.OK).json(response);
         })
   public forgotPassword = catchAsync(async (req: Request, res: Response, next: NextFunction) => {

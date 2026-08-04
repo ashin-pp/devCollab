@@ -1,13 +1,5 @@
 import { AdminLayout } from "../../layouts/AdminLayout";
-import {
-  BadgeCheck,
-  Ban,
-  CreditCard,
-  Loader2,
-  Plus,
-  ToggleLeft,
-  ToggleRight,
-} from "lucide-react";
+import { ChevronDown, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AdminService } from "../../api/admin/admin.service";
 import toast from "react-hot-toast";
@@ -45,11 +37,31 @@ const emptyForm = {
   isActive: true,
 };
 
+const inputClass =
+  "w-full bg-[#0d1117] border border-[#30363d] rounded px-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-500 transition-colors";
+
+const labelClass = "text-[10px] font-bold tracking-[0.2em] text-slate-500 uppercase";
+
+const formatCycle = (days: number) => {
+  if (days === 30) return "Monthly";
+  if (days === 365) return "Yearly";
+  return `${days} Days`;
+};
+
+const formatPrice = (plan: Plan) => {
+  const symbol = plan.currency === "INR" ? "₹" : plan.currency === "USD" ? "$" : `${plan.currency} `;
+  return `${symbol}${Number(plan.price).toFixed(2)}`;
+};
+
+const formatUnitLimit = (plan: Plan) => {
+  if (plan.maxWorkspaces >= 9999) return "Unlimited";
+  return String(plan.maxWorkspaces).padStart(2, "0") + " Units";
+};
+
 export const AdminPlanManagementPage = () => {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
 
   const extractError = (err: unknown, fallback: string) => {
@@ -67,8 +79,7 @@ export const AdminPlanManagementPage = () => {
       const data = response.data ?? [];
       setPlans(Array.isArray(data) ? data : []);
     } catch (err: unknown) {
-      const errMsg = extractError(err, "Failed to fetch plans");
-      toast.error(errMsg);
+      toast.error(extractError(err, "Failed to fetch plans"));
     } finally {
       setIsLoading(false);
     }
@@ -96,9 +107,8 @@ export const AdminPlanManagementPage = () => {
         maxMembersPerWorkspace: Number(form.maxMembersPerWorkspace),
         messageRetentionDays: Number(form.messageRetentionDays),
       });
-      toast.success("Plan created");
+      toast.success("Plan initialized");
       setForm(emptyForm);
-      setShowForm(false);
       await fetchPlans();
     } catch (err: unknown) {
       toast.error(extractError(err, "Failed to create plan"));
@@ -110,13 +120,13 @@ export const AdminPlanManagementPage = () => {
   const handleToggleStatus = async (plan: Plan) => {
     const nextStatus = !plan.isActive;
     const result = await Swal.fire({
-      title: nextStatus ? "Activate plan?" : "Deactivate plan?",
-      text: `${plan.name} will become ${nextStatus ? "visible" : "hidden"} for users.`,
+      title: nextStatus ? "Activate plan?" : "Archive plan?",
+      text: `${plan.name} will be marked ${nextStatus ? "ACTIVE" : "ARCHIVED"}.`,
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: nextStatus ? "#10b981" : "#ef4444",
+      confirmButtonColor: "#f59e0b",
       cancelButtonColor: "#30363d",
-      confirmButtonText: nextStatus ? "Activate" : "Deactivate",
+      confirmButtonText: nextStatus ? "Activate" : "Archive",
       background: "#161b22",
       color: "#fff",
     });
@@ -125,239 +135,244 @@ export const AdminPlanManagementPage = () => {
 
     try {
       await AdminService.togglePlanStatus(plan.id, nextStatus);
-      toast.success(`Plan ${nextStatus ? "activated" : "deactivated"}`);
+      toast.success(`Plan ${nextStatus ? "activated" : "archived"}`);
       await fetchPlans();
     } catch (err: unknown) {
       toast.error(extractError(err, "Failed to update plan status"));
     }
   };
 
-  const FeaturePill = ({ label, on }: { label: string; on: boolean }) => (
-    <span
-      className={`text-[10px] font-bold tracking-wider px-2 py-1 rounded border ${
-        on
-          ? "border-emerald-500/40 text-emerald-400 bg-emerald-500/10"
-          : "border-[#30363d] text-slate-500 bg-[#0d1117]"
-      }`}
-    >
-      {label}
-    </span>
-  );
-
   return (
     <AdminLayout>
       <div className="space-y-8">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <div className="text-[10px] font-bold tracking-[0.3em] text-amber-500 uppercase mb-2">
-              Billing // Catalog
-            </div>
-            <h1 className="text-3xl font-bold text-white tracking-tight">PLAN MANAGEMENT</h1>
-            <p className="text-sm text-slate-500 mt-2 max-w-xl">
-              Create subscription tiers and control which plans users can purchase.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowForm((prev) => !prev)}
-            className="inline-flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-black font-bold tracking-widest text-xs px-5 py-3 rounded-md transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            {showForm ? "CLOSE FORM" : "NEW PLAN"}
-          </button>
-        </div>
+        <h1 className="text-2xl md:text-3xl font-bold text-white tracking-wide">
+          PLAN MANAGEMENT
+        </h1>
 
-        {showForm && (
-          <form
-            onSubmit={handleCreate}
-            className="border border-[#30363d] bg-[#161b22] rounded-lg p-6 space-y-6"
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <label className="space-y-2">
-                <span className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">Name</span>
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-6 items-start">
+          {/* Inventory table */}
+          <section className="border border-[#30363d] bg-[#0d1117]/80 rounded-sm overflow-hidden min-h-[420px]">
+            <div className="px-5 py-4 border-b border-[#30363d]">
+              <h2 className="text-xs font-bold tracking-[0.25em] text-white uppercase">
+                Plan_Inventory_Database
+              </h2>
+            </div>
+
+            {isLoading ? (
+              <div className="flex items-center justify-center py-24 text-slate-500 gap-2 text-sm">
+                <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+                Loading inventory...
+              </div>
+            ) : plans.length === 0 ? (
+              <div className="py-24 text-center text-slate-500 text-sm tracking-wide">
+                No plans in inventory. Initialize one on the right.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-[#30363d] text-[10px] font-bold tracking-[0.2em] text-slate-500 uppercase">
+                      <th className="px-5 py-4 font-bold">Plan Name</th>
+                      <th className="px-5 py-4 font-bold">Price</th>
+                      <th className="px-5 py-4 font-bold">Cycle</th>
+                      <th className="px-5 py-4 font-bold">Unit Limit</th>
+                      <th className="px-5 py-4 font-bold">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {plans.map((plan) => (
+                      <tr
+                        key={plan.id}
+                        className="border-b border-[#21262d] last:border-0 hover:bg-[#161b22]/60 transition-colors"
+                      >
+                        <td className="px-5 py-5 text-sm font-semibold text-white whitespace-nowrap">
+                          {plan.name}
+                        </td>
+                        <td className="px-5 py-5 text-sm text-slate-300 whitespace-nowrap">
+                          {formatPrice(plan)}
+                        </td>
+                        <td className="px-5 py-5 text-sm text-slate-300 whitespace-nowrap">
+                          {formatCycle(plan.durationDays)}
+                        </td>
+                        <td className="px-5 py-5 text-sm text-slate-300 whitespace-nowrap">
+                          {formatUnitLimit(plan)}
+                        </td>
+                        <td className="px-5 py-5">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleStatus(plan)}
+                            title="Click to toggle status"
+                            className={`text-[10px] font-bold tracking-[0.15em] px-3 py-1.5 rounded-sm uppercase transition-colors ${
+                              plan.isActive
+                                ? "bg-amber-500 text-black hover:bg-amber-400"
+                                : "border border-[#484f58] text-slate-400 hover:border-amber-500/50 hover:text-amber-500"
+                            }`}
+                          >
+                            {plan.isActive ? "Active" : "Archived"}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+
+          {/* Configurator panel */}
+          <aside className="border border-[#30363d] bg-[#161b22] rounded-sm p-5 xl:sticky xl:top-4">
+            <h2 className="text-xs font-bold tracking-[0.25em] text-white uppercase mb-6">
+              New_Plan_Configurator
+            </h2>
+
+            <form onSubmit={handleCreate} className="space-y-5">
+              <label className="block space-y-2">
+                <span className={labelClass}>Plan Identifier</span>
                 <input
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full bg-[#0d1117] border border-[#30363d] rounded-md px-3 py-2 text-white focus:outline-none focus:border-amber-500"
-                  placeholder="Pro"
+                  className={inputClass}
+                  placeholder="e.g. Professional"
                   required
                 />
               </label>
-              <label className="space-y-2">
-                <span className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">Price</span>
-                <input
-                  type="number"
-                  min={0}
-                  value={form.price}
-                  onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
-                  className="w-full bg-[#0d1117] border border-[#30363d] rounded-md px-3 py-2 text-white focus:outline-none focus:border-amber-500"
-                  required
-                />
-              </label>
-              <label className="space-y-2">
-                <span className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">Currency</span>
-                <input
-                  value={form.currency}
-                  onChange={(e) => setForm({ ...form, currency: e.target.value.toUpperCase() })}
-                  className="w-full bg-[#0d1117] border border-[#30363d] rounded-md px-3 py-2 text-white focus:outline-none focus:border-amber-500"
-                />
-              </label>
-              <label className="space-y-2">
-                <span className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">Duration (days)</span>
-                <input
-                  type="number"
-                  min={1}
-                  value={form.durationDays}
-                  onChange={(e) => setForm({ ...form, durationDays: Number(e.target.value) })}
-                  className="w-full bg-[#0d1117] border border-[#30363d] rounded-md px-3 py-2 text-white focus:outline-none focus:border-amber-500"
-                  required
-                />
-              </label>
-              <label className="space-y-2">
-                <span className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">Max workspaces</span>
-                <input
-                  type="number"
-                  min={1}
-                  value={form.maxWorkspaces}
-                  onChange={(e) => setForm({ ...form, maxWorkspaces: Number(e.target.value) })}
-                  className="w-full bg-[#0d1117] border border-[#30363d] rounded-md px-3 py-2 text-white focus:outline-none focus:border-amber-500"
-                  required
-                />
-              </label>
-              <label className="space-y-2">
-                <span className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">Max members / workspace</span>
-                <input
-                  type="number"
-                  min={1}
-                  value={form.maxMembersPerWorkspace}
-                  onChange={(e) => setForm({ ...form, maxMembersPerWorkspace: Number(e.target.value) })}
-                  className="w-full bg-[#0d1117] border border-[#30363d] rounded-md px-3 py-2 text-white focus:outline-none focus:border-amber-500"
-                  required
-                />
-              </label>
-              <label className="space-y-2">
-                <span className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">Message retention (days)</span>
-                <input
-                  type="number"
-                  min={1}
-                  value={form.messageRetentionDays}
-                  onChange={(e) => setForm({ ...form, messageRetentionDays: Number(e.target.value) })}
-                  className="w-full bg-[#0d1117] border border-[#30363d] rounded-md px-3 py-2 text-white focus:outline-none focus:border-amber-500"
-                  required
-                />
-              </label>
-            </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {(
-                [
-                  ["aiAssistantEnabled", "AI Assistant"],
-                  ["videoCallsEnabled", "Video Calls"],
-                  ["multiAiAgents", "Multi AI Agents"],
-                  ["pinBoardEnabled", "Pin Board"],
-                ] as const
-              ).map(([key, label]) => (
-                <label
-                  key={key}
-                  className="flex items-center gap-2 border border-[#30363d] rounded-md px-3 py-2 cursor-pointer hover:border-amber-500/40"
-                >
+              <label className="block space-y-2">
+                <span className={labelClass}>Monthly Operating Cost ({form.currency})</span>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
+                    {form.currency === "INR" ? "₹" : "$"}
+                  </span>
                   <input
-                    type="checkbox"
-                    checked={form[key]}
-                    onChange={(e) => setForm({ ...form, [key]: e.target.checked })}
-                    className="accent-amber-500"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={form.price}
+                    onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
+                    className={`${inputClass} pl-8`}
+                    required
                   />
-                  <span className="text-xs font-bold tracking-wider text-slate-300">{label}</span>
-                </label>
-              ))}
-            </div>
+                </div>
+              </label>
 
-            <div className="flex justify-end">
+              <label className="block space-y-2">
+                <span className={labelClass}>Billing Cycle</span>
+                <div className="relative">
+                  <select
+                    value={form.durationDays}
+                    onChange={(e) => setForm({ ...form, durationDays: Number(e.target.value) })}
+                    className={`${inputClass} appearance-none pr-10`}
+                  >
+                    <option value={30}>Monthly (30 days)</option>
+                    <option value={90}>Quarterly (90 days)</option>
+                    <option value={365}>Yearly (365 days)</option>
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-slate-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+              </label>
+
+              <label className="block space-y-2">
+                <span className={labelClass}>Retention (Days)</span>
+                <div className="relative">
+                  <select
+                    value={form.messageRetentionDays}
+                    onChange={(e) =>
+                      setForm({ ...form, messageRetentionDays: Number(e.target.value) })
+                    }
+                    className={`${inputClass} appearance-none pr-10`}
+                  >
+                    <option value={7}>7 Days</option>
+                    <option value={30}>30 Days</option>
+                    <option value={90}>90 Days</option>
+                    <option value={365}>365 Days</option>
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-slate-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+              </label>
+
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block space-y-2">
+                  <span className={labelClass}>Workspace Units</span>
+                  <input
+                    type="number"
+                    min={1}
+                    value={form.maxWorkspaces}
+                    onChange={(e) => setForm({ ...form, maxWorkspaces: Number(e.target.value) })}
+                    className={inputClass}
+                    required
+                  />
+                </label>
+                <label className="block space-y-2">
+                  <span className={labelClass}>Members Limit</span>
+                  <input
+                    type="number"
+                    min={1}
+                    value={form.maxMembersPerWorkspace}
+                    onChange={(e) =>
+                      setForm({ ...form, maxMembersPerWorkspace: Number(e.target.value) })
+                    }
+                    className={inputClass}
+                    required
+                  />
+                </label>
+              </div>
+
+              <div className="flex items-center justify-between py-1">
+                <span className={`${labelClass} normal-case tracking-widest`}>AI Assistant Access</span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={form.aiAssistantEnabled}
+                  onClick={() =>
+                    setForm({ ...form, aiAssistantEnabled: !form.aiAssistantEnabled })
+                  }
+                  className={`relative w-11 h-6 rounded-full transition-colors ${
+                    form.aiAssistantEnabled ? "bg-amber-500" : "bg-[#30363d]"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                      form.aiAssistantEnabled ? "translate-x-5" : "translate-x-0"
+                    }`}
+                  />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between py-1">
+                <span className={`${labelClass} normal-case tracking-widest`}>Video Calls</span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={form.videoCallsEnabled}
+                  onClick={() =>
+                    setForm({ ...form, videoCallsEnabled: !form.videoCallsEnabled })
+                  }
+                  className={`relative w-11 h-6 rounded-full transition-colors ${
+                    form.videoCallsEnabled ? "bg-amber-500" : "bg-[#30363d]"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                      form.videoCallsEnabled ? "translate-x-5" : "translate-x-0"
+                    }`}
+                  />
+                </button>
+              </div>
+
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-400 disabled:opacity-60 text-black font-bold tracking-widest text-xs px-5 py-3 rounded-md"
+                className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-60 text-black font-bold tracking-[0.2em] text-xs uppercase py-3.5 rounded-sm transition-colors flex items-center justify-center gap-2"
               >
-                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
-                CREATE PLAN
+                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                Initialize Plan
               </button>
-            </div>
-          </form>
-        )}
 
-        <div className="border border-[#30363d] bg-[#161b22] rounded-lg overflow-hidden">
-          <div className="px-6 py-4 border-b border-[#30363d] flex items-center justify-between">
-            <h2 className="text-sm font-bold tracking-widest text-white">ALL PLANS</h2>
-            <span className="text-[10px] text-slate-500 tracking-widest uppercase">
-              {plans.length} records
-            </span>
-          </div>
-
-          {isLoading ? (
-            <div className="flex items-center justify-center py-20 text-slate-500 gap-2">
-              <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
-              Loading plans...
-            </div>
-          ) : plans.length === 0 ? (
-            <div className="py-20 text-center text-slate-500 text-sm">
-              No plans yet. Create your first plan above.
-            </div>
-          ) : (
-            <div className="divide-y divide-[#30363d]">
-              {plans.map((plan) => (
-                <div key={plan.id} className="p-6 flex flex-col lg:flex-row lg:items-center gap-6">
-                  <div className="flex-1 space-y-3">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <h3 className="text-xl font-bold text-white">{plan.name}</h3>
-                      <span
-                        className={`inline-flex items-center gap-1 text-[10px] font-bold tracking-widest px-2 py-1 rounded ${
-                          plan.isActive
-                            ? "bg-emerald-500/10 text-emerald-400"
-                            : "bg-red-500/10 text-red-400"
-                        }`}
-                      >
-                        {plan.isActive ? <BadgeCheck className="w-3 h-3" /> : <Ban className="w-3 h-3" />}
-                        {plan.isActive ? "ACTIVE" : "INACTIVE"}
-                      </span>
-                    </div>
-                    <p className="text-amber-500 font-bold tracking-wider">
-                      {plan.currency} {plan.price} / {plan.durationDays} days
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {plan.maxWorkspaces} workspaces · {plan.maxMembersPerWorkspace} members/workspace ·{" "}
-                      {plan.messageRetentionDays}d message retention
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      <FeaturePill label="AI" on={plan.aiAssistantEnabled} />
-                      <FeaturePill label="VIDEO" on={plan.videoCallsEnabled} />
-                      <FeaturePill label="MULTI_AI" on={plan.multiAiAgents} />
-                      <FeaturePill label="PIN_BOARD" on={plan.pinBoardEnabled} />
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => handleToggleStatus(plan)}
-                    className={`inline-flex items-center gap-2 px-4 py-3 rounded-md border text-xs font-bold tracking-widest transition-colors ${
-                      plan.isActive
-                        ? "border-red-500/40 text-red-400 hover:bg-red-500/10"
-                        : "border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10"
-                    }`}
-                  >
-                    {plan.isActive ? (
-                      <>
-                        <ToggleLeft className="w-4 h-4" /> DEACTIVATE
-                      </>
-                    ) : (
-                      <>
-                        <ToggleRight className="w-4 h-4" /> ACTIVATE
-                      </>
-                    )}
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+              <p className="text-[9px] text-slate-600 tracking-widest text-center uppercase leading-relaxed">
+                Protocol requires admin signature for deployment.
+              </p>
+            </form>
+          </aside>
         </div>
       </div>
     </AdminLayout>

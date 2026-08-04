@@ -8,6 +8,11 @@ import toast from 'react-hot-toast';
 import { isAxiosError } from 'axios';
 import { isDigitOnly, validateOtp } from '../../validation';
 import { pathAfterAuth } from '../../utils/pendingInvite';
+import {
+  markNeedsOnboarding,
+  markOnboardingEntrance,
+  OnboardingEntranceOverlay,
+} from '../../components/onboarding/OnboardingWizardModal';
 
 export const OtpVerificationPage = () => {
   const getInitialTimer = () => {
@@ -23,6 +28,8 @@ export const OtpVerificationPage = () => {
 
   const [otp, setOtp] = useState(['', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [welcomeName, setWelcomeName] = useState('');
   const [error, setError] = useState('');
   const [resendTimer, setResendTimer] = useState(getInitialTimer());
   
@@ -110,6 +117,7 @@ export const OtpVerificationPage = () => {
 
     try {
       await AuthService.verifyOtp(email, otpString);
+      markNeedsOnboarding();
       
       if (password) {
         const response = await AuthService.login({ email, password });
@@ -118,10 +126,14 @@ export const OtpVerificationPage = () => {
           accessToken: response.data.accessToken
         }));
         toast.success("Account verified successfully!");
-        navigate(pathAfterAuth());
+        setWelcomeName(response.data.user?.name || '');
+        setIsTransitioning(true);
+        markOnboardingEntrance();
+        await new Promise((r) => setTimeout(r, 700));
+        navigate(pathAfterAuth(), { replace: true });
       } else {
-        toast.success('Email successfully verified!');
-        navigate('/login');
+        toast.success('Email successfully verified! Please log in to continue setup.');
+        navigate('/login', { replace: true });
       }
       
     } catch (err: unknown) {
@@ -141,7 +153,12 @@ export const OtpVerificationPage = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-white font-sans">
+    <div className="min-h-screen w-full flex bg-white font-sans relative">
+      <OnboardingEntranceOverlay
+        visible={isTransitioning}
+        userName={welcomeName}
+        subtitle="Getting your workspace ready…"
+      />
       <div className="hidden lg:flex w-[45%] bg-[#0a0f1c] relative flex-col justify-between p-12 overflow-hidden text-white">
         <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-slate-800/40 via-[#0a0f1c] to-[#0a0f1c] pointer-events-none"></div>
 

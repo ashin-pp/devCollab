@@ -87,6 +87,11 @@ export const API_ENDPOINTS = {
     PLAN_STATUS: (planId: string) => `/admin/plans/${planId}/status`,
   },
 
+  // User-facing plans
+  PLANS: {
+    BASE: '/plans',
+  },
+
   // Poll endpoints
   POLLS: {
     CREATE: '/polls',

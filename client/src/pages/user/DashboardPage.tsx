@@ -15,6 +15,14 @@ import { WorkspaceService } from '../../api/workspace/workspace.service';
 import type { Workspace } from '../../types/workspace.types';
 import { validateWorkspaceInviteCode } from '../../validation';
 import { clearPendingInvite, getPendingInviteCode } from '../../utils/pendingInvite';
+import {
+  OnboardingWizardModal,
+  OnboardingEntranceOverlay,
+  shouldShowOnboarding,
+  clearNeedsOnboarding,
+  peekOnboardingEntrance,
+  consumeOnboardingEntrance,
+} from '../../components/onboarding/OnboardingWizardModal';
 
 export const DashboardPage = () => {
   const user = useSelector((state: RootState) => state.auth.user);
@@ -28,12 +36,84 @@ export const DashboardPage = () => {
   const [joinMessage, setJoinMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [isFromEmailLink, setIsFromEmailLink] = useState(false);
   const invitePromptHandled = useRef(false);
+  const entranceConsumed = useRef(false);
 
   const [myWorkspaces, setMyWorkspaces] = useState<Workspace[]>([]);
   const [publicWorkspaces, setPublicWorkspaces] = useState<Workspace[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [publicCurrentPage, setPublicCurrentPage] = useState(1);
+
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState<1 | 2>(1);
+  const [onboardingIntent, setOnboardingIntent] = useState<'register' | 'create-workspace' | 'browse'>('register');
+  // Peek only — Strict Mode remount would wipe the flag if we consume in useState.
+  const [showEntrance, setShowEntrance] = useState(() => peekOnboardingEntrance());
+
+  useEffect(() => {
+    if (!showEntrance || entranceConsumed.current) return;
+    entranceConsumed.current = true;
+    consumeOnboardingEntrance();
+  }, [showEntrance]);
+
+  const openCreateWorkspaceFlow = () => {
+    setOnboardingIntent('create-workspace');
+    setOnboardingStep(2);
+    setShowOnboarding(true);
+  };
+
+  const handleEntranceDone = useCallback(() => {
+    setShowEntrance(false);
+    if (shouldShowOnboarding()) {
+      setOnboardingIntent('register');
+      setOnboardingStep(1);
+      setShowOnboarding(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (showEntrance) return;
+    if (shouldShowOnboarding()) {
+      setOnboardingIntent('register');
+      setOnboardingStep(1);
+      setShowOnboarding(true);
+    }
+  }, [showEntrance]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    let dirty = false;
+
+    if (params.get('createWorkspace') === '1') {
+      setIsCreateModalOpen(true);
+      params.delete('createWorkspace');
+      dirty = true;
+    }
+
+    if (params.get('showPlans') === '1') {
+      setOnboardingIntent('browse');
+      setOnboardingStep(2);
+      setShowOnboarding(true);
+      params.delete('showPlans');
+      dirty = true;
+    }
+
+    if (dirty) {
+      const next = params.toString();
+      navigate(
+        { pathname: location.pathname, search: next ? `?${next}` : '' },
+        { replace: true }
+      );
+    }
+  }, [location.pathname, location.search, navigate]);
+
+  const handleOnboardingComplete = () => {
+    clearNeedsOnboarding();
+    setShowOnboarding(false);
+    if (onboardingIntent === 'create-workspace') {
+      setIsCreateModalOpen(true);
+    }
+  };
 
   useEffect(() => {
     setTimeout(() => {
@@ -392,7 +472,7 @@ export const DashboardPage = () => {
               ) : (
                 <div className="bg-white border border-slate-200 rounded-xl p-8 text-center shadow-sm">
                   <p className="text-slate-500 mb-4">You haven't created any workspaces yet.</p>
-                  <button onClick={() => setIsCreateModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-sm">
+                  <button onClick={openCreateWorkspaceFlow} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-sm">
                     Create One
                   </button>
                 </div>
@@ -713,7 +793,7 @@ export const DashboardPage = () => {
               </p>
 
               <button
-                onClick={() => setIsCreateModalOpen(true)}
+                onClick={openCreateWorkspaceFlow}
                 className="w-full bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 py-2.5 rounded-lg text-sm font-bold transition-colors shadow-sm"
               >
                 Create Workspace
@@ -732,6 +812,19 @@ export const DashboardPage = () => {
           ...myWorkspaces.map((ws) => ws.name),
           ...publicWorkspaces.map((ws) => ws.name),
         ]}
+      />
+
+      <OnboardingEntranceOverlay
+        visible={showEntrance}
+        onDone={handleEntranceDone}
+        userName={user?.name}
+        subtitle="Getting your workspace ready…"
+      />
+
+      <OnboardingWizardModal
+        isOpen={showOnboarding && !showEntrance}
+        initialStep={onboardingStep}
+        onComplete={handleOnboardingComplete}
       />
 
       {verificationResult && isFromEmailLink && (

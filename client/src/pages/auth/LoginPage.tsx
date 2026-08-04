@@ -10,6 +10,10 @@ import toast from 'react-hot-toast';
 import { isAxiosError } from 'axios';
 import { validateLoginCredentials } from '../../validation';
 import { pathAfterAuth, stashPendingInviteFromSearch } from '../../utils/pendingInvite';
+import {
+  markNeedsOnboarding,
+  markOnboardingEntrance,
+} from '../../components/onboarding/OnboardingWizardModal';
 
 export const LoginPage = () => {
 
@@ -53,7 +57,7 @@ export const LoginPage = () => {
         accessToken: response.data.accessToken
       }));
       toast.success('Successfully logged in!');
-      navigate(pathAfterAuth());
+      navigate(pathAfterAuth(), { replace: true });
 
     } catch (err: unknown) {
       let errMsg = 'Login failed. Please try again.';
@@ -77,8 +81,16 @@ export const LoginPage = () => {
         user: response.data.user,
         accessToken: response.data.accessToken
       }));
-      toast.success('Successfully logged in with Google!');
-      navigate(pathAfterAuth());
+
+      if (response.data.isNewUser) {
+        markNeedsOnboarding();
+        markOnboardingEntrance();
+        toast.success("Welcome! Let's finish setting up your account.");
+      } else {
+        toast.success('Successfully logged in with Google!');
+      }
+
+      navigate(pathAfterAuth(), { replace: true });
     } catch (err: unknown) {
       if (isAxiosError(err)) {
         toast.error(err.response?.data?.error?.message || err.response?.data?.message || "Google authentication failed");

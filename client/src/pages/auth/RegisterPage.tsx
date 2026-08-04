@@ -11,9 +11,13 @@ import { isAxiosError } from 'axios';
 import { validateRegisterForm } from '../../validation';
 import {
   getPendingInviteEmail,
-  pathAfterAuth,
   stashPendingInviteFromSearch,
+  pathAfterAuth,
 } from '../../utils/pendingInvite';
+import {
+  markNeedsOnboarding,
+  markOnboardingEntrance,
+} from '../../components/onboarding/OnboardingWizardModal';
 
 export const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -95,8 +99,17 @@ export const RegisterPage = () => {
         user: response.data.user,
         accessToken: response.data.accessToken
       }));
-      toast.success("Login successful!");
-      navigate(pathAfterAuth());
+
+      // Same Google endpoint for login + register — only new accounts get onboarding.
+      if (response.data.isNewUser) {
+        markNeedsOnboarding();
+        markOnboardingEntrance();
+        toast.success('Account created successfully!');
+      } else {
+        toast.success('Successfully logged in with Google!');
+      }
+
+      navigate(pathAfterAuth(), { replace: true });
     } catch (err: unknown) {
       if (isAxiosError(err)) {
         toast.error(err.response?.data?.error?.message || err.response?.data?.message || "Google authentication failed");
