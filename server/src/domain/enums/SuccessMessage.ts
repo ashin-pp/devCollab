@@ -31,4 +31,5 @@ export const SuccessMessage = {
     MESSAGE_SENT: "Message sent successfully",
     MESSAGES_MARKED_SEEN: "Messages marked as seen",
     THREAD_REPLIES_FETCHED: "Thread replies fetched successfully",
+    PLANS_FETCHED: "Plans fetched successfully",
 } as const;

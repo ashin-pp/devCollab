@@ -13,5 +13,6 @@ export const REPOSITORY_TOKENS = {
     IAIReminderRepository: 'IAIReminderRepository',
     IAIChatRepository: 'IAIChatRepository',
     INotificationRepository: 'INotificationRepository',
-    IPollRepository: 'IPollRepository'
+    IPollRepository: 'IPollRepository',
+    IPlanRepository: 'IPlanRepository',
 } as const;
