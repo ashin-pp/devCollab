@@ -83,6 +83,8 @@ export const API_ENDPOINTS = {
     WORKSPACE_STATUS: (workspaceId: string) => `/admin/workspaces/${workspaceId}/status`,
     WORKSPACE_MEMBERS: (workspaceId: string) => `/admin/workspaces/${workspaceId}/members`,
     WORKSPACE_MEMBER_STATUS: (workspaceId: string, userId: string) => `/admin/workspaces/${workspaceId}/members/${userId}/status`,
+    PLANS: '/admin/plans',
+    PLAN_STATUS: (planId: string) => `/admin/plans/${planId}/status`,
   },
 
   // Poll endpoints

@@ -98,4 +98,7 @@ export const ErrorMessage = {
     PARENT_MESSAGE_NOT_FOUND: "Parent message not found",
     INVALID_THREAD_REPLY: "Cannot reply to a message that is already a thread reply",
     INVALID_REPLY_VISIBILITY: "Reply visibility must be everyone or author",
+
+    // Plan
+    PLAN_NOT_FOUND: "Plan not found",
 } as const;

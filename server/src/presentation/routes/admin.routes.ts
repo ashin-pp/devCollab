@@ -1,5 +1,6 @@
 import { Router } from "express";
-import { adminController } from "../../infrastructure/di/container";
+import { adminController, planController } from "../../infrastructure/di/container";
+import { authMiddleware } from "../middlewares/authMiddleware";
 
 const adminRouter = Router();
 
@@ -18,5 +19,9 @@ adminRouter.get("/workspaces", adminController.getWorkspaces);
 adminRouter.patch("/workspaces/:id/status", adminController.toggleWorkspaceStatus);
 adminRouter.get("/workspaces/:id/members", adminController.getWorkspaceMembers);
 adminRouter.patch("/workspaces/:workspaceId/members/:userId/status", adminController.updateWorkspaceMemberStatus);
+
+adminRouter.get("/plans", authMiddleware, planController.getAllPlans);
+adminRouter.post("/plans", authMiddleware, planController.createPlan);
+adminRouter.patch("/plans/:id/status", authMiddleware, planController.togglePlanStatus);
 
 export { adminRouter };

@@ -1,4 +1,4 @@
-import { LayoutDashboard, Server, Users, BarChart3, Wallet, LogOut, Settings, User } from 'lucide-react';
+import { LayoutDashboard, Server, Users, BarChart3, Wallet, LogOut, Settings, User, CreditCard } from 'lucide-react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
@@ -39,6 +39,7 @@ export const AdminSidebar = () => {
     { name: 'DASHBOARD', icon: LayoutDashboard, path: '/admin/dashboard' },
     { name: 'WORKSPACES', icon: Server, path: '/admin/workspaces' },
     { name: 'USERS', icon: Users, path: '/admin/users' },
+    { name: 'PLANS', icon: CreditCard, path: '/admin/plans' },
     { name: 'SALES REPORT', icon: BarChart3, path: '/admin/sales' },
     { name: 'WALLET', icon: Wallet, path: '/admin/wallet' },
   ];

@@ -67,6 +67,9 @@ export const USECASE_TOKENS = {
 
     // Plan
     IGetPlansUseCase: 'IGetPlansUseCase',
+    IGetAllPlansUseCase: 'IGetAllPlansUseCase',
+    ICreatePlanUseCase: 'ICreatePlanUseCase',
+    ITogglePlanStatusUseCase: 'ITogglePlanStatusUseCase',
 
     // Poll
     IClosePollUseCase: 'IClosePollUseCase',
