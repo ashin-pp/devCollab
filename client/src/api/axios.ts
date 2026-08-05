@@ -22,12 +22,21 @@ api.interceptors.request.use(
   }
 );
 
+const isRefreshRequest = (url?: string) =>
+  !!url && (url.includes('/auth/refresh') || url.includes('/admin/refresh'));
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Don't retry refresh itself — missing cookie on login/register is expected.
+    if (
+      error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      !isRefreshRequest(originalRequest.url)
+    ) {
       originalRequest._retry = true;
 
       try {

@@ -5,6 +5,12 @@ import { AppError } from "../../domain/errors/AppError";
 import { ErrorMessage } from "../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../domain/enums/HttpStatusCode";
 
+/** Expected when a guest hits /auth/refresh — not a real failure. */
+const EXPECTED_GUEST_AUTH_ERRORS = new Set<string>([
+    ErrorMessage.NO_REFRESH_TOKEN,
+    ErrorMessage.INVALID_OR_EXPIRED_REFRESH_TOKEN,
+]);
+
 export const errorHandler = (
     err: Error,
     req: Request,
@@ -12,7 +18,10 @@ export const errorHandler = (
     next: NextFunction
 ): void => {
     if (err instanceof AppError) {
-        logger.error(`[AppError] ${err.message}`, { path: req.path });
+        // Guest session probe on /auth/refresh — expected, don't spam the console.
+        if (!EXPECTED_GUEST_AUTH_ERRORS.has(err.message)) {
+            logger.error(`[AppError] ${err.message}`, { path: req.path });
+        }
         const errorPayload = ApiResponse.error(err.message);
         res.status(err.statusCode).json(errorPayload);
         return;
