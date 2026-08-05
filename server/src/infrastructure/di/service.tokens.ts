@@ -4,5 +4,6 @@ export const SERVICE_TOKENS = {
     IEmailService: 'IEmailService',
     IStorageService: 'IStorageService',
     IAIService: 'IAIService',
+    IPlanEntitlementService: 'IPlanEntitlementService',
     ILogger: 'ILogger'
 } as const;

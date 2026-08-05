@@ -10,6 +10,7 @@ import {
 import toast from 'react-hot-toast';
 import { isAxiosError } from 'axios';
 import { PlanService, type Plan } from '../../api/plan/plan.service';
+import { UserService } from '../../api/user/user.service';
 import { pathAfterAuth } from '../../utils/pendingInvite';
 
 const formatPrice = (plan: Plan) => {
@@ -81,10 +82,24 @@ export const PlanSelectionPage = () => {
     return 0;
   }, [plans.length]);
 
-  const finish = (chosenPlan?: Plan | null) => {
-    if (chosenPlan) {
-      sessionStorage.setItem('preferredPlanId', chosenPlan.id);
-      sessionStorage.setItem('preferredPlanName', chosenPlan.name);
+  const finish = async (chosenPlan?: Plan | null) => {
+    try {
+      if (chosenPlan) {
+        await UserService.selectPlan(chosenPlan.id);
+        sessionStorage.setItem('preferredPlanId', chosenPlan.id);
+        sessionStorage.setItem('preferredPlanName', chosenPlan.name);
+      } else {
+        await UserService.selectPlan(null);
+        sessionStorage.removeItem('preferredPlanId');
+        sessionStorage.removeItem('preferredPlanName');
+      }
+    } catch (err: unknown) {
+      let errMsg = 'Failed to save plan';
+      if (isAxiosError(err)) {
+        errMsg = err.response?.data?.error?.message || err.response?.data?.message || errMsg;
+      }
+      toast.error(errMsg);
+      throw err;
     }
 
     if (fromCreateWorkspace) {
@@ -98,17 +113,25 @@ export const PlanSelectionPage = () => {
     setSelectedId(plan.id);
     setIsContinuing(true);
     try {
-      toast.success(`${plan.name} selected. Checkout with Razorpay comes next.`);
-      finish(plan);
+      await finish(plan);
+      toast.success(`${plan.name} saved to your account. Checkout with Razorpay comes next.`);
+    } catch {
+      // toast already shown
     } finally {
       setIsContinuing(false);
     }
   };
 
-  const handleSkip = () => {
-    sessionStorage.removeItem('preferredPlanId');
-    toast('You can choose a plan anytime when creating a workspace.');
-    finish(null);
+  const handleSkip = async () => {
+    setIsContinuing(true);
+    try {
+      await finish(null);
+      toast('You can choose a plan anytime from Plans & Billing.');
+    } catch {
+      // toast already shown
+    } finally {
+      setIsContinuing(false);
+    }
   };
 
   return (

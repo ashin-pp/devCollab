@@ -3,7 +3,8 @@ import { inject, injectable } from "tsyringe";
 import type { IGetPlansUseCase } from "../../application/interfaces/use-cases/plan/get-plans.usecase.interface";
 import type { IGetAllPlansUseCase } from "../../application/interfaces/use-cases/plan/get-all-plans.usecase.interface";
 import type { ICreatePlanUseCase } from "../../application/interfaces/use-cases/plan/create-plan.usecase.interface";
-import type { ITogglePlanStatusUseCase } from "../../application/interfaces/use-cases/plan/toggle-plan-status.usecase.interface";
+import type { IUpdatePlanUseCase } from "../../application/interfaces/use-cases/plan/update-plan.usecase.interface";
+import type { IDeletePlanUseCase } from "../../application/interfaces/use-cases/plan/delete-plan.usecase.interface";
 import { ErrorMessage } from "../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../domain/enums/HttpStatusCode";
 import { SuccessMessage } from "../../domain/enums/SuccessMessage";
@@ -19,7 +20,8 @@ export class PlanController {
         @inject(USECASE_TOKENS.IGetPlansUseCase) private readonly _getPlansUseCase: IGetPlansUseCase,
         @inject(USECASE_TOKENS.IGetAllPlansUseCase) private readonly _getAllPlansUseCase: IGetAllPlansUseCase,
         @inject(USECASE_TOKENS.ICreatePlanUseCase) private readonly _createPlanUseCase: ICreatePlanUseCase,
-        @inject(USECASE_TOKENS.ITogglePlanStatusUseCase) private readonly _togglePlanStatusUseCase: ITogglePlanStatusUseCase
+        @inject(USECASE_TOKENS.IUpdatePlanUseCase) private readonly _updatePlanUseCase: IUpdatePlanUseCase,
+        @inject(USECASE_TOKENS.IDeletePlanUseCase) private readonly _deletePlanUseCase: IDeletePlanUseCase
     ) {}
 
     public getPlans = catchAsync(async (_req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
@@ -45,14 +47,22 @@ export class PlanController {
         res.status(HttpStatusCode.CREATED).json(response);
     });
 
-    public togglePlanStatus = catchAsync(async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
+    public updatePlan = catchAsync(async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
         this.assertAdmin(req);
         const planId = req.params.id as string;
-        const plan = await this._togglePlanStatusUseCase.execute({
+        const plan = await this._updatePlanUseCase.execute({
+            ...req.body,
             planId,
-            isActive: req.body.isActive,
         });
-        const response = ApiResponse.success(SuccessMessage.PLAN_STATUS_UPDATED, plan);
+        const response = ApiResponse.success(SuccessMessage.PLAN_UPDATED, plan);
+        res.status(HttpStatusCode.OK).json(response);
+    });
+
+    public deletePlan = catchAsync(async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
+        this.assertAdmin(req);
+        const planId = req.params.id as string;
+        const plan = await this._deletePlanUseCase.execute({ planId });
+        const response = ApiResponse.success(SuccessMessage.PLAN_DELETED, plan);
         res.status(HttpStatusCode.OK).json(response);
     });
 

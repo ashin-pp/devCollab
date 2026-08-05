@@ -23,6 +23,14 @@ export class PlanRepository implements IPlanRepository {
         return planDoc ? this._mapper.toDomain(planDoc) : null;
     }
 
+    async findActiveByNameContains(namePart: string): Promise<Plan | null> {
+        const planDoc = await PlanModel.findOne({
+            is_active: true,
+            name: { $regex: namePart, $options: "i" },
+        }).sort({ price: 1 });
+        return planDoc ? this._mapper.toDomain(planDoc) : null;
+    }
+
     async findAllActive(): Promise<Plan[]> {
         const plans = await PlanModel.find({ is_active: true }).sort({ price: 1 });
         return plans.map((p) => this._mapper.toDomain(p));

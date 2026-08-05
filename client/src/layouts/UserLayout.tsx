@@ -123,7 +123,7 @@ export const UserLayout = ({ children }: UserLayoutProps) => {
                 <button
                   onClick={() => {
                     setIsDropdownOpen(false);
-                    navigate('/dashboard?showPlans=1');
+                    navigate('/billing');
                   }}
                   className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors flex items-center gap-2"
                 >

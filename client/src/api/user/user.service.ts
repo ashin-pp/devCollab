@@ -12,6 +12,11 @@ export const UserService = {
         const response = await api.put(API_ENDPOINTS.USER.PROFILE, data);
         return response.data;
     },
+
+    selectPlan: async (planId: string | null) => {
+        const response = await api.put(API_ENDPOINTS.USER.PLAN, { planId });
+        return response.data;
+    },
     
     changePassword: async (data: ChangePasswordData) => {
         const response = await api.post(API_ENDPOINTS.USER.CHANGE_PASSWORD, data);

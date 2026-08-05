@@ -15,7 +15,7 @@ export class UpdateUserProfileUseCase implements IUpdateUserProfileUseCase {
         @inject(REPOSITORY_TOKENS.IUserRepository) private _userRepository: IUserRepository
     ) {}
 
-    async execute(payload: {userId: string, data: UpdateUserProfileRequestDto}): Promise<UserProfileResponseDto> {
+    async execute(payload: { userId: string, data: UpdateUserProfileRequestDto}): Promise<UserProfileResponseDto> {
         const { userId, data } = payload;
         const user = await this._userRepository.findById(userId);
         if (!user) {
@@ -40,7 +40,9 @@ export class UpdateUserProfileUseCase implements IUpdateUserProfileUseCase {
             linkedin: updatedUser.linkedin,
             twitter: updatedUser.twitter,
             location: updatedUser.location,
-            title: updatedUser.title
+            title: updatedUser.title,
+            planId: updatedUser.planId ?? null,
+            subscriptionStatus: updatedUser.subscriptionStatus,
         };
     }
 }

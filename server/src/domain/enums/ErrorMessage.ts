@@ -101,4 +101,13 @@ export const ErrorMessage = {
 
     // Plan
     PLAN_NOT_FOUND: "Plan not found",
+    PLAN_INACTIVE: "This plan is not currently available",
+    CANNOT_DELETE_STARTER_PLAN: "The Starter plan cannot be deleted because it is the fallback for expired or unassigned users.",
+    STARTER_PLAN_NOT_CONFIGURED: "Starter plan is not configured. Please contact support.",
+    SUBSCRIPTION_EXPIRED: "Your subscription has expired. Renew or upgrade your plan to continue.",
+    VIDEO_CALLS_DISABLED: "Video calls are not available on your current plan. Upgrade to enable them.",
+    WORKSPACE_PLAN_LIMIT_REACHED: "Your plan's workspace limit has been reached. Upgrade to create more workspaces.",
+    WORKSPACE_MEMBER_PLAN_LIMIT: "Max members cannot exceed your plan limit. Upgrade to increase the member cap.",
+    WORKSPACE_MAX_MEMBERS_BELOW_CURRENT: "Max members cannot be lower than the current number of members.",
+    AI_ASSISTANT_DISABLED: "AI Assistant is not available on your current plan. Upgrade to enable it.",
 } as const;

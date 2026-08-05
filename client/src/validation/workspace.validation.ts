@@ -17,11 +17,25 @@ export function validateWorkspaceName(
   return null;
 }
 
-export function validateWorkspaceTeamSize(teamSize: string): string | null {
+export function validateWorkspaceTeamSize(
+  teamSize: string,
+  options?: { maxAllowed?: number; minAllowed?: number }
+): string | null {
   if (!teamSize.trim()) return null;
   const size = parseInt(teamSize, 10);
-  if (Number.isNaN(size) || size < 1 || size > 10000) {
-    return 'Team size must be a number between 1 and 10000';
+  const ceiling = options?.maxAllowed ?? 10000;
+  const floor = options?.minAllowed ?? 1;
+
+  if (Number.isNaN(size) || size < 1) {
+    return 'Team size must be a positive number';
+  }
+  if (options?.minAllowed !== undefined && size < floor) {
+    return `Max members cannot be lower than your current member count (${floor})`;
+  }
+  if (size > ceiling) {
+    return options?.maxAllowed !== undefined
+      ? `Team size cannot exceed your plan limit of ${ceiling}`
+      : 'Team size must be a number between 1 and 10000';
   }
   return null;
 }

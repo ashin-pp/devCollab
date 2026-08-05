@@ -26,6 +26,9 @@ import { CreatePollModal } from '../../../components/polls/CreatePollModal';
 import { AiDashboardModal } from '../../../components/workspace/channel/AiDashboardModal';
 import type { AiTab } from '../../../components/workspace/channel/AiDashboardModal';
 import { getMessageId } from '../../../utils/message.utils';
+import { WorkspaceService } from '../../../api/workspace/workspace.service';
+import type { Workspace } from '../../../types/workspace.types';
+import toast from 'react-hot-toast';
 
 export const WorkspaceChannelPage = () => {
   const { workspaceId, channelId } = useParams<{ workspaceId: string, channelId: string }>();
@@ -37,6 +40,7 @@ export const WorkspaceChannelPage = () => {
   const textareaRef = useRef<HTMLDivElement>(null);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [isChannelDropdownOpen, setIsChannelDropdownOpen] = useState(false);
+  const [aiAssistantEnabled, setAiAssistantEnabled] = useState(true);
 
   const { channels, setChannels, refetch: refetchChannels } = useWorkspaceChannels(workspaceId);
   const [currentChannel, setCurrentChannel] = useState<ChannelData | null>(null);
@@ -77,6 +81,17 @@ export const WorkspaceChannelPage = () => {
   useEffect(() => {
     joinedChannelRef.current = false;
   }, [channelId]);
+
+  useEffect(() => {
+    if (!workspaceId) return;
+    WorkspaceService.getUserWorkspaces()
+      .then((res) => {
+        const list = (res.data || []) as Workspace[];
+        const current = list.find((ws) => ws.id === workspaceId);
+        setAiAssistantEnabled(Boolean(current?.aiAssistantEnabled));
+      })
+      .catch(() => setAiAssistantEnabled(false));
+  }, [workspaceId]);
 
   useEffect(() => {
     if (channels.length > 0 && channelId) {
@@ -394,6 +409,12 @@ export const WorkspaceChannelPage = () => {
       const isAiCommand = aiCommands.some(cmd => plainText.startsWith(cmd));
 
       if (isAiCommand) {
+        if (!aiAssistantEnabled) {
+          toast.error('AI Assistant is locked on this workspace plan. Upgrade to enable it.');
+          navigate('/billing');
+          return;
+        }
+
         // Clear input immediately so user knows it was intercepted
         if (textareaRef.current) textareaRef.current.innerHTML = '';
         setMessage('');
@@ -403,7 +424,7 @@ export const WorkspaceChannelPage = () => {
           const aiResponse = await processCommand(plainText, workspaceId, channelId);
           if (aiResponse) {
              if (aiResponse.includes("summary has been successfully sent")) {
-               import('react-hot-toast').then(m => m.default.success('Summary successfully sent to your Direct Messages!'));
+               toast.success('Summary successfully sent to your Direct Messages!');
              }
              const systemMsg: MessageData = {
                id: Date.now().toString(), // fake local ID
@@ -418,7 +439,11 @@ export const WorkspaceChannelPage = () => {
              setScrollToBottomSignal(prev => prev + 1);
           }
         } catch (err) {
-          import('react-hot-toast').then(m => m.default.error('AI command failed'));
+          const message = err instanceof Error ? err.message : 'AI command failed';
+          toast.error(message);
+          if (message.toLowerCase().includes('upgrade') || message.toLowerCase().includes('not available')) {
+            navigate('/billing');
+          }
         }
         return;
       }
@@ -480,6 +505,11 @@ export const WorkspaceChannelPage = () => {
   };
 
   const handleAiCommandClick = (command: string) => {
+    if (!aiAssistantEnabled) {
+      toast.error('AI Assistant is locked on this workspace plan. Upgrade to enable it.');
+      navigate('/billing');
+      return;
+    }
     if (textareaRef.current) {
       const currentHtml = textareaRef.current.innerHTML;
       const newHtml = currentHtml ? currentHtml + ' ' + command + ' ' : command + ' ';
@@ -498,6 +528,11 @@ export const WorkspaceChannelPage = () => {
   };
 
   const openAiDashboard = (tab: AiTab) => {
+    if (!aiAssistantEnabled) {
+      toast.error('AI Assistant is locked on this workspace plan. Upgrade to enable it.');
+      navigate('/billing');
+      return;
+    }
     setAiDashboardTab(tab);
     setIsAiDashboardOpen(true);
   };
@@ -560,6 +595,7 @@ export const WorkspaceChannelPage = () => {
             setIsSettingsModalOpen={setIsSettingsModalOpen}
             navigate={navigate}
             openAiDashboard={openAiDashboard}
+            aiAssistantEnabled={aiAssistantEnabled}
           />
 
           {currentChannel?.isActive === false ? (
@@ -636,6 +672,7 @@ export const WorkspaceChannelPage = () => {
                 setIsCreatePollModalOpen={setIsCreatePollModalOpen}
                 handleSendMessage={handleSendMessage}
                 onAiCommandClick={handleAiCommandClick}
+                aiAssistantEnabled={aiAssistantEnabled}
               />
             </>
           )}

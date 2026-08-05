@@ -72,8 +72,28 @@ export const AdminService = {
         const response = await api.post(API_ENDPOINTS.ADMIN.PLANS, data);
         return response.data;
     },
-    togglePlanStatus: async (id: string, isActive: boolean) => {
-        const response = await api.patch(API_ENDPOINTS.ADMIN.PLAN_STATUS(id), { isActive });
+    updatePlan: async (
+        id: string,
+        data: {
+            name: string;
+            price: number;
+            currency?: string;
+            durationDays: number;
+            maxWorkspaces: number;
+            maxMembersPerWorkspace: number;
+            messageRetentionDays: number;
+            aiAssistantEnabled?: boolean;
+            videoCallsEnabled?: boolean;
+            multiAiAgents?: boolean;
+            pinBoardEnabled?: boolean;
+            isActive?: boolean;
+        }
+    ) => {
+        const response = await api.put(API_ENDPOINTS.ADMIN.PLAN_DETAIL(id), data);
+        return response.data;
+    },
+    deletePlan: async (id: string) => {
+        const response = await api.delete(API_ENDPOINTS.ADMIN.PLAN_DETAIL(id));
         return response.data;
     },
 };

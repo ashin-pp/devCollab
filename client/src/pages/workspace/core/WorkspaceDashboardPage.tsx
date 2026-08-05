@@ -27,7 +27,13 @@ export const WorkspaceDashboardPage = () => {
     if (workspaceId) {
       WorkspaceService.getWorkspaceMembers(workspaceId, true)
         .then((res) => {
-          setMembers(Array.isArray(res.data) ? res.data : res.data?.data || []);
+          const all = Array.isArray(res.data) ? res.data : res.data?.data || [];
+          // Pending/invited are not workspace members yet.
+          setMembers(
+            all.filter(
+              (m: MemberData) => m.status === 'approved' || m.status === 'blocked'
+            )
+          );
           setLoadingMembers(false);
         })
         .catch(() => {

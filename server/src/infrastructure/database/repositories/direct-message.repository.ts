@@ -24,8 +24,13 @@ export class DirectMessageRepository implements IDirectMessageRepository {
         return this._mapper.toDomain(saved);
     }
 
-    async findByConversationId(conversationId: string, limit: number = 50, skip: number = 0): Promise<DirectMessage[]> {
-        const docs = await DirectMessageModel.find({ conversationId })
+    async findByConversationId(conversationId: string, limit: number = 50, skip: number = 0, since?: Date): Promise<DirectMessage[]> {
+        const query: Record<string, unknown> = { conversationId };
+        if (since) {
+            query.createdAt = { $gte: since };
+        }
+
+        const docs = await DirectMessageModel.find(query)
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)

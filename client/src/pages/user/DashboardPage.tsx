@@ -11,10 +11,14 @@ import toast from 'react-hot-toast';
 
 import { UserLayout } from '../../layouts/UserLayout';
 import { CreateWorkspaceModal } from '../../components/workspace/CreateWorkspaceModal';
+import { WorkspaceLimitModal } from '../../components/workspace/WorkspaceLimitModal';
 import { WorkspaceService } from '../../api/workspace/workspace.service';
+import { UserService } from '../../api/user/user.service';
+import { PlanService } from '../../api/plan/plan.service';
 import type { Workspace } from '../../types/workspace.types';
 import { validateWorkspaceInviteCode } from '../../validation';
 import { clearPendingInvite, getPendingInviteCode } from '../../utils/pendingInvite';
+import { isSubscriptionExpiredError } from '../../utils/subscription.utils';
 import {
   OnboardingWizardModal,
   OnboardingEntranceOverlay,
@@ -37,10 +41,14 @@ export const DashboardPage = () => {
   const [isFromEmailLink, setIsFromEmailLink] = useState(false);
   const invitePromptHandled = useRef(false);
   const entranceConsumed = useRef(false);
+  const openCreateWorkspaceFlowRef = useRef<(options?: { skipPlanPrompt?: boolean }) => void | Promise<void>>(
+    async () => {}
+  );
 
   const [myWorkspaces, setMyWorkspaces] = useState<Workspace[]>([]);
   const [publicWorkspaces, setPublicWorkspaces] = useState<Workspace[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubscriptionExpired, setIsSubscriptionExpired] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [publicCurrentPage, setPublicCurrentPage] = useState(1);
 
@@ -49,18 +57,14 @@ export const DashboardPage = () => {
   const [onboardingIntent, setOnboardingIntent] = useState<'register' | 'create-workspace' | 'browse'>('register');
   // Peek only — Strict Mode remount would wipe the flag if we consume in useState.
   const [showEntrance, setShowEntrance] = useState(() => peekOnboardingEntrance());
+  const [showWorkspaceLimitModal, setShowWorkspaceLimitModal] = useState(false);
+  const [workspaceLimitMax, setWorkspaceLimitMax] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     if (!showEntrance || entranceConsumed.current) return;
     entranceConsumed.current = true;
     consumeOnboardingEntrance();
   }, [showEntrance]);
-
-  const openCreateWorkspaceFlow = () => {
-    setOnboardingIntent('create-workspace');
-    setOnboardingStep(2);
-    setShowOnboarding(true);
-  };
 
   const handleEntranceDone = useCallback(() => {
     setShowEntrance(false);
@@ -83,19 +87,23 @@ export const DashboardPage = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     let dirty = false;
+    let shouldOpenCreate = false;
 
     if (params.get('createWorkspace') === '1') {
-      setIsCreateModalOpen(true);
+      shouldOpenCreate = true;
       params.delete('createWorkspace');
       dirty = true;
     }
 
     if (params.get('showPlans') === '1') {
-      setOnboardingIntent('browse');
-      setOnboardingStep(2);
-      setShowOnboarding(true);
       params.delete('showPlans');
       dirty = true;
+      const next = params.toString();
+      navigate(
+        { pathname: '/billing', search: next ? `?${next}` : '' },
+        { replace: true }
+      );
+      return;
     }
 
     if (dirty) {
@@ -105,13 +113,18 @@ export const DashboardPage = () => {
         { replace: true }
       );
     }
+
+    if (shouldOpenCreate) {
+      void openCreateWorkspaceFlowRef.current();
+    }
   }, [location.pathname, location.search, navigate]);
 
   const handleOnboardingComplete = () => {
     clearNeedsOnboarding();
     setShowOnboarding(false);
     if (onboardingIntent === 'create-workspace') {
-      setIsCreateModalOpen(true);
+      // Plan step finished (selected or skipped) — don't re-prompt for plan.
+      void openCreateWorkspaceFlowRef.current({ skipPlanPrompt: true });
     }
   };
 
@@ -139,6 +152,57 @@ export const DashboardPage = () => {
 
   const myCreatedWorkspaces = approvedWorkspaces.filter(ws => ws.createdBy === user?.id);
   const myJoinedWorkspaces = approvedWorkspaces.filter(ws => ws.createdBy !== user?.id);
+
+  const openCreateWorkspaceFlow = useCallback(async (options?: { skipPlanPrompt?: boolean }) => {
+    try {
+      const [profileRes, plans] = await Promise.all([
+        UserService.getProfile(),
+        PlanService.getActivePlans(),
+      ]);
+      const profile = profileRes?.data;
+      const planId = profile?.planId;
+
+      if (profile?.isSubscriptionExpired) {
+        setIsSubscriptionExpired(true);
+        toast.error('Your subscription has expired. Renew to create workspaces.');
+        navigate('/billing?next=/dashboard');
+        return;
+      }
+      setIsSubscriptionExpired(Boolean(profile?.isSubscriptionExpired));
+
+      // First-time only: pick a plan once before creating a workspace.
+      if (!planId && !options?.skipPlanPrompt) {
+        setOnboardingIntent('create-workspace');
+        setOnboardingStep(2);
+        setShowOnboarding(true);
+        return;
+      }
+
+      const plan =
+        (typeof planId === 'string' && plans.find((p) => p.id === planId)) ||
+        plans.find((p) => p.name.toLowerCase().includes('starter')) ||
+        plans[0];
+
+      const ownedCount = myWorkspaces.filter(
+        (ws) =>
+          ws.createdBy === user?.id &&
+          (!ws.memberStatus || ws.memberStatus === 'approved')
+      ).length;
+
+      if (plan && ownedCount >= plan.maxWorkspaces) {
+        setWorkspaceLimitMax(plan.maxWorkspaces);
+        setShowWorkspaceLimitModal(true);
+        return;
+      }
+
+      setIsCreateModalOpen(true);
+    } catch {
+      // Let the create API enforce limits if profile/plans fail to load.
+      setIsCreateModalOpen(true);
+    }
+  }, [myWorkspaces, user?.id, navigate]);
+
+  openCreateWorkspaceFlowRef.current = openCreateWorkspaceFlow;
 
   const myCreatedChunks = chunkArray(myCreatedWorkspaces, 4);
   const myJoinedChunks = chunkArray(myJoinedWorkspaces, 4);
@@ -199,13 +263,15 @@ export const DashboardPage = () => {
   useEffect(() => {
     const fetchWorkspaces = async () => {
       try {
-        const [myRes, publicRes] = await Promise.all([
+        const [myRes, publicRes, profileRes] = await Promise.all([
           WorkspaceService.getUserWorkspaces(),
-          WorkspaceService.getPublicWorkspaces()
+          WorkspaceService.getPublicWorkspaces(),
+          UserService.getProfile().catch(() => null),
         ]);
         const workspaces = (myRes.data || []) as Workspace[];
         setMyWorkspaces(workspaces);
         setPublicWorkspaces(publicRes.data || []);
+        setIsSubscriptionExpired(Boolean(profileRes?.data?.isSubscriptionExpired));
 
         if (!invitePromptHandled.current) {
           invitePromptHandled.current = true;
@@ -229,6 +295,11 @@ export const DashboardPage = () => {
           }
         }
       } catch (error) {
+        if (isSubscriptionExpiredError(error)) {
+          setIsSubscriptionExpired(true);
+          toast.error('Your subscription has expired. Renew to unlock paid features.');
+          return;
+        }
         console.error("Error fetching workspaces", error);
       } finally {
         setIsLoading(false);
@@ -368,6 +439,24 @@ export const DashboardPage = () => {
           </p>
         </div>
 
+        {isSubscriptionExpired && (
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4">
+            <div>
+              <p className="text-sm font-semibold text-rose-800">Subscription expired</p>
+              <p className="text-sm text-rose-700/90 mt-0.5">
+                Chat still works. Renew to create workspaces and restore AI, video, and higher member limits.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate('/billing?next=/dashboard')}
+              className="shrink-0 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold px-4 py-2.5 transition-colors"
+            >
+              Renew plan
+            </button>
+          </div>
+        )}
+
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="flex-1 space-y-8">
 
@@ -472,7 +561,7 @@ export const DashboardPage = () => {
               ) : (
                 <div className="bg-white border border-slate-200 rounded-xl p-8 text-center shadow-sm">
                   <p className="text-slate-500 mb-4">You haven't created any workspaces yet.</p>
-                  <button onClick={openCreateWorkspaceFlow} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-sm">
+                  <button onClick={() => void openCreateWorkspaceFlow()} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-sm">
                     Create One
                   </button>
                 </div>
@@ -793,7 +882,7 @@ export const DashboardPage = () => {
               </p>
 
               <button
-                onClick={openCreateWorkspaceFlow}
+                onClick={() => void openCreateWorkspaceFlow()}
                 className="w-full bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 py-2.5 rounded-lg text-sm font-bold transition-colors shadow-sm"
               >
                 Create Workspace
@@ -808,10 +897,23 @@ export const DashboardPage = () => {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSuccess={handleWorkspaceCreated}
+        onLimitReached={() => {
+          setShowWorkspaceLimitModal(true);
+        }}
         existingWorkspaceNames={[
           ...myWorkspaces.map((ws) => ws.name),
           ...publicWorkspaces.map((ws) => ws.name),
         ]}
+      />
+
+      <WorkspaceLimitModal
+        isOpen={showWorkspaceLimitModal}
+        maxWorkspaces={workspaceLimitMax}
+        onClose={() => setShowWorkspaceLimitModal(false)}
+        onUpgrade={() => {
+          setShowWorkspaceLimitModal(false);
+          navigate('/billing');
+        }}
       />
 
       <OnboardingEntranceOverlay

@@ -22,6 +22,7 @@ adminRouter.patch("/workspaces/:workspaceId/members/:userId/status", adminContro
 
 adminRouter.get("/plans", authMiddleware, planController.getAllPlans);
 adminRouter.post("/plans", authMiddleware, planController.createPlan);
-adminRouter.patch("/plans/:id/status", authMiddleware, planController.togglePlanStatus);
+adminRouter.put("/plans/:id", authMiddleware, planController.updatePlan);
+adminRouter.delete("/plans/:id", authMiddleware, planController.deletePlan);
 
 export { adminRouter };

@@ -4,6 +4,7 @@ import type { IChannelMemberRepository } from "../../../application/interfaces/r
 import type { IChannelRepository } from "../../../application/interfaces/repositories/channel.repository.interface";
 import type { IMessageRepository } from "../../../application/interfaces/repositories/message.repository.interface";
 import type { IWorkspaceRepository } from "../../../application/interfaces/repositories/workspace.repository.interface";
+import type { IPlanEntitlementService } from "../../interfaces/services/plan-entitlement.service.interface";
 import { Message } from "../../../domain/entities/message.entity";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
@@ -13,6 +14,7 @@ import { SendMessageRequestDto } from "../../dtos/channel/request/send-message-r
 import { ISendMessageUseCase } from "../../interfaces/use-cases/channel/send-message.usecase.interface";
 import type { ICreateNotificationUseCase } from "../../interfaces/use-cases/notification/create-notification.usecase.interface";
 import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
+import { SERVICE_TOKENS } from "../../../infrastructure/di/service.tokens";
 
 @injectable()
 export class SendMessageUseCase implements ISendMessageUseCase {
@@ -21,7 +23,8 @@ export class SendMessageUseCase implements ISendMessageUseCase {
         @inject(REPOSITORY_TOKENS.IChannelMemberRepository) private _channelMemberRepository: IChannelMemberRepository,
         @inject(USECASE_TOKENS.ICreateNotificationUseCase) private _createNotificationUseCase: ICreateNotificationUseCase,
         @inject(REPOSITORY_TOKENS.IChannelRepository) private _channelRepository: IChannelRepository,
-        @inject(REPOSITORY_TOKENS.IWorkspaceRepository) private _workspaceRepository: IWorkspaceRepository
+        @inject(REPOSITORY_TOKENS.IWorkspaceRepository) private _workspaceRepository: IWorkspaceRepository,
+        @inject(SERVICE_TOKENS.IPlanEntitlementService) private _planEntitlementService: IPlanEntitlementService
     ) {}
 
     async execute(payload: SendMessageRequestDto): Promise<Message> {
@@ -36,6 +39,8 @@ export class SendMessageUseCase implements ISendMessageUseCase {
             parentMessageId,
             replyVisibility
         } = payload;
+
+        await this._planEntitlementService.resolveForUserId(senderId);
 
         const member = await this._channelMemberRepository.findByChannelAndUser(channelId, senderId);
         

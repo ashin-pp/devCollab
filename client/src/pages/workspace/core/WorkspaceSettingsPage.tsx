@@ -10,6 +10,8 @@ import Swal from 'sweetalert2';
 import toast from 'react-hot-toast';
 
 import type { WorkspaceData, MemberData } from '../../../types/workspace.types';
+import { validateWorkspaceTeamSize } from '../../../validation';
+import { resolveUserPlan } from '../../../utils/plan-limits.utils';
 
 export const WorkspaceSettingsPage = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>();
@@ -28,6 +30,8 @@ export const WorkspaceSettingsPage = () => {
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [privacy, setPrivacy] = useState<'public' | 'private'>('public');
   const [maxMembers, setMaxMembers] = useState<number | ''>(50);
+  const [planMemberLimit, setPlanMemberLimit] = useState<number | null>(null);
+  const [maxMembersError, setMaxMembersError] = useState<string | null>(null);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -38,7 +42,12 @@ export const WorkspaceSettingsPage = () => {
     if (!workspaceId) return;
     try {
       setIsLoading(true);
-      const response = await WorkspaceService.getUserWorkspaces();
+      const [response, plan] = await Promise.all([
+        WorkspaceService.getUserWorkspaces(),
+        resolveUserPlan(),
+      ]);
+      setPlanMemberLimit(plan?.maxMembersPerWorkspace ?? null);
+
       const ws = response.data.find((w: WorkspaceData) => w.id === workspaceId);
       if (ws) {
         setWorkspace(ws);
@@ -50,7 +59,22 @@ export const WorkspaceSettingsPage = () => {
       }
 
       const membersData = await WorkspaceService.getWorkspaceMembers(workspaceId, false);
-      setMembers(Array.isArray(membersData.data) ? membersData.data : membersData.data?.data || []);
+      const loadedMembers: MemberData[] = Array.isArray(membersData.data)
+        ? membersData.data
+        : membersData.data?.data || [];
+      setMembers(loadedMembers);
+
+      if (ws?.maxMembers) {
+        const approvedCount = loadedMembers.filter((m) => m.status === 'approved').length;
+        setMaxMembersError(
+          validateWorkspaceTeamSize(String(ws.maxMembers), {
+            maxAllowed: plan?.maxMembersPerWorkspace,
+            minAllowed: approvedCount || 1,
+          })
+        );
+      } else {
+        setMaxMembersError(null);
+      }
 
       // Fetch channels count for this workspace
       const channelsData = await ChannelService.getWorkspaceChannels(workspaceId);
@@ -64,13 +88,51 @@ export const WorkspaceSettingsPage = () => {
   };
 
   const isOwner = workspace?.createdBy === currentUser?.id || members.some(m => m.userId === currentUser?.id && m.role === 'owner');
+  const approvedMemberCount = members.filter((m) => m.status === 'approved').length;
+
+  const handleMaxMembersChange = (value: string) => {
+    if (value === '') {
+      setMaxMembers('');
+      setMaxMembersError(null);
+      return;
+    }
+    const next = Number(value);
+    setMaxMembers(next);
+    setMaxMembersError(
+      validateWorkspaceTeamSize(value, {
+        maxAllowed: planMemberLimit ?? undefined,
+        minAllowed: approvedMemberCount || 1,
+      })
+    );
+  };
 
   const handleUpdateGeneral = async () => {
     if (!workspaceId) return;
+
+    if (maxMembers === '') {
+      toast.error('Max members is required');
+      return;
+    }
+
+    const sizeError = validateWorkspaceTeamSize(String(maxMembers), {
+      maxAllowed: planMemberLimit ?? undefined,
+      minAllowed: approvedMemberCount || 1,
+    });
+    if (sizeError) {
+      setMaxMembersError(sizeError);
+      toast.error(sizeError);
+      return;
+    }
+
     try {
       const loadingToast = toast.loading('Updating settings...');
-      const membersLimit = maxMembers === '' ? 50 : maxMembers;
-      await WorkspaceService.updateWorkspace(workspaceId, { name, description, logo, privacy, maxMembers: membersLimit });
+      await WorkspaceService.updateWorkspace(workspaceId, {
+        name,
+        description,
+        logo,
+        privacy,
+        maxMembers,
+      });
       toast.dismiss(loadingToast);
       toast.success('Settings updated successfully!');
       fetchData();
@@ -348,13 +410,37 @@ export const WorkspaceSettingsPage = () => {
                       <input 
                         type="number" 
                         value={maxMembers}
-                        onChange={(e) => setMaxMembers(e.target.value === '' ? '' : Number(e.target.value))}
-                        className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        min="1"
+                        onChange={(e) => handleMaxMembersChange(e.target.value)}
+                        className={`w-full bg-slate-50 border text-slate-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                          maxMembersError ? 'border-rose-400' : 'border-slate-200'
+                        }`}
+                        min={approvedMemberCount || 1}
+                        max={planMemberLimit ?? undefined}
+                        placeholder={
+                          planMemberLimit
+                            ? `Max ${planMemberLimit} on your plan`
+                            : undefined
+                        }
                       />
+                      {maxMembersError ? (
+                        <p className="mt-1.5 text-xs font-medium text-rose-600">{maxMembersError}</p>
+                      ) : (
+                        <p className="mt-1.5 text-xs text-slate-500">
+                          {planMemberLimit
+                            ? `Your plan allows up to ${planMemberLimit} members.`
+                            : 'Set the maximum members for this workspace.'}
+                          {approvedMemberCount > 0
+                            ? ` Current members: ${approvedMemberCount}.`
+                            : ''}
+                        </p>
+                      )}
                     </div>
                     <div className="pt-2">
-                      <button onClick={handleUpdateGeneral} className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors">
+                      <button
+                        onClick={handleUpdateGeneral}
+                        disabled={!!maxMembersError}
+                        className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50"
+                      >
                         Save Changes
                       </button>
                     </div>
@@ -473,40 +559,6 @@ export const WorkspaceSettingsPage = () => {
                     )}
                   </div>
 
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="border-b border-slate-100 p-6">
-                  <h2 className="text-lg font-bold text-slate-900">Recent Activity</h2>
-                </div>
-                <div className="p-6">
-                  <div className="relative border-l-2 border-slate-100 pl-4 space-y-6 ml-2">
-                    <div className="relative">
-                      <div className="absolute -left-[25px] bg-orange-100 text-orange-600 w-6 h-6 rounded-full flex items-center justify-center border-4 border-white">
-                        <Users className="w-3 h-3" />
-                      </div>
-                      <p className="text-sm text-slate-900 font-medium">Jordan Miller joined the workspace.</p>
-                      <p className="text-xs text-slate-400 mt-0.5">2 minutes ago</p>
-                    </div>
-                    <div className="relative">
-                      <div className="absolute -left-[25px] bg-blue-100 text-blue-600 w-6 h-6 rounded-full flex items-center justify-center border-4 border-white">
-                        <Hash className="w-3 h-3" />
-                      </div>
-                      <p className="text-sm text-slate-900 font-medium">Alex Linden created channel <span className="text-blue-600 font-bold">#q4-planning</span>.</p>
-                      <p className="text-xs text-slate-400 mt-0.5">45 minutes ago</p>
-                    </div>
-                    <div className="relative">
-                      <div className="absolute -left-[25px] bg-red-100 text-red-600 w-6 h-6 rounded-full flex items-center justify-center border-4 border-white">
-                        <AlertCircle className="w-3 h-3" />
-                      </div>
-                      <p className="text-sm text-slate-900 font-medium">Workspace security policy updated.</p>
-                      <p className="text-xs text-slate-400 mt-0.5">5 hours ago</p>
-                    </div>
-                  </div>
-                  <button className="w-full mt-6 py-2 bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-bold rounded-lg border border-slate-200 transition-colors">
-                    View Activity Log
-                  </button>
                 </div>
               </div>
 

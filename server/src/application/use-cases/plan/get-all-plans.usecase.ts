@@ -11,7 +11,8 @@ export class GetAllPlansUseCase implements IGetAllPlansUseCase {
     ) {}
 
     async execute(): Promise<PlanResponseDto[]> {
-        const plans = await this._planRepository.findAll();
+        // Soft-deleted plans stay in DB for current subscribers until expiry, but are hidden from admin inventory.
+        const plans = await this._planRepository.findAllActive();
 
         return plans.map((plan) => ({
             id: plan.id as string,

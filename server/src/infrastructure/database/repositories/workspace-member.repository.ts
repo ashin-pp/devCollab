@@ -57,7 +57,11 @@ export class WorkspaceMemberRepository implements IWorkspaceMemberRepository {
     }
 
     async countMembersInWorkspace(workspaceId: string): Promise<number> {
-        return await WorkspaceMemberModel.countDocuments({ workspace_id: workspaceId });
+        // Only approved/blocked occupy seats. Pending/invited must not block capacity.
+        return await WorkspaceMemberModel.countDocuments({
+            workspace_id: workspaceId,
+            status: { $in: ['approved', 'blocked'] },
+        });
     }
 
     async updateStatus(workspaceId: string, userId: string, status: 'pending' | 'approved' | 'blocked' | 'invited'): Promise<WorkspaceMember | null> {

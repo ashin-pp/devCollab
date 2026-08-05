@@ -15,17 +15,20 @@ import type { IDeleteProfileImageUseCase } from "../../application/interfaces/us
 import type { IGetUserProfileUseCase } from "../../application/interfaces/use-cases/user/get-user-profile.usecase.interface";
 import type { IRequestEmailChangeUseCase } from "../../application/interfaces/use-cases/user/request-email-change.usecase.interface";
 import type { ISearchUserByEmailUseCase } from "../../application/interfaces/use-cases/user/search-user-by-email.usecase.interface";
+import type { ISelectUserPlanUseCase } from "../../application/interfaces/use-cases/user/select-user-plan.usecase.interface";
 import type { IUpdateUserProfileUseCase } from "../../application/interfaces/use-cases/user/update-user-profile.usecase.interface";
 import type { IUploadProfileImageUseCase } from "../../application/interfaces/use-cases/user/upload-profile-image.usecase.interface";
 import type { IVerifyEmailChangeUseCase } from "../../application/interfaces/use-cases/user/verify-email-change.usecase.interface";
 import { USECASE_TOKENS } from "../../infrastructure/di/usecase.tokens";
 import { catchAsync } from "../utils/catch-async";
+import { SelectUserPlanRequestDto } from "../../application/dtos/user/request/select-user-plan.dto";
 
 @injectable()
 export class UserController {
     constructor(
         @inject(USECASE_TOKENS.IGetUserProfileUseCase) private readonly _getUserProfileUseCase: IGetUserProfileUseCase,
         @inject(USECASE_TOKENS.IUpdateUserProfileUseCase) private readonly _updateUserProfileUseCase: IUpdateUserProfileUseCase,
+        @inject(USECASE_TOKENS.ISelectUserPlanUseCase) private readonly _selectUserPlanUseCase: ISelectUserPlanUseCase,
         @inject(USECASE_TOKENS.IChangePasswordUseCase) private readonly _changePasswordUseCase: IChangePasswordUseCase,
         @inject(USECASE_TOKENS.IRequestEmailChangeUseCase) private readonly _requestEmailChangeUseCase: IRequestEmailChangeUseCase,
         @inject(USECASE_TOKENS.IVerifyEmailChangeUseCase) private readonly _verifyEmailChangeUseCase: IVerifyEmailChangeUseCase,
@@ -52,6 +55,22 @@ export class UserController {
                         ApiResponse.success(SuccessMessage.PROFILE_UPDATED, updatedProfile)
                     );
         });
+
+    public selectPlan = catchAsync(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+        const userId = req.user?.id;
+        if (!userId) throw new AppError(ErrorMessage.UNAUTHORIZED, HttpStatusCode.UNAUTHORIZED);
+        const body = req.body as SelectUserPlanRequestDto;
+        if (body.planId !== null && (typeof body.planId !== 'string' || !body.planId.trim())) {
+            throw new AppError("planId must be a plan id string or null", HttpStatusCode.BAD_REQUEST);
+        }
+        const updatedProfile = await this._selectUserPlanUseCase.execute({
+            userId,
+            data: { planId: body.planId === null ? null : body.planId.trim() },
+        });
+        res.status(HttpStatusCode.OK).json(
+            ApiResponse.success(SuccessMessage.PLAN_SELECTED, updatedProfile)
+        );
+    });
 
     public changePassword = catchAsync(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
         const userId = req.user?.id;

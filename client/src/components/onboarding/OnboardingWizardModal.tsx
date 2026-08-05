@@ -329,11 +329,30 @@ export const OnboardingWizardModal = ({ isOpen, onComplete, initialStep = 1 }: P
 
   if (!isOpen) return null;
 
-  const finish = (plan?: Plan | null) => {
-    if (plan) {
-      sessionStorage.setItem('preferredPlanId', plan.id);
-      sessionStorage.setItem('preferredPlanName', plan.name);
+  const finish = async (plan?: Plan | null) => {
+    try {
+      if (plan) {
+        await UserService.selectPlan(plan.id);
+        sessionStorage.setItem('preferredPlanId', plan.id);
+        sessionStorage.setItem('preferredPlanName', plan.name);
+      } else {
+        await UserService.selectPlan(null);
+        sessionStorage.removeItem('preferredPlanId');
+        sessionStorage.removeItem('preferredPlanName');
+      }
+    } catch (err: unknown) {
+      let errMsg = 'Failed to save plan';
+      if (isAxiosError(err)) {
+        errMsg = err.response?.data?.error?.message || err.response?.data?.message || errMsg;
+      }
+      toast.error(errMsg);
+      throw err;
     }
+    clearNeedsOnboarding();
+    onComplete();
+  };
+
+  const closeWithoutPlanChange = () => {
     clearNeedsOnboarding();
     onComplete();
   };
@@ -363,8 +382,21 @@ export const OnboardingWizardModal = ({ isOpen, onComplete, initialStep = 1 }: P
     setSelectedPlanId(plan.id);
     setIsFinishing(true);
     try {
-      toast.success(`${plan.name} selected. Checkout with Razorpay comes next.`);
-      finish(plan);
+      await finish(plan);
+      toast.success(`${plan.name} saved to your account. Checkout with Razorpay comes next.`);
+    } catch {
+      // toast already shown in finish
+    } finally {
+      setIsFinishing(false);
+    }
+  };
+
+  const handleSkipPlan = async () => {
+    setIsFinishing(true);
+    try {
+      await finish(null);
+    } catch {
+      // toast already shown in finish
     } finally {
       setIsFinishing(false);
     }
@@ -415,7 +447,7 @@ export const OnboardingWizardModal = ({ isOpen, onComplete, initialStep = 1 }: P
           </div>
           <button
             type="button"
-            onClick={() => finish(null)}
+            onClick={closeWithoutPlanChange}
             className="shrink-0 p-2.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-50 border border-transparent hover:border-slate-200 transition-all"
             aria-label="Close"
           >
@@ -685,7 +717,7 @@ export const OnboardingWizardModal = ({ isOpen, onComplete, initialStep = 1 }: P
             <>
               <button
                 type="button"
-                onClick={() => (initialStep === 2 ? finish(null) : goToStep(1))}
+                onClick={() => (initialStep === 2 ? closeWithoutPlanChange() : goToStep(1))}
                 className="inline-flex items-center gap-1.5 text-sm font-bold text-slate-500 hover:text-slate-800 transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -693,8 +725,9 @@ export const OnboardingWizardModal = ({ isOpen, onComplete, initialStep = 1 }: P
               </button>
               <button
                 type="button"
-                onClick={() => finish(null)}
-                className="text-sm font-bold text-slate-500 hover:text-blue-600 transition-colors"
+                onClick={() => void handleSkipPlan()}
+                disabled={isFinishing}
+                className="text-sm font-bold text-slate-500 hover:text-blue-600 transition-colors disabled:opacity-50"
               >
                 Skip for now
               </button>

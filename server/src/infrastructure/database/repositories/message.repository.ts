@@ -31,14 +31,19 @@ export class MessageRepository implements IMessageRepository {
         return message ? this._mapper.toDomain(message) : null;
     }
 
-    async findByChannelId(channelId: string, limit: number, skip: number): Promise<Message[]> {
-        const messages = await MessageModel.find({
+    async findByChannelId(channelId: string, limit: number, skip: number, since?: Date): Promise<Message[]> {
+        const query: Record<string, unknown> = {
             channel_id: channelId,
             $or: [
                 { thread_root_id: { $exists: false } },
                 { thread_root_id: null }
             ]
-        })
+        };
+        if (since) {
+            query.created_at = { $gte: since };
+        }
+
+        const messages = await MessageModel.find(query)
             .sort({ created_at: -1 })
             .skip(skip)
             .limit(limit)
@@ -46,37 +51,45 @@ export class MessageRepository implements IMessageRepository {
         return messages.map(m => this._mapper.toDomain(m));
     }
 
-    async findThreadReplies(threadRootId: string, viewerId: string): Promise<Message[]> {
-        const messages = await MessageModel.find({
+    async findThreadReplies(threadRootId: string, viewerId: string, since?: Date): Promise<Message[]> {
+        const query: Record<string, unknown> = {
             thread_root_id: threadRootId,
             $or: [
                 { reply_visibility: { $ne: 'author' } },
                 { reply_visibility: 'author', sender_id: viewerId },
                 { reply_visibility: 'author', visible_to_user_id: viewerId }
             ]
-        })
+        };
+        if (since) {
+            query.created_at = { $gte: since };
+        }
+
+        const messages = await MessageModel.find(query)
             .sort({ created_at: 1 })
             .populate('sender_id', 'name');
         return messages.map(m => this._mapper.toDomain(m));
     }
 
-    async countVisibleRepliesByRootIds(rootIds: string[], viewerId: string): Promise<Record<string, number>> {
+    async countVisibleRepliesByRootIds(rootIds: string[], viewerId: string, since?: Date): Promise<Record<string, number>> {
         if (rootIds.length === 0) return {};
 
         const objectIds = rootIds.map(id => new mongoose.Types.ObjectId(id));
         const viewerObjectId = new mongoose.Types.ObjectId(viewerId);
 
+        const match: Record<string, unknown> = {
+            thread_root_id: { $in: objectIds },
+            $or: [
+                { reply_visibility: { $ne: 'author' } },
+                { reply_visibility: 'author', sender_id: viewerObjectId },
+                { reply_visibility: 'author', visible_to_user_id: viewerObjectId }
+            ]
+        };
+        if (since) {
+            match.created_at = { $gte: since };
+        }
+
         const results = await MessageModel.aggregate([
-            {
-                $match: {
-                    thread_root_id: { $in: objectIds },
-                    $or: [
-                        { reply_visibility: { $ne: 'author' } },
-                        { reply_visibility: 'author', sender_id: viewerObjectId },
-                        { reply_visibility: 'author', visible_to_user_id: viewerObjectId }
-                    ]
-                }
-            },
+            { $match: match },
             {
                 $group: {
                     _id: '$thread_root_id',
@@ -107,22 +120,23 @@ export class MessageRepository implements IMessageRepository {
         return result !== null;
     }
 
-    async countUnreadMessages(channelId: string, lastReadAt: Date): Promise<number> {
-        const count = await MessageModel.countDocuments({
+    async countUnreadMessages(channelId: string, lastReadAt: Date, since?: Date): Promise<number> {
+        const lowerBound = since && since.getTime() > lastReadAt.getTime() ? since : lastReadAt;
+        return MessageModel.countDocuments({
             channel_id: channelId,
-            created_at: { $gt: lastReadAt },
+            created_at: { $gt: lowerBound },
             $or: [
                 { thread_root_id: { $exists: false } },
                 { thread_root_id: null }
             ]
         });
-        return count;
     }
 
-    async findUnreadMessages(channelId: string, lastReadAt: Date): Promise<Message[]> {
+    async findUnreadMessages(channelId: string, lastReadAt: Date, since?: Date): Promise<Message[]> {
+        const lowerBound = since && since.getTime() > lastReadAt.getTime() ? since : lastReadAt;
         const messages = await MessageModel.find({
             channel_id: channelId,
-            created_at: { $gt: lastReadAt },
+            created_at: { $gt: lowerBound },
             $or: [
                 { thread_root_id: { $exists: false } },
                 { thread_root_id: null }
