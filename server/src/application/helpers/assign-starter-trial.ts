@@ -5,7 +5,6 @@ import { HttpStatusCode } from "../../domain/enums/HttpStatusCode";
 import { SubscriptionStatus } from "../../domain/enums/SubscriptionStatus";
 import { AppError } from "../../domain/errors/AppError";
 
-/** Assign active Starter and start the free-trial clock at account creation. */
 export async function assignStarterTrial(
     user: User,
     planRepository: IPlanRepository,

@@ -44,6 +44,22 @@ export class AITaskRepository implements IAITaskRepository {
         return tasks.map(t => this._mapper.toDomain(t));
     }
 
+    async findByAssigneeInWorkspace(userId: string, workspaceId: string): Promise<AITask[]> {
+        const tasks = await AITaskModel.find({
+            assigned_to: userId,
+            workspace_id: workspaceId,
+        }).sort({ due_date: 1 });
+        return tasks.map((t) => this._mapper.toDomain(t));
+    }
+
+    async findForUserInWorkspace(userId: string, workspaceId: string): Promise<AITask[]> {
+        const tasks = await AITaskModel.find({
+            workspace_id: workspaceId,
+            $or: [{ assigned_to: userId }, { created_by: userId }],
+        }).sort({ created_at: -1 });
+        return tasks.map((t) => this._mapper.toDomain(t));
+    }
+
     async update(id: string, updateData: Partial<AITask>): Promise<AITask | null> {
         const updateDoc: any = {};
         if (updateData.title) updateDoc.title = updateData.title;
@@ -54,5 +70,14 @@ export class AITaskRepository implements IAITaskRepository {
 
         const updatedTask = await AITaskModel.findByIdAndUpdate(id, updateDoc, { new: true });
         return updatedTask ? this._mapper.toDomain(updatedTask) : null;
+    }
+
+    async clearDoneForUserInWorkspace(userId: string, workspaceId: string): Promise<number> {
+        const result = await AITaskModel.deleteMany({
+            workspace_id: workspaceId,
+            $or: [{ assigned_to: userId }, { created_by: userId }],
+            status: { $in: ['done', 'completed'] },
+        });
+        return result.deletedCount ?? 0;
     }
 }

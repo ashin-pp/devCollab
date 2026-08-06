@@ -4,7 +4,9 @@ import { authMiddleware } from "../middlewares/authMiddleware";
 
 const router = Router();
 
-// Process an AI message (handles commands like /task, /summary, etc.)
 router.post('/process', authMiddleware, aiController.processMessage);
+router.get('/dashboard', authMiddleware, aiController.getDashboard);
+router.post('/dashboard/clear', authMiddleware, aiController.clearDashboardTab);
+router.patch('/tasks/:taskId/status', authMiddleware, aiController.updateTaskStatus);
 
 export default router;

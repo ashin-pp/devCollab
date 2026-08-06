@@ -128,5 +128,8 @@ export const API_ENDPOINTS = {
   // AI endpoints
   AI: {
     PROCESS: '/ai/process',
+    DASHBOARD: '/ai/dashboard',
+    DASHBOARD_CLEAR: '/ai/dashboard/clear',
+    TASK_STATUS: (taskId: string) => `/ai/tasks/${taskId}/status`,
   }
 };

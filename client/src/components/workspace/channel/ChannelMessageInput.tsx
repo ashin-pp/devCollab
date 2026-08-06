@@ -265,7 +265,6 @@ export const ChannelMessageInput = ({
     { id: 'remind', label: 'Set Reminder', icon: '⏰' },
     { id: 'schedule', label: 'Schedule', icon: '📅' },
     { id: 'summary', label: 'Summarize Chat', icon: '✨' },
-    { id: 'fix', label: 'Fix Code', icon: '🔧' }
   ];
 
   const filteredAiCommands = AI_COMMANDS.filter(cmd => 

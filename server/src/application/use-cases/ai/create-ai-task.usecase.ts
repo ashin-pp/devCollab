@@ -5,15 +5,23 @@ import { AITaskStatus } from "../../../domain/enums/AITaskStatus";
 import { ICreateAITaskUseCase } from "../../interfaces/use-cases/ai/create-ai-task.usecase.interface";
 import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
+const SYSTEM_AGENT_ID = "000000000000000000000000";
+
 @injectable()
 export class CreateAITaskUseCase implements ICreateAITaskUseCase {
     constructor(
         @inject(REPOSITORY_TOKENS.IAITaskRepository) private _aiTaskRepository: IAITaskRepository
     ) {}
 
-    async execute(data: { workspaceId: string; channelId: string; title: string; description: string; assignedTo: string; dueDate: string }): Promise<void> {
-        // We will default the agentId and createdBy to a placeholder or extract it properly.
-        // For simplicity, we assume the AI is the agent creating it.
+    async execute(data: {
+        workspaceId: string;
+        channelId: string;
+        title: string;
+        description: string;
+        assignedTo: string;
+        dueDate: string;
+        createdBy: string;
+    }): Promise<void> {
         const newTask: Partial<AITask> = {
             workspaceId: data.workspaceId,
             channelId: data.channelId,
@@ -22,8 +30,8 @@ export class CreateAITaskUseCase implements ICreateAITaskUseCase {
             assignedTo: data.assignedTo,
             dueDate: new Date(data.dueDate),
             status: AITaskStatus.OPEN,
-            agentId: "000000000000000000000000", // placeholder or system AI agent id
-            createdBy: "000000000000000000000000" 
+            agentId: SYSTEM_AGENT_ID,
+            createdBy: data.createdBy,
         };
 
         await this._aiTaskRepository.create(newTask);

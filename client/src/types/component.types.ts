@@ -116,4 +116,8 @@ export interface ChannelHeaderProps {
   navigate: (path: string) => void;
   openAiDashboard: (tab: 'tasks' | 'reminders' | 'notifications' | 'schedule') => void;
   aiAssistantEnabled?: boolean;
+  aiTaskCount?: number;
+  aiReminderCount?: number;
+  aiScheduleCount?: number;
+  aiNotifyCount?: number;
 }

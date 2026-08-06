@@ -23,7 +23,7 @@ export class HandleAiCommandUseCase implements IHandleAiCommandUseCase {
     ) { }
 
     private resolveCommand(input: string): AIAgentType {
-        const match = input.trim().match(/^\/(summary|task|notify|remind|schedule|fix|help|info)\b/i);
+        const match = input.trim().match(/^\/(summary|task|notify|remind|schedule|help|info)\b/i);
         if (!match) {
             return AIAgentType.INFO;
         }
@@ -40,8 +40,6 @@ export class HandleAiCommandUseCase implements IHandleAiCommandUseCase {
                 return AIAgentType.REMIND;
             case 'schedule':
                 return AIAgentType.SCHEDULE;
-            case 'fix':
-                return AIAgentType.FIX;
             case 'help':
             case 'info':
             default:

@@ -14,7 +14,8 @@ export class AIReminderMapper implements IMapper<AIReminder, IAIReminderModel> {
             persistence.remind_at,
             persistence.is_sent,
             persistence._id ? persistence._id.toString() : undefined,
-            persistence.created_at
+            persistence.created_at,
+            persistence.sender_id ? persistence.sender_id.toString() : undefined
         );
     }
 
@@ -25,6 +26,7 @@ export class AIReminderMapper implements IMapper<AIReminder, IAIReminderModel> {
             channel_id: domain.channelId as any,
             agent_id: domain.agentId as any,
             message_id: domain.messageId as any,
+            sender_id: domain.senderId as any,
             content: domain.content,
             remind_at: domain.remindAt,
             is_sent: domain.isSent

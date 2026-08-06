@@ -11,6 +11,8 @@ export interface WorkspaceResponseDto {
     maxMembers: number;
     isActive: boolean;
     aiAssistantEnabled?: boolean;
+    /** Plan assigned to the workspace owner (drives workspace entitlements). */
+    ownerPlanName?: string;
     createdAt?: Date;
     updatedAt?: Date;
 }

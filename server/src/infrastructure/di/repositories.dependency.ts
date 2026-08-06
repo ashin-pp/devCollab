@@ -13,6 +13,7 @@ import { PollRepository } from '../database/repositories/poll.repository';
 import { NotificationRepository } from '../database/repositories/notification.repository';
 import { AITaskRepository } from '../database/repositories/ai-task.repository';
 import { AIReminderRepository } from '../database/repositories/ai-reminder.repository';
+import { AIScheduleRepository } from '../database/repositories/ai-schedule.repository';
 import { AIChatRepository } from '../database/repositories/ai-chat.repository';
 import { PlanRepository } from '../database/repositories/plan.repository';
 import { PaymentTransactionRepository } from '../database/repositories/payment-transaction.repository';
@@ -34,6 +35,7 @@ export function registerRepositories() {
     container.registerSingleton(REPOSITORY_TOKENS.INotificationRepository, NotificationRepository);
     container.registerSingleton(REPOSITORY_TOKENS.IAITaskRepository, AITaskRepository);
     container.registerSingleton(REPOSITORY_TOKENS.IAIReminderRepository, AIReminderRepository);
+    container.registerSingleton(REPOSITORY_TOKENS.IAIScheduleRepository, AIScheduleRepository);
     container.registerSingleton(REPOSITORY_TOKENS.IAIChatRepository, AIChatRepository);
     container.registerSingleton(REPOSITORY_TOKENS.IPlanRepository, PlanRepository);
     container.registerSingleton(REPOSITORY_TOKENS.IPaymentTransactionRepository, PaymentTransactionRepository);

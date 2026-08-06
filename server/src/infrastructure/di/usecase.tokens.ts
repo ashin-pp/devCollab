@@ -18,6 +18,10 @@ export const USECASE_TOKENS = {
     // AI
     ICreateAIReminderUseCase: 'ICreateAIReminderUseCase',
     ICreateAITaskUseCase: 'ICreateAITaskUseCase',
+    ICreateAIScheduleUseCase: 'ICreateAIScheduleUseCase',
+    IGetAIDashboardUseCase: 'IGetAIDashboardUseCase',
+    IClearAIDashboardTabUseCase: 'IClearAIDashboardTabUseCase',
+    IUpdateAITaskStatusUseCase: 'IUpdateAITaskStatusUseCase',
     IHandleAiCommandUseCase: 'IHandleAiCommandUseCase',
     ISaveAIChatUseCase: 'ISaveAIChatUseCase',
 

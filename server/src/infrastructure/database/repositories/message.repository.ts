@@ -28,7 +28,8 @@ export class MessageRepository implements IMessageRepository {
 
     async findById(id: string): Promise<Message | null> {
         const message = await MessageModel.findById(id).populate('sender_id', 'name');
-        return message ? this._mapper.toDomain(message) : null;
+        if (!message || message.sender_id == null) return null;
+        return this._mapper.toDomain(message);
     }
 
     async findByChannelId(channelId: string, limit: number, skip: number, since?: Date): Promise<Message[]> {
@@ -48,7 +49,9 @@ export class MessageRepository implements IMessageRepository {
             .skip(skip)
             .limit(limit)
             .populate('sender_id', 'name');
-        return messages.map(m => this._mapper.toDomain(m));
+        return messages
+            .filter((m) => m.sender_id != null)
+            .map((m) => this._mapper.toDomain(m));
     }
 
     async findThreadReplies(threadRootId: string, viewerId: string, since?: Date): Promise<Message[]> {
@@ -67,7 +70,9 @@ export class MessageRepository implements IMessageRepository {
         const messages = await MessageModel.find(query)
             .sort({ created_at: 1 })
             .populate('sender_id', 'name');
-        return messages.map(m => this._mapper.toDomain(m));
+        return messages
+            .filter((m) => m.sender_id != null)
+            .map((m) => this._mapper.toDomain(m));
     }
 
     async countVisibleRepliesByRootIds(rootIds: string[], viewerId: string, since?: Date): Promise<Record<string, number>> {
@@ -142,6 +147,8 @@ export class MessageRepository implements IMessageRepository {
                 { thread_root_id: null }
             ]
         }).populate('sender_id', 'name').sort({ created_at: 1 });
-        return messages.map(m => this._mapper.toDomain(m));
+        return messages
+            .filter((m) => m.sender_id != null)
+            .map((m) => this._mapper.toDomain(m));
     }
 }

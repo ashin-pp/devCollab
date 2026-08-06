@@ -12,6 +12,7 @@ export class NotificationMapper implements IMapper<Notification, INotificationDo
             title: doc.title,
             message: doc.message,
             relatedId: doc.relatedId,
+            actorId: doc.actorId ? doc.actorId.toString() : undefined,
             isRead: doc.isRead,
             createdAt: doc.createdAt,
             updatedAt: doc.updatedAt,
@@ -25,6 +26,7 @@ export class NotificationMapper implements IMapper<Notification, INotificationDo
             ...(domain.title && { title: domain.title }),
             ...(domain.message && { message: domain.message }),
             ...(domain.relatedId !== undefined && { relatedId: domain.relatedId }),
+            ...(domain.actorId && { actorId: new Types.ObjectId(domain.actorId) as any }),
             ...(domain.isRead !== undefined && { isRead: domain.isRead }),
         };
     }

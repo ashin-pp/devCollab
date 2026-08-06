@@ -36,21 +36,28 @@ export class GetUserWorkspacesUseCase implements IGetUserWorkspacesUseCase {
         if (workspaceIds.length === 0) return [];
         
         const workspaces = await this._workspaceRepository.findByIds(workspaceIds);
-        const aiByOwner = new Map<string, boolean>();
+        const ownerMeta = new Map<string, { aiAssistantEnabled: boolean; ownerPlanName: string }>();
 
         const result: (WorkspaceResponseDto & { memberStatus: string })[] = [];
         for (const ws of workspaces) {
             const member = memberships.find((m: WorkspaceMember) => m.workspaceId === ws.id);
-            let aiAssistantEnabled = aiByOwner.get(ws.createdBy);
-            if (aiAssistantEnabled === undefined) {
+            let meta = ownerMeta.get(ws.createdBy);
+            if (!meta) {
                 try {
                     const ownerEntitlement = await this._planEntitlementService.resolveForUserId(ws.createdBy);
-                    aiAssistantEnabled =
-                        !ownerEntitlement.isExpired && ownerEntitlement.plan.aiAssistantEnabled;
+                    meta = {
+                        aiAssistantEnabled:
+                            !ownerEntitlement.isExpired && ownerEntitlement.plan.aiAssistantEnabled,
+                        // Prefer assigned/billing plan name (what the owner subscribed to).
+                        ownerPlanName:
+                            ownerEntitlement.billingPlan?.name?.trim() ||
+                            ownerEntitlement.plan.name?.trim() ||
+                            'No plan',
+                    };
                 } catch {
-                    aiAssistantEnabled = false;
+                    meta = { aiAssistantEnabled: false, ownerPlanName: 'No plan' };
                 }
-                aiByOwner.set(ws.createdBy, aiAssistantEnabled);
+                ownerMeta.set(ws.createdBy, meta);
             }
 
             result.push({
@@ -63,7 +70,8 @@ export class GetUserWorkspacesUseCase implements IGetUserWorkspacesUseCase {
                 privacy: ws.privacy,
                 maxMembers: ws.maxMembers,
                 isActive: ws.isActive,
-                aiAssistantEnabled,
+                aiAssistantEnabled: meta.aiAssistantEnabled,
+                ownerPlanName: meta.ownerPlanName,
                 createdAt: ws.createdAt as Date,
                 updatedAt: ws.updatedAt as Date,
                 memberStatus: member?.status || 'approved'

@@ -25,6 +25,7 @@ import { ChannelPollsList } from '../../../components/polls/ChannelPollsList';
 import { CreatePollModal } from '../../../components/polls/CreatePollModal';
 import { AiDashboardModal } from '../../../components/workspace/channel/AiDashboardModal';
 import type { AiTab } from '../../../components/workspace/channel/AiDashboardModal';
+import { AiService } from '../../../api/ai/ai.service';
 import { getMessageId } from '../../../utils/message.utils';
 import { WorkspaceService } from '../../../api/workspace/workspace.service';
 import type { Workspace } from '../../../types/workspace.types';
@@ -65,6 +66,10 @@ export const WorkspaceChannelPage = () => {
   const [isCreatePollModalOpen, setIsCreatePollModalOpen] = useState(false);
   const [isAiDashboardOpen, setIsAiDashboardOpen] = useState(false);
   const [aiDashboardTab, setAiDashboardTab] = useState<AiTab>('tasks');
+  const [aiTaskCount, setAiTaskCount] = useState(0);
+  const [aiReminderCount, setAiReminderCount] = useState(0);
+  const [aiScheduleCount, setAiScheduleCount] = useState(0);
+  const [aiNotifyCount, setAiNotifyCount] = useState(0);
 
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -405,7 +410,7 @@ export const WorkspaceChannelPage = () => {
       const cleanMessage = isTextEmpty ? '' : message;
       
       const plainText = cleanMessage.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim();
-      const aiCommands = ['/task', '/notify', '/remind', '/summary', '/fix', '/schedule'];
+      const aiCommands = ['/task', '/notify', '/remind', '/summary', '/schedule'];
       const isAiCommand = aiCommands.some(cmd => plainText.startsWith(cmd));
 
       if (isAiCommand) {
@@ -537,6 +542,24 @@ export const WorkspaceChannelPage = () => {
     setIsAiDashboardOpen(true);
   };
 
+  const refreshAiCounts = async () => {
+    if (!workspaceId || !aiAssistantEnabled) return;
+    try {
+      const res = await AiService.getDashboard(workspaceId);
+      const counts = res.data.data.counts;
+      setAiTaskCount(counts.tasks);
+      setAiReminderCount(counts.reminders);
+      setAiScheduleCount(counts.schedules);
+      setAiNotifyCount(counts.notifications ?? 0);
+    } catch {
+      // Plan-locked or network errors should not break the channel UI.
+    }
+  };
+
+  useEffect(() => {
+    void refreshAiCounts();
+  }, [workspaceId, aiAssistantEnabled]);
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -596,6 +619,10 @@ export const WorkspaceChannelPage = () => {
             navigate={navigate}
             openAiDashboard={openAiDashboard}
             aiAssistantEnabled={aiAssistantEnabled}
+            aiTaskCount={aiTaskCount}
+            aiReminderCount={aiReminderCount}
+            aiScheduleCount={aiScheduleCount}
+            aiNotifyCount={aiNotifyCount}
           />
 
           {currentChannel?.isActive === false ? (
@@ -760,8 +787,12 @@ export const WorkspaceChannelPage = () => {
 
           <AiDashboardModal
             isOpen={isAiDashboardOpen}
-            onClose={() => setIsAiDashboardOpen(false)}
+            onClose={() => {
+              setIsAiDashboardOpen(false);
+              void refreshAiCounts();
+            }}
             defaultTab={aiDashboardTab}
+            workspaceId={workspaceId as string}
           />
         </>
       )}

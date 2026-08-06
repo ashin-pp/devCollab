@@ -16,6 +16,30 @@ export class NotificationRepository extends MongoBaseRepository<Notification, IN
         return docs.map(doc => this._mapper.toDomain(doc));
     }
 
+    async findAiNotifiesForUserInWorkspace(
+        userId: string,
+        workspaceId: string,
+        limit = 50
+    ): Promise<Notification[]> {
+        const docs = await NotificationModel.find({
+            userId,
+            type: 'AI_NOTIFY',
+            relatedId: workspaceId,
+        })
+            .sort({ createdAt: -1 })
+            .limit(limit);
+        return docs.map((doc) => this._mapper.toDomain(doc));
+    }
+
+    async clearAiNotifiesForUserInWorkspace(userId: string, workspaceId: string): Promise<number> {
+        const result = await NotificationModel.deleteMany({
+            userId,
+            type: 'AI_NOTIFY',
+            relatedId: workspaceId,
+        });
+        return result.deletedCount ?? 0;
+    }
+
     async markAsRead(id: string): Promise<Notification | null> {
         const doc = await NotificationModel.findByIdAndUpdate(id, { isRead: true }, { new: true });
         if (!doc) return null;

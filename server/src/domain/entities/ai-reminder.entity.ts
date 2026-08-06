@@ -9,6 +9,7 @@ export class AIReminder {
         public remindAt: Date,
         public isSent: boolean = false,
         public id?: string,
-        public createdAt?: Date
+        public createdAt?: Date,
+        public senderId?: string
     ) {}
 }

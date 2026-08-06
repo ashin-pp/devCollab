@@ -20,6 +20,10 @@ export const ChannelHeader = ({
   navigate,
   openAiDashboard,
   aiAssistantEnabled = true,
+  aiTaskCount = 0,
+  aiReminderCount = 0,
+  aiScheduleCount = 0,
+  aiNotifyCount = 0,
 }: ChannelHeaderProps) => {
   const handleAiClick = (tab: 'tasks' | 'reminders' | 'notifications' | 'schedule') => {
     if (!aiAssistantEnabled) {
@@ -163,7 +167,11 @@ export const ChannelHeader = ({
             className={aiChipClass}
           >
             {aiAssistantEnabled ? null : <Lock className="w-3 h-3" />}
-            /task <span className="w-4 h-4 rounded-full bg-red-500 text-white flex items-center justify-center text-[9px]">3</span>
+            /task{aiTaskCount > 0 ? (
+              <span className="w-4 h-4 rounded-full bg-red-500 text-white flex items-center justify-center text-[9px]">
+                {aiTaskCount > 9 ? '9+' : aiTaskCount}
+              </span>
+            ) : null}
           </button>
           <button
             type="button"
@@ -172,7 +180,11 @@ export const ChannelHeader = ({
             className={aiChipClass}
           >
             {aiAssistantEnabled ? null : <Lock className="w-3 h-3" />}
-            /notify
+            /notify{aiNotifyCount > 0 ? (
+              <span className="w-4 h-4 rounded-full bg-sky-500 text-white flex items-center justify-center text-[9px]">
+                {aiNotifyCount > 9 ? '9+' : aiNotifyCount}
+              </span>
+            ) : null}
           </button>
           <button
             type="button"
@@ -181,7 +193,11 @@ export const ChannelHeader = ({
             className={aiChipClass}
           >
             {aiAssistantEnabled ? null : <Lock className="w-3 h-3" />}
-            /remind <span className="w-4 h-4 rounded-full bg-orange-500 text-white flex items-center justify-center text-[9px]">5</span>
+            /remind{aiReminderCount > 0 ? (
+              <span className="w-4 h-4 rounded-full bg-orange-500 text-white flex items-center justify-center text-[9px]">
+                {aiReminderCount > 9 ? '9+' : aiReminderCount}
+              </span>
+            ) : null}
           </button>
           <button
             type="button"
@@ -190,7 +206,11 @@ export const ChannelHeader = ({
             className={aiChipClass}
           >
             {aiAssistantEnabled ? null : <Lock className="w-3 h-3" />}
-            /schedule
+            /schedule{aiScheduleCount > 0 ? (
+              <span className="w-4 h-4 rounded-full bg-indigo-500 text-white flex items-center justify-center text-[9px]">
+                {aiScheduleCount > 9 ? '9+' : aiScheduleCount}
+              </span>
+            ) : null}
           </button>
         </div>
 

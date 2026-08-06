@@ -25,39 +25,19 @@ export class CreateAIReminderUseCase implements ICreateAIReminderUseCase {
             channelId: data.channelId,
             content: data.content,
             remindAt: new Date(data.remindAt),
-            isSent: false
+            isSent: false,
+            senderId: data.senderId,
         };
 
-        await this._aiReminderRepository.create(newReminder);
+        const saved = await this._aiReminderRepository.create(newReminder);
         const scheduledTime = new Date(data.remindAt);
-        if (scheduledTime > new Date()) {
-            schedule.scheduleJob(scheduledTime, async () => {
-                try {
-                    let finalMessage = data.content;
-                    
-                    if (data.senderId) {
-                        const sender = await this._userRepository.findById(data.senderId);
-                        const channel = await this._channelRepository.findById(data.channelId);
-                        if (sender && channel) {
-                            finalMessage = `@${sender.name} in #${channel.name} reminded you: "${data.content}"`;
-                        }
-                    }
 
-                    await this._createNotificationUseCase.execute({
-                        userId: data.userId,
-                        type: 'GENERAL',
-                        title: 'AI Reminder',
-                        message: finalMessage
-                    });
-                } catch (error) {
-                    console.error("Failed to send scheduled AI reminder notification", error);
-                }
-            });
-        } else {
+        const fire = async () => {
             try {
                 let finalMessage = data.content;
-                
-                if (data.senderId) {
+
+                // Skip fake system sender ids — show plain reminder content
+                if (data.senderId && data.senderId !== "000000000000000000000000") {
                     const sender = await this._userRepository.findById(data.senderId);
                     const channel = await this._channelRepository.findById(data.channelId);
                     if (sender && channel) {
@@ -71,9 +51,19 @@ export class CreateAIReminderUseCase implements ICreateAIReminderUseCase {
                     title: 'AI Reminder',
                     message: finalMessage
                 });
+
+                if (saved.id) {
+                    await this._aiReminderRepository.markAsSent(saved.id);
+                }
             } catch (error) {
-                console.error("Failed to send immediate AI reminder notification", error);
+                console.error("Failed to send scheduled AI reminder notification", error);
             }
+        };
+
+        if (scheduledTime > new Date()) {
+            schedule.scheduleJob(scheduledTime, fire);
+        } else {
+            await fire();
         }
     }
 }
