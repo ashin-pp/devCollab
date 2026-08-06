@@ -11,6 +11,9 @@ import { AdminGetWorkspaceMembersUseCase } from "../../../application/use-cases/
 import { ToggleUserStatusUseCase } from "../../../application/use-cases/admin/toggle-user-status.usecase";
 import { ToggleWorkspaceStatusUseCase } from "../../../application/use-cases/admin/toggle-workspace-status.usecase";
 import { UpdateWorkspaceMemberStatusUseCase } from "../../../application/use-cases/admin/update-workspace-member-status.usecase";
+import { GetAdminDashboardStatsUseCase } from "../../../application/use-cases/admin/get-admin-dashboard-stats.usecase";
+import { GetAdminSalesReportUseCase } from "../../../application/use-cases/admin/get-admin-sales-report.usecase";
+import { GetAdminWalletUseCase } from "../../../application/use-cases/admin/get-admin-wallet.usecase";
 
 export function registerAdminUseCases() {
     container.register(USECASE_TOKENS.IAdminForgotPasswordUseCase, { useClass: AdminForgotPasswordUseCase });
@@ -24,4 +27,7 @@ export function registerAdminUseCases() {
     container.register(USECASE_TOKENS.IToggleWorkspaceStatusUseCase, { useClass: ToggleWorkspaceStatusUseCase });
     container.register(USECASE_TOKENS.IUpdateWorkspaceMemberStatusUseCase, { useClass: UpdateWorkspaceMemberStatusUseCase });
     container.register(USECASE_TOKENS.IAdminGetWorkspaceMembersUseCase, { useClass: AdminGetWorkspaceMembersUseCase });
+    container.register(USECASE_TOKENS.IGetAdminDashboardStatsUseCase, { useClass: GetAdminDashboardStatsUseCase });
+    container.register(USECASE_TOKENS.IGetAdminSalesReportUseCase, { useClass: GetAdminSalesReportUseCase });
+    container.register(USECASE_TOKENS.IGetAdminWalletUseCase, { useClass: GetAdminWalletUseCase });
 }

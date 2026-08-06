@@ -4,6 +4,7 @@ import type { UserProfileResponseDto } from "../../dtos/user/response/user-profi
 import type { IPaymentTransactionRepository } from "../../interfaces/repositories/payment-transaction.repository.interface";
 import type { IPlanRepository } from "../../interfaces/repositories/plan.repository.interface";
 import type { IUserRepository } from "../../interfaces/repositories/user.repository.interface";
+import type { IWalletLedgerRepository } from "../../interfaces/repositories/wallet-ledger.repository.interface";
 import type { IPaymentService } from "../../interfaces/services/payment.service.interface";
 import type { ISelectUserPlanUseCase } from "../../interfaces/use-cases/user/select-user-plan.usecase.interface";
 import type { IVerifyPaymentUseCase } from "../../interfaces/use-cases/payment/verify-payment.usecase.interface";
@@ -22,6 +23,8 @@ export class VerifyPaymentUseCase implements IVerifyPaymentUseCase {
         @inject(REPOSITORY_TOKENS.IPlanRepository) private readonly _planRepository: IPlanRepository,
         @inject(REPOSITORY_TOKENS.IPaymentTransactionRepository)
         private readonly _paymentTransactionRepository: IPaymentTransactionRepository,
+        @inject(REPOSITORY_TOKENS.IWalletLedgerRepository)
+        private readonly _walletLedgerRepository: IWalletLedgerRepository,
         @inject(SERVICE_TOKENS.IPaymentService) private readonly _paymentService: IPaymentService,
         @inject(USECASE_TOKENS.ISelectUserPlanUseCase)
         private readonly _selectUserPlanUseCase: ISelectUserPlanUseCase
@@ -90,19 +93,34 @@ export class VerifyPaymentUseCase implements IVerifyPaymentUseCase {
             throw new AppError(ErrorMessage.FAILED_TO_UPDATE_PROFILE, HttpStatusCode.INTERNAL_SERVER);
         }
 
+        const amount = Number(plan.price);
+        const currency = (plan.currency || "INR").toUpperCase();
+
         const existingTxn = await this._paymentTransactionRepository.findByOrderId(razorpay_order_id);
         if (!existingTxn) {
             await this._paymentTransactionRepository.create({
                 userId: payload.userId,
                 planId: plan.id,
                 planName: plan.name,
-                amount: Number(plan.price),
-                currency: (plan.currency || "INR").toUpperCase(),
+                amount,
+                currency,
                 status: "success",
                 razorpayOrderId: razorpay_order_id,
                 razorpayPaymentId: razorpay_payment_id,
             });
         }
+
+        await this._walletLedgerRepository.creditIfAbsent({
+            userId: payload.userId,
+            planId: plan.id,
+            planName: plan.name,
+            amount,
+            currency,
+            type: "credit",
+            razorpayOrderId: razorpay_order_id,
+            razorpayPaymentId: razorpay_payment_id,
+            description: `Plan purchase: ${plan.name}`,
+        });
 
         return this._selectUserPlanUseCase.execute({
             userId: payload.userId,

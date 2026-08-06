@@ -25,6 +25,8 @@ export interface User {
     profileImage?: string;
     status?: string;
     subscriptionStatus?: string;
+    planId?: string | null;
+    planName?: string;
     github?: string;
     linkedin?: string;
     twitter?: string;

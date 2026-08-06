@@ -86,6 +86,9 @@ export const API_ENDPOINTS = {
     WORKSPACE_MEMBER_STATUS: (workspaceId: string, userId: string) => `/admin/workspaces/${workspaceId}/members/${userId}/status`,
     PLANS: '/admin/plans',
     PLAN_DETAIL: (planId: string) => `/admin/plans/${planId}`,
+    DASHBOARD: '/admin/dashboard',
+    SALES: '/admin/sales',
+    WALLET: '/admin/wallet',
   },
 
   // User-facing plans

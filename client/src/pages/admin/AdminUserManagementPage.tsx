@@ -188,7 +188,7 @@ export const AdminUserManagementPage = () => {
             <thead className="text-[10px] text-slate-500 font-bold tracking-widest uppercase border-b border-[#30363d] bg-[#0d1117]">
               <tr>
                 <th className="px-6 py-4 cursor-pointer hover:text-amber-500 transition-colors" onClick={() => handleSort('name')}>USER <SortIcon column="name" /></th>
-                <th className="px-6 py-4">ROLE</th>
+                <th className="px-6 py-4">PLAN</th>
                 <th className="px-6 py-4 cursor-pointer hover:text-amber-500 transition-colors" onClick={() => handleSort('createdAt')}>JOIN DATE <SortIcon column="createdAt" /></th>
                 <th className="px-6 py-4">LAST ACTIVE</th>
                 <th className="px-6 py-4 cursor-pointer hover:text-amber-500 transition-colors" onClick={() => handleSort('status')}>STATUS <SortIcon column="status" /></th>
@@ -231,8 +231,8 @@ export const AdminUserManagementPage = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="bg-[#30363d]/50 text-slate-400 border border-[#30363d] px-2 py-1 rounded text-[9px] font-bold tracking-wider uppercase">
-                        USER
+                      <span className="inline-flex items-center px-2 py-1 rounded border border-amber-500/30 bg-amber-500/10 text-amber-400 text-[10px] font-bold tracking-widest uppercase">
+                        {user.planName || 'No plan'}
                       </span>
                     </td>
                     <td className="px-6 py-4 font-mono text-xs text-slate-400">

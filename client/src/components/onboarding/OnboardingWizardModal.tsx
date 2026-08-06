@@ -403,9 +403,15 @@ export const OnboardingWizardModal = ({ isOpen, onComplete, initialStep = 1 }: P
         return;
       }
 
+      sessionStorage.setItem('preferredPlanId', plan.id);
+      sessionStorage.setItem('preferredPlanName', plan.name);
       clearNeedsOnboarding();
       onComplete();
-      toast.success(`${plan.name} is now your plan.`);
+      const params = new URLSearchParams({
+        plan: plan.name,
+        next: '/dashboard',
+      });
+      navigate(`/billing/success?${params.toString()}`);
     } catch (err: unknown) {
       let errMsg = 'Failed to activate plan';
       if (isAxiosError(err)) {

@@ -11,6 +11,9 @@ export const USECASE_TOKENS = {
     IToggleUserStatusUseCase: 'IToggleUserStatusUseCase',
     IToggleWorkspaceStatusUseCase: 'IToggleWorkspaceStatusUseCase',
     IUpdateWorkspaceMemberStatusUseCase: 'IUpdateWorkspaceMemberStatusUseCase',
+    IGetAdminDashboardStatsUseCase: 'IGetAdminDashboardStatsUseCase',
+    IGetAdminSalesReportUseCase: 'IGetAdminSalesReportUseCase',
+    IGetAdminWalletUseCase: 'IGetAdminWalletUseCase',
 
     // AI
     ICreateAIReminderUseCase: 'ICreateAIReminderUseCase',

@@ -11,7 +11,11 @@ import type { IAdminGetWorkspaceMembersUseCase } from "../../application/interfa
 import type { IToggleUserStatusUseCase } from "../../application/interfaces/use-cases/admin/toggle-user-status.usecase.interface";
 import type { IToggleWorkspaceStatusUseCase } from "../../application/interfaces/use-cases/admin/toggle-workspace-status.usecase.interface";
 import type { IUpdateWorkspaceMemberStatusUseCase } from "../../application/interfaces/use-cases/admin/update-workspace-member-status.usecase.interface";
+import type { IGetAdminDashboardStatsUseCase } from "../../application/interfaces/use-cases/admin/get-admin-dashboard-stats.usecase.interface";
+import type { IGetAdminSalesReportUseCase } from "../../application/interfaces/use-cases/admin/get-admin-sales-report.usecase.interface";
+import type { IGetAdminWalletUseCase } from "../../application/interfaces/use-cases/admin/get-admin-wallet.usecase.interface";
 import type { IVerifyResetOtpUseCase } from "../../application/interfaces/use-cases/auth/verify-reset-otp.usecase.interface";
+import type { PaymentTransactionStatus } from "../../domain/types/payment-transaction-status";
 import { envConfig } from "../../config/envConfig";
 import { AppConstants } from "../../domain/constants";
 import { HttpStatusCode } from "../../domain/enums/HttpStatusCode";
@@ -34,7 +38,10 @@ export class AdminController {
         @inject(USECASE_TOKENS.IGetAllWorkspacesUseCase) private _getAllWorkspacesUseCase: IGetAllWorkspacesUseCase,
         @inject(USECASE_TOKENS.IToggleWorkspaceStatusUseCase) private _adminToggleWorkspaceStatusUseCase: IToggleWorkspaceStatusUseCase,
         @inject(USECASE_TOKENS.IAdminGetWorkspaceMembersUseCase) private _adminGetWorkspaceMembersUseCase: IAdminGetWorkspaceMembersUseCase,
-        @inject(USECASE_TOKENS.IUpdateWorkspaceMemberStatusUseCase) private _adminUpdateWorkspaceMemberStatusUseCase: IUpdateWorkspaceMemberStatusUseCase
+        @inject(USECASE_TOKENS.IUpdateWorkspaceMemberStatusUseCase) private _adminUpdateWorkspaceMemberStatusUseCase: IUpdateWorkspaceMemberStatusUseCase,
+        @inject(USECASE_TOKENS.IGetAdminDashboardStatsUseCase) private _getAdminDashboardStatsUseCase: IGetAdminDashboardStatsUseCase,
+        @inject(USECASE_TOKENS.IGetAdminSalesReportUseCase) private _getAdminSalesReportUseCase: IGetAdminSalesReportUseCase,
+        @inject(USECASE_TOKENS.IGetAdminWalletUseCase) private _getAdminWalletUseCase: IGetAdminWalletUseCase
     ) { }
 
   public createAdmin = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -164,6 +171,47 @@ export class AdminController {
         const { status } = req.body;
         await this._adminUpdateWorkspaceMemberStatusUseCase.execute({ workspaceId: workspaceId as string, userId: userId as string, status });
         const response = ApiResponse.success(`Member status updated to ${status}`);
+        res.status(HttpStatusCode.OK).json(response);
+        })
+
+  public getDashboardStats = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+        const days = parseInt(req.query.days as string, 10);
+        const from = req.query.from as string | undefined;
+        const to = req.query.to as string | undefined;
+        const stats = await this._getAdminDashboardStatsUseCase.execute({
+            days: Number.isFinite(days) ? days : undefined,
+            from,
+            to,
+        });
+        const response = ApiResponse.success(SuccessMessage.ADMIN_DASHBOARD_FETCHED, stats);
+        res.status(HttpStatusCode.OK).json(response);
+        })
+
+  public getSalesReport = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+        const page = parseInt(req.query.page as string, 10) || 1;
+        const limit = parseInt(req.query.limit as string, 10) || AppConstants.DEFAULT_PAGE_LIMIT;
+        const status = req.query.status as PaymentTransactionStatus | undefined;
+        const planName = req.query.planName as string | undefined;
+        const from = req.query.from as string | undefined;
+        const to = req.query.to as string | undefined;
+
+        const report = await this._getAdminSalesReportUseCase.execute({
+            page,
+            limit,
+            status,
+            planName,
+            from,
+            to,
+        });
+        const response = ApiResponse.success(SuccessMessage.ADMIN_SALES_REPORT_FETCHED, report);
+        res.status(HttpStatusCode.OK).json(response);
+        })
+
+  public getWallet = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+        const page = parseInt(req.query.page as string, 10) || 1;
+        const limit = parseInt(req.query.limit as string, 10) || AppConstants.DEFAULT_PAGE_LIMIT;
+        const wallet = await this._getAdminWalletUseCase.execute({ page, limit });
+        const response = ApiResponse.success(SuccessMessage.ADMIN_WALLET_FETCHED, wallet);
         res.status(HttpStatusCode.OK).json(response);
         })
 }
