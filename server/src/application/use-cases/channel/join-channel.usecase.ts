@@ -70,6 +70,19 @@ export class JoinChannelUseCase implements IJoinChannelUseCase {
         if (isWorkspaceOwner) {
             newStatus = ChannelMemberStatus.APPROVED;
         }
+
+        const inactiveMember = await this._channelMemberRepository.findInactiveByChannelAndUser(channelId, userId);
+        if (inactiveMember) {
+            await this._channelMemberRepository.reactivate(channelId, userId, newStatus);
+            const user = await this._userRepository.findById(userId);
+            return {
+                success: true,
+                status: newStatus,
+                message: newStatus === ChannelMemberStatus.APPROVED ? 'Successfully joined the channel' : 'Join request submitted',
+                userName: user?.name || 'A user'
+            };
+        }
+
         const member = new ChannelMember(
             channelId,
             userId,

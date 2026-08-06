@@ -22,6 +22,8 @@ import { NotificationBell } from '../components/notifications/NotificationBell';
 import { addNotification } from '../store/slices/notificationSlice';
 import { useDispatch } from 'react-redux';
 import { playNotificationSound } from '../utils/audio';
+import { UserService } from '../api/user/user.service';
+import { isSubscriptionExpiredError } from '../utils/subscription.utils';
 
 import type { WorkspaceLayoutProps } from '../types/component.types';
 
@@ -42,6 +44,7 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
   const [workspacePrivacy, setWorkspacePrivacy] = useState<'public' | 'private'>('private');
   const [inviteCode, setInviteCode] = useState<string>('');
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [isSubscriptionExpired, setIsSubscriptionExpired] = useState(false);
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const [mentions, setMentions] = useState<Record<string, string>>(() => {
     try {
@@ -124,7 +127,22 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
             }
           }
         })
-        .catch((err) => console.error('Failed to fetch workspace data', err));
+        .catch((err) => {
+          if (isSubscriptionExpiredError(err)) {
+            setIsSubscriptionExpired(true);
+            toast.error('Your subscription has expired. Paid features are locked until you renew.');
+            return;
+          }
+          console.error('Failed to fetch workspace data', err);
+        });
+
+      UserService.getProfile()
+        .then((res) => {
+          setIsSubscriptionExpired(Boolean(res?.data?.isSubscriptionExpired));
+        })
+        .catch(() => {
+          /* profile is best-effort for the banner */
+        });
 
       // Fetch workspace members
       WorkspaceService.getWorkspaceMembers(workspaceId, false).then((response: any) => {
@@ -632,6 +650,20 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
         </aside>
 
         <main className="flex-1 flex flex-col bg-white overflow-hidden relative">
+          {isSubscriptionExpired && (
+            <div className="shrink-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-amber-200 bg-amber-50 px-4 py-2.5">
+              <p className="text-xs sm:text-sm text-amber-900 font-medium">
+                Your plan expired — chat stays available. Renew for AI, higher limits, and new workspaces.
+              </p>
+              <button
+                type="button"
+                onClick={() => navigate(`/billing?next=/workspace/${workspaceId}/dashboard`)}
+                className="self-start sm:self-auto text-xs font-bold uppercase tracking-wide text-amber-900 underline underline-offset-2 hover:text-amber-950"
+              >
+                Renew
+              </button>
+            </div>
+          )}
           {children}
         </main>
 

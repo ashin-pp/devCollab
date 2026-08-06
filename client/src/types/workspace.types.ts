@@ -66,6 +66,7 @@ export interface Workspace {
   ownerName: string;
   ownerEmail: string;
   memberStatus?: string;
+  aiAssistantEnabled?: boolean;
 }
 
 export interface WorkspaceMember {

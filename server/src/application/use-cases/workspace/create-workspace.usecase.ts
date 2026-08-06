@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { inject, injectable } from 'tsyringe';
 import type { IWorkspaceMemberRepository } from "../../../application/interfaces/repositories/workspace-member.repository.interface";
 import type { IWorkspaceRepository } from "../../../application/interfaces/repositories/workspace.repository.interface";
+import type { IPlanEntitlementService } from "../../interfaces/services/plan-entitlement.service.interface";
 import { WorkspaceMember } from "../../../domain/entities/workspace-member.entity";
 import { Workspace } from "../../../domain/entities/workspace.entity";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
@@ -13,13 +14,15 @@ import { CreateWorkspaceRequestDto } from "../../dtos/workspace/request/create-w
 import { WorkspaceResponseDto } from "../../dtos/workspace/response/workspace.response.dto";
 import { ICreateWorkspaceUseCase } from "../../interfaces/use-cases/workspace/create-workspace.usecase.interface";
 import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
+import { SERVICE_TOKENS } from "../../../infrastructure/di/service.tokens";
 import { isValidWorkspaceName } from "../../../shared/utils/name-validation.util";
 
 @injectable()
 export class CreateWorkspaceUseCase implements ICreateWorkspaceUseCase {
     constructor(
         @inject(REPOSITORY_TOKENS.IWorkspaceRepository) private _workspaceRepository: IWorkspaceRepository,
-        @inject(REPOSITORY_TOKENS.IWorkspaceMemberRepository) private _workspaceMemberRepository: IWorkspaceMemberRepository
+        @inject(REPOSITORY_TOKENS.IWorkspaceMemberRepository) private _workspaceMemberRepository: IWorkspaceMemberRepository,
+        @inject(SERVICE_TOKENS.IPlanEntitlementService) private _planEntitlementService: IPlanEntitlementService
     ) { }
 
     async execute(payload: CreateWorkspaceRequestDto): Promise<WorkspaceResponseDto> {
@@ -33,12 +36,28 @@ export class CreateWorkspaceUseCase implements ICreateWorkspaceUseCase {
             throw new AppError(ErrorMessage.WORKSPACE_NAME_INVALID, HttpStatusCode.BAD_REQUEST);
         }
 
+        const entitlement = await this._planEntitlementService.assertSubscriptionActive(payload.createdBy);
+        const ownedWorkspaces = await this._workspaceRepository.findAllByUserId(payload.createdBy);
+        if (ownedWorkspaces.length >= entitlement.plan.maxWorkspaces) {
+            throw new AppError(ErrorMessage.WORKSPACE_PLAN_LIMIT_REACHED, HttpStatusCode.FORBIDDEN);
+        }
+
         const existing = await this._workspaceRepository.findByNameIgnoreCase(name);
         if (existing) {
             throw new AppError(ErrorMessage.WORKSPACE_NAME_EXISTS, HttpStatusCode.CONFLICT);
         }
 
         const inviteCode = crypto.randomBytes(4).toString('hex').toUpperCase();
+        const planMax = entitlement.plan.maxMembersPerWorkspace;
+
+        if (
+            payload.maxMembers !== undefined &&
+            (!Number.isFinite(payload.maxMembers) || payload.maxMembers < 1 || payload.maxMembers > planMax)
+        ) {
+            throw new AppError(ErrorMessage.WORKSPACE_MEMBER_PLAN_LIMIT, HttpStatusCode.FORBIDDEN);
+        }
+
+        const maxMembers = payload.maxMembers ?? planMax;
 
         const newWorkspace = new Workspace(
             name,
@@ -47,7 +66,7 @@ export class CreateWorkspaceUseCase implements ICreateWorkspaceUseCase {
             payload.description?.trim(),
             payload.logo,
             (payload.privacy as WorkspacePrivacy) ?? WorkspacePrivacy.PRIVATE,
-            payload.maxMembers
+            maxMembers
         );
 
         const createdWorkspace = await this._workspaceRepository.create(newWorkspace);

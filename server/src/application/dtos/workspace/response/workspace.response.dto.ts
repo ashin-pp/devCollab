@@ -10,6 +10,7 @@ export interface WorkspaceResponseDto {
     privacy: WorkspacePrivacy;
     maxMembers: number;
     isActive: boolean;
+    aiAssistantEnabled?: boolean;
     createdAt?: Date;
     updatedAt?: Date;
 }

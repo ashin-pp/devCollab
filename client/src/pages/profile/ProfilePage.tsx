@@ -83,9 +83,35 @@ export const ProfilePage = () => {
             <ArrowLeft className="w-4 h-4" /> Back to Workspace
           </Link>
         )}
-        <div className="text-xs font-bold text-blue-600 bg-blue-50 inline-block px-3 py-1 rounded border border-blue-100 uppercase tracking-wider mb-2">
-          Your Active Plan &rarr; Professional
+        <div className="flex flex-wrap items-center gap-2 mb-2">
+          <div
+            className={`text-xs font-bold inline-block px-3 py-1 rounded border uppercase tracking-wider ${
+              profile?.isSubscriptionExpired
+                ? 'text-rose-700 bg-rose-50 border-rose-100'
+                : 'text-blue-600 bg-blue-50 border-blue-100'
+            }`}
+          >
+            Your Active Plan &rarr;{' '}
+            {profile?.currentPlan?.name ?? profile?.subscriptionStatus ?? 'Starter'}
+            {profile?.isSubscriptionExpired ? ' (Expired)' : ''}
+          </div>
+          <Link
+            to="/billing"
+            className="text-xs font-semibold text-slate-500 hover:text-blue-600 underline underline-offset-2"
+          >
+            Manage billing
+          </Link>
         </div>
+        {profile?.planExpiresAt && (
+          <p className="text-xs text-slate-500 -mt-1 mb-2">
+            {profile.isSubscriptionExpired ? 'Expired' : 'Renews'} on{' '}
+            {new Date(profile.planExpiresAt).toLocaleDateString('en-GB', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            })}
+          </p>
+        )}
 
         <div className="bg-white border border-slate-200 rounded-xl p-8 flex items-start justify-between shadow-sm">
           <div className="flex gap-8">

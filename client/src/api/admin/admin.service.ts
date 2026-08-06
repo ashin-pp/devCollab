@@ -50,5 +50,50 @@ export const AdminService = {
     updateWorkspaceMemberStatus: async (workspaceId: string, userId: string, status: string) => {
         const response = await api.patch(API_ENDPOINTS.ADMIN.WORKSPACE_MEMBER_STATUS(workspaceId, userId), { status });
         return response.data;
-    }
+    },
+    getPlans: async () => {
+        const response = await api.get(API_ENDPOINTS.ADMIN.PLANS);
+        return response.data;
+    },
+    createPlan: async (data: {
+        name: string;
+        price: number;
+        currency?: string;
+        durationDays: number;
+        maxWorkspaces: number;
+        maxMembersPerWorkspace: number;
+        messageRetentionDays: number;
+        aiAssistantEnabled?: boolean;
+        videoCallsEnabled?: boolean;
+        multiAiAgents?: boolean;
+        pinBoardEnabled?: boolean;
+        isActive?: boolean;
+    }) => {
+        const response = await api.post(API_ENDPOINTS.ADMIN.PLANS, data);
+        return response.data;
+    },
+    updatePlan: async (
+        id: string,
+        data: {
+            name: string;
+            price: number;
+            currency?: string;
+            durationDays: number;
+            maxWorkspaces: number;
+            maxMembersPerWorkspace: number;
+            messageRetentionDays: number;
+            aiAssistantEnabled?: boolean;
+            videoCallsEnabled?: boolean;
+            multiAiAgents?: boolean;
+            pinBoardEnabled?: boolean;
+            isActive?: boolean;
+        }
+    ) => {
+        const response = await api.put(API_ENDPOINTS.ADMIN.PLAN_DETAIL(id), data);
+        return response.data;
+    },
+    deletePlan: async (id: string) => {
+        const response = await api.delete(API_ENDPOINTS.ADMIN.PLAN_DETAIL(id));
+        return response.data;
+    },
 };

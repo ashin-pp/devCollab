@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Bell, Settings, User as UserIcon } from 'lucide-react';
+import { Bell, Settings, User as UserIcon, CreditCard } from 'lucide-react';
 import { NotificationBell } from '../components/notifications/NotificationBell';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
@@ -119,6 +119,16 @@ export const UserLayout = ({ children }: UserLayoutProps) => {
                 >
                   <UserIcon className="w-4 h-4" />
                   Profile
+                </button>
+                <button
+                  onClick={() => {
+                    setIsDropdownOpen(false);
+                    navigate('/billing');
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors flex items-center gap-2"
+                >
+                  <CreditCard className="w-4 h-4" />
+                  Plans & Billing
                 </button>
                 <button
                   onClick={() => {

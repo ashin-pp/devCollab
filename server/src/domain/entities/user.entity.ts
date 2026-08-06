@@ -15,6 +15,8 @@ export class User {
         public twitter?: string,
         public location?: string,
         public title?: string,
+        public planId?: string | null,
+        public planSelectedAt?: Date | null,
         public googleId?: string,
         public isVerified: boolean = false,
         public status: UserStatus = UserStatus.ACTIVE,
@@ -30,6 +32,18 @@ export class User {
 
     public updateSubscription(newStatus: SubscriptionStatus): void {
         this.subscriptionStatus = newStatus;
+    }
+
+    public selectPlan(
+        planId: string | null,
+        subscriptionStatus?: SubscriptionStatus,
+        planSelectedAt: Date | null = new Date()
+    ): void {
+        this.planId = planId;
+        this.planSelectedAt = planSelectedAt;
+        if (subscriptionStatus) {
+            this.subscriptionStatus = subscriptionStatus;
+        }
     }
 
     public updateProfile(data: Partial<User>): void {

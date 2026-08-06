@@ -19,6 +19,9 @@ import { MemberProfilePage } from '../pages/workspace/core/MemberProfilePage';
 import { WorkspacePollsPage } from '../pages/workspace/polls/WorkspacePollsPage';
 import { ProfilePage } from '../pages/profile/ProfilePage';
 import { EditProfilePage } from '../pages/profile/EditProfilePage';
+import { BillingPage } from '../pages/billing/BillingPage';
+import { BackgroundSelectionPage } from '../pages/onboarding/BackgroundSelectionPage';
+import { PlanSelectionPage } from '../pages/onboarding/PlanSelectionPage';
 
 export const ClientRoutes = () => {
   return (
@@ -34,6 +37,9 @@ export const ClientRoutes = () => {
 
       <Route element={<UserProtectedRoute />}>
         <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="billing" element={<BillingPage />} />
+        <Route path="onboarding/background" element={<BackgroundSelectionPage />} />
+        <Route path="onboarding/plans" element={<PlanSelectionPage />} />
 
         {/* Workspace Routes */}
         <Route path="workspace/:workspaceId" element={<Navigate to="dashboard" replace />} />

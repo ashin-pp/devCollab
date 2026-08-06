@@ -17,6 +17,7 @@ export const API_ENDPOINTS = {
   // User endpoints
   USER: {
     PROFILE: '/users/profile',
+    PLAN: '/users/plan',
     CHANGE_PASSWORD: '/users/change-password',
     CHANGE_EMAIL_REQUEST: '/users/change-email/request',
     CHANGE_EMAIL_VERIFY: '/users/change-email/verify',
@@ -83,6 +84,13 @@ export const API_ENDPOINTS = {
     WORKSPACE_STATUS: (workspaceId: string) => `/admin/workspaces/${workspaceId}/status`,
     WORKSPACE_MEMBERS: (workspaceId: string) => `/admin/workspaces/${workspaceId}/members`,
     WORKSPACE_MEMBER_STATUS: (workspaceId: string, userId: string) => `/admin/workspaces/${workspaceId}/members/${userId}/status`,
+    PLANS: '/admin/plans',
+    PLAN_DETAIL: (planId: string) => `/admin/plans/${planId}`,
+  },
+
+  // User-facing plans
+  PLANS: {
+    BASE: '/plans',
   },
 
   // Poll endpoints

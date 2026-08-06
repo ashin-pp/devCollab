@@ -16,6 +16,22 @@ export interface ChangePasswordData {
     newPassword?: string;
 }
 
+export interface ProfilePlanSnapshot {
+  id: string;
+  name: string;
+  price: number;
+  currency: string;
+  durationDays: number;
+  maxWorkspaces: number;
+  maxMembersPerWorkspace: number;
+  messageRetentionDays: number;
+  aiAssistantEnabled: boolean;
+  videoCallsEnabled: boolean;
+  multiAiAgents: boolean;
+  pinBoardEnabled: boolean;
+  isActive: boolean;
+}
+
 export interface UserProfile {
   id: string;
   name: string;
@@ -28,4 +44,10 @@ export interface UserProfile {
   twitter?: string;
   location?: string;
   title?: string;
+  planId?: string | null;
+  planSelectedAt?: string | null;
+  planExpiresAt?: string | null;
+  isSubscriptionExpired?: boolean;
+  subscriptionStatus?: string;
+  currentPlan?: ProfilePlanSnapshot | null;
 }

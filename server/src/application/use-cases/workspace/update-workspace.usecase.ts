@@ -1,6 +1,7 @@
 import { inject, injectable } from 'tsyringe';
 import type { IWorkspaceMemberRepository } from "../../../application/interfaces/repositories/workspace-member.repository.interface";
 import type { IWorkspaceRepository } from "../../../application/interfaces/repositories/workspace.repository.interface";
+import type { IPlanEntitlementService } from "../../interfaces/services/plan-entitlement.service.interface";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { MemberRole } from "../../../domain/enums/MemberRole";
@@ -9,13 +10,15 @@ import { UpdateWorkspaceRequestDto } from "../../dtos/workspace/request/update-w
 import { WorkspaceResponseDto } from "../../dtos/workspace/response/workspace.response.dto";
 import { IUpdateWorkspaceUseCase } from "../../interfaces/use-cases/workspace/update-workspace.usecase.interface";
 import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
+import { SERVICE_TOKENS } from "../../../infrastructure/di/service.tokens";
 import { isValidWorkspaceName } from "../../../shared/utils/name-validation.util";
 
 @injectable()
 export class UpdateWorkspaceUseCase implements IUpdateWorkspaceUseCase {
     constructor(
         @inject(REPOSITORY_TOKENS.IWorkspaceRepository) private _workspaceRepository: IWorkspaceRepository,
-        @inject(REPOSITORY_TOKENS.IWorkspaceMemberRepository) private _workspaceMemberRepository: IWorkspaceMemberRepository
+        @inject(REPOSITORY_TOKENS.IWorkspaceMemberRepository) private _workspaceMemberRepository: IWorkspaceMemberRepository,
+        @inject(SERVICE_TOKENS.IPlanEntitlementService) private _planEntitlementService: IPlanEntitlementService
     ) {}
 
     async execute(payload: UpdateWorkspaceRequestDto): Promise<WorkspaceResponseDto> {
@@ -44,6 +47,31 @@ export class UpdateWorkspaceUseCase implements IUpdateWorkspaceUseCase {
             }
 
             data = { ...data, name };
+        }
+
+        if (data.maxMembers !== undefined) {
+            if (!Number.isFinite(data.maxMembers) || data.maxMembers < 1) {
+                throw new AppError(ErrorMessage.WORKSPACE_MEMBER_PLAN_LIMIT, HttpStatusCode.BAD_REQUEST);
+            }
+
+            const entitlement = await this._planEntitlementService.assertSubscriptionActive(ownerId);
+            const planMax = entitlement.plan.maxMembersPerWorkspace;
+
+            if (data.maxMembers > planMax) {
+                throw new AppError(ErrorMessage.WORKSPACE_MEMBER_PLAN_LIMIT, HttpStatusCode.FORBIDDEN);
+            }
+
+            const { total: approvedCount } = await this._workspaceMemberRepository.findPaginated(
+                { workspace_id: workspaceId, status: 'approved' },
+                1,
+                1
+            );
+
+            if (data.maxMembers < approvedCount) {
+                throw new AppError(ErrorMessage.WORKSPACE_MAX_MEMBERS_BELOW_CURRENT, HttpStatusCode.BAD_REQUEST);
+            }
+
+            data = { ...data, maxMembers: data.maxMembers };
         }
 
         const updatedWorkspace = await this._workspaceRepository.update(workspaceId, data);

@@ -7,6 +7,12 @@ import { AppRoutes } from './routes/AppRoutes';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import './index.css';
 import { Toaster } from 'react-hot-toast';
+import {
+  clearAdminSession,
+  clearUserSession,
+  hasAdminSession,
+  hasUserSession,
+} from './utils/sessionHint';
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -20,25 +26,33 @@ function App() {
 
   useEffect(() => {
     const initializeAuth = async () => {
+      const isAdminRoute = window.location.pathname.startsWith('/admin');
+
+      // Skip refresh for guests — avoids a guaranteed 401 (and red console noise).
+      if (isAdminRoute ? !hasAdminSession() : !hasUserSession()) {
+        setIsInitializing(false);
+        return;
+      }
+
       try {
-        const isAdminRoute = window.location.pathname.startsWith('/admin');
-        const response = isAdminRoute 
+        const response = isAdminRoute
           ? await AdminService.refresh()
           : await AuthService.refresh();
-          
+
         if (response.success && response.data) {
           dispatch(setCredentials({
             user: response.data.user || response.data.admin,
             accessToken: response.data.accessToken
           }));
         }
-      } catch (error) {
-        // Silent catch: if refresh fails (no cookie, expired), user stays logged out
+      } catch {
+        if (isAdminRoute) clearAdminSession();
+        else clearUserSession();
       } finally {
         setIsInitializing(false);
       }
     };
-    
+
     initializeAuth();
   }, [dispatch]);
 

@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react';
-import { Smile, Bold, Italic, AtSign, BarChart2, Image as ImageIcon, X, Send } from 'lucide-react';
+import { Smile, Bold, Italic, AtSign, BarChart2, Image as ImageIcon, X, Send, Lock } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
+import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 import type { ChannelMemberData } from '../../../types/channel.types';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../../store';
@@ -27,6 +29,7 @@ interface ChannelMessageInputProps {
   handleSendMessage: () => void;
   channelMembers: ChannelMemberData[];
   onAiCommandClick?: (command: string) => void;
+  aiAssistantEnabled?: boolean;
 }
 
 export const ChannelMessageInput = ({
@@ -50,11 +53,26 @@ export const ChannelMessageInput = ({
   setIsCreatePollModalOpen,
   handleSendMessage,
   channelMembers,
-  onAiCommandClick
+  onAiCommandClick,
+  aiAssistantEnabled = true,
 }: ChannelMessageInputProps) => {
   const [mentionSearch, setMentionSearch] = useState<string | null>(null);
   const [aiCommandSearch, setAiCommandSearch] = useState<string | null>(null);
   const currentUser = useSelector((state: RootState) => state.auth.user);
+  const navigate = useNavigate();
+
+  const promptAiUpgrade = () => {
+    toast.error('AI Assistant is locked on this workspace plan. Upgrade to enable it.');
+    navigate('/billing');
+  };
+
+  const handleAiChipClick = (command: string) => {
+    if (!aiAssistantEnabled) {
+      promptAiUpgrade();
+      return;
+    }
+    onAiCommandClick?.(command);
+  };
 
   const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
     let html = e.currentTarget.innerHTML;
@@ -81,8 +99,13 @@ export const ChannelMessageInput = ({
       } else {
         const aiCommandMatch = preCursorText.match(/\/([a-zA-Z0-9_]*)$/);
         if (aiCommandMatch) {
-          setAiCommandSearch(aiCommandMatch[1]);
-          setMentionSearch(null);
+          if (aiAssistantEnabled) {
+            setAiCommandSearch(aiCommandMatch[1]);
+            setMentionSearch(null);
+          } else {
+            setAiCommandSearch(null);
+            setMentionSearch(null);
+          }
         } else {
           setMentionSearch(null);
           setAiCommandSearch(null);
@@ -255,12 +278,35 @@ export const ChannelMessageInput = ({
 
         {/* AI Commands Bar - Minimal Pill Style */}
         <div className="px-4 pt-3 flex items-center gap-2 overflow-x-auto hide-scrollbar">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">AI</span>
-          <button onClick={() => onAiCommandClick && onAiCommandClick('/task')} className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full hover:bg-indigo-100 transition-colors shadow-sm">/task</button>
-          <button onClick={() => onAiCommandClick && onAiCommandClick('/notify')} className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full hover:bg-indigo-100 transition-colors shadow-sm">/notify</button>
-          <button onClick={() => onAiCommandClick && onAiCommandClick('/remind')} className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full hover:bg-indigo-100 transition-colors shadow-sm">/remind</button>
-          <button onClick={() => onAiCommandClick && onAiCommandClick('/schedule')} className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full hover:bg-indigo-100 transition-colors shadow-sm">/schedule</button>
-          <button onClick={() => onAiCommandClick && onAiCommandClick('/summary')} className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full hover:bg-indigo-100 transition-colors shadow-sm">/summary</button>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1 flex items-center gap-1">
+            AI
+            {!aiAssistantEnabled && <Lock className="w-3 h-3 text-slate-400" />}
+          </span>
+          {(['/task', '/notify', '/remind', '/schedule', '/summary'] as const).map((cmd) => (
+            <button
+              key={cmd}
+              type="button"
+              title={aiAssistantEnabled ? `Insert ${cmd}` : 'AI locked — upgrade plan'}
+              onClick={() => handleAiChipClick(cmd)}
+              className={
+                aiAssistantEnabled
+                  ? 'text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full hover:bg-indigo-100 transition-colors shadow-sm'
+                  : 'text-[11px] font-semibold text-slate-400 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-full cursor-not-allowed flex items-center gap-1'
+              }
+            >
+              {!aiAssistantEnabled && <Lock className="w-2.5 h-2.5" />}
+              {cmd}
+            </button>
+          ))}
+          {!aiAssistantEnabled && (
+            <button
+              type="button"
+              onClick={promptAiUpgrade}
+              className="text-[11px] font-bold text-blue-600 hover:text-blue-700 underline underline-offset-2 shrink-0"
+            >
+              Upgrade
+            </button>
+          )}
         </div>
 
         <input type="file" ref={fileInputRef} hidden onChange={handleFileSelect} accept="image/*" />
@@ -359,7 +405,7 @@ export const ChannelMessageInput = ({
         )}
         
         {/* --- AI COMMAND POPUP --- */}
-        {aiCommandSearch !== null && (
+        {aiAssistantEnabled && aiCommandSearch !== null && (
           <div className="absolute bottom-full mb-3 left-4 w-72 bg-white/95 backdrop-blur-md border border-slate-200/60 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden z-50 transform origin-bottom-left transition-all duration-200 ease-out">
             <div className="px-4 py-3 bg-gradient-to-r from-indigo-50/80 to-white border-b border-slate-100 flex justify-between items-center">
               <div className="flex items-center gap-2">
@@ -414,7 +460,11 @@ export const ChannelMessageInput = ({
           onKeyUp={checkFormatting}
           onMouseUp={checkFormatting}
           className="w-full resize-none px-4 py-3 min-h-[60px] max-h-[200px] text-[15px] focus:outline-none text-slate-800 bg-transparent overflow-y-auto cursor-text empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400"
-          data-placeholder="Message #channel..."
+          data-placeholder={
+            aiAssistantEnabled
+              ? 'Message #channel...'
+              : 'Message #channel... (AI commands locked on this plan)'
+          }
         />
 
         <div className="px-3 pb-3 flex items-center justify-between">

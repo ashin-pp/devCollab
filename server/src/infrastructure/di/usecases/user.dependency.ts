@@ -9,6 +9,7 @@ import { SearchUserByEmailUseCase } from "../../../application/use-cases/user/se
 import { UpdateUserProfileUseCase } from "../../../application/use-cases/user/update-user-profile.usecase";
 import { UploadProfileImageUseCase } from "../../../application/use-cases/user/upload-profile-image.usecase";
 import { VerifyEmailChangeUseCase } from "../../../application/use-cases/user/verify-email-change.usecase";
+import { SelectUserPlanUseCase } from "../../../application/use-cases/user/select-user-plan.usecase";
 
 export function registerUserUseCases() {
     container.register(USECASE_TOKENS.IChangePasswordUseCase, { useClass: ChangePasswordUseCase });
@@ -18,6 +19,7 @@ export function registerUserUseCases() {
     container.register(USECASE_TOKENS.IRequestEmailChangeUseCase, { useClass: RequestEmailChangeUseCase });
     container.register(USECASE_TOKENS.ISearchUserByEmailUseCase, { useClass: SearchUserByEmailUseCase });
     container.register(USECASE_TOKENS.IUpdateUserProfileUseCase, { useClass: UpdateUserProfileUseCase });
+    container.register(USECASE_TOKENS.ISelectUserPlanUseCase, { useClass: SelectUserPlanUseCase });
     container.register(USECASE_TOKENS.IUploadProfileImageUseCase, { useClass: UploadProfileImageUseCase });
     container.register(USECASE_TOKENS.IVerifyEmailChangeUseCase, { useClass: VerifyEmailChangeUseCase });
 }

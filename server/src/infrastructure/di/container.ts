@@ -22,6 +22,7 @@ import { PollController } from '../../presentation/controllers/poll.controller';
 import { UploadController } from '../../presentation/controllers/upload.controller';
 import { NotificationController } from '../../presentation/controllers/notification.controller';
 import { AIController } from '../../presentation/controllers/ai.controller';
+import { PlanController } from '../../presentation/controllers/plan.controller';
 
 export const authController = container.resolve(AuthController);
 export const adminController = container.resolve(AdminController);
@@ -34,6 +35,7 @@ export const pollController = container.resolve(PollController);
 export const uploadController = container.resolve(UploadController);
 export const notificationController = container.resolve(NotificationController);
 export const aiController = container.resolve(AIController);
+export const planController = container.resolve(PlanController);
 
 // 3. Resolve base services
 import { WinstonLogger } from '../services/winston-logger.service';

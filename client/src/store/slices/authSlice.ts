@@ -1,6 +1,12 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 import type { User, AuthState } from '../../types/auth.types';
+import {
+  clearAdminSession,
+  clearUserSession,
+  markAdminSession,
+  markUserSession,
+} from '../../utils/sessionHint';
 
 const initialState: AuthState = {
   user: null,
@@ -19,8 +25,18 @@ const authSlice = createSlice({
       state.user = action.payload.user;
       state.accessToken = action.payload.accessToken;
       state.isAuthenticated = true;
+      if (action.payload.user.role === 'admin') {
+        markAdminSession();
+      } else {
+        markUserSession();
+      }
     },
     logout: (state) => {
+      if (state.user?.role === 'admin') {
+        clearAdminSession();
+      } else {
+        clearUserSession();
+      }
       state.user = null;
       state.accessToken = null;
       state.isAuthenticated = false;

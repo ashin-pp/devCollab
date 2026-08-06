@@ -1,5 +1,6 @@
 import { Hash, Lock, ChevronDown, Users, Settings, LogOut, Star } from 'lucide-react';
 import Swal from 'sweetalert2';
+import toast from 'react-hot-toast';
 import { ChannelService } from '../../../api/workspace/channel.service';
 import type { ChannelHeaderProps } from '../../../types/component.types';
 
@@ -17,8 +18,22 @@ export const ChannelHeader = ({
   onCloseThread,
   setIsSettingsModalOpen,
   navigate,
-  openAiDashboard
+  openAiDashboard,
+  aiAssistantEnabled = true,
 }: ChannelHeaderProps) => {
+  const handleAiClick = (tab: 'tasks' | 'reminders' | 'notifications' | 'schedule') => {
+    if (!aiAssistantEnabled) {
+      toast.error('AI Assistant is locked on this workspace plan. Upgrade to enable it.');
+      navigate('/billing');
+      return;
+    }
+    openAiDashboard(tab);
+  };
+
+  const aiChipClass = aiAssistantEnabled
+    ? 'px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-semibold rounded-md border border-blue-100 flex items-center gap-1 cursor-pointer hover:bg-blue-200 transition-colors'
+    : 'px-2 py-0.5 bg-slate-100 text-slate-400 text-xs font-semibold rounded-md border border-slate-200 flex items-center gap-1 cursor-not-allowed opacity-80';
+
   return (
     <header className="h-14 border-b border-slate-200 flex items-center justify-between px-6 shrink-0 bg-white">
       <div className="flex items-center gap-3">
@@ -141,16 +156,40 @@ export const ChannelHeader = ({
       {isChannelMember && (
       <div className="flex items-center gap-6">
         <div className="hidden md:flex items-center gap-2">
-          <button onClick={() => openAiDashboard('tasks')} className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-semibold rounded-md border border-blue-100 flex items-center gap-1 cursor-pointer hover:bg-blue-200 transition-colors">
+          <button
+            type="button"
+            title={aiAssistantEnabled ? 'AI tasks' : 'AI locked — upgrade plan'}
+            onClick={() => handleAiClick('tasks')}
+            className={aiChipClass}
+          >
+            {aiAssistantEnabled ? null : <Lock className="w-3 h-3" />}
             /task <span className="w-4 h-4 rounded-full bg-red-500 text-white flex items-center justify-center text-[9px]">3</span>
           </button>
-          <button onClick={() => openAiDashboard('notifications')} className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-semibold rounded-md border border-blue-100 cursor-pointer hover:bg-blue-200 transition-colors">
+          <button
+            type="button"
+            title={aiAssistantEnabled ? 'AI notifications' : 'AI locked — upgrade plan'}
+            onClick={() => handleAiClick('notifications')}
+            className={aiChipClass}
+          >
+            {aiAssistantEnabled ? null : <Lock className="w-3 h-3" />}
             /notify
           </button>
-          <button onClick={() => openAiDashboard('reminders')} className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-semibold rounded-md border border-blue-100 flex items-center gap-1 cursor-pointer hover:bg-blue-200 transition-colors">
+          <button
+            type="button"
+            title={aiAssistantEnabled ? 'AI reminders' : 'AI locked — upgrade plan'}
+            onClick={() => handleAiClick('reminders')}
+            className={aiChipClass}
+          >
+            {aiAssistantEnabled ? null : <Lock className="w-3 h-3" />}
             /remind <span className="w-4 h-4 rounded-full bg-orange-500 text-white flex items-center justify-center text-[9px]">5</span>
           </button>
-          <button onClick={() => openAiDashboard('schedule')} className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-semibold rounded-md border border-blue-100 cursor-pointer hover:bg-blue-200 transition-colors">
+          <button
+            type="button"
+            title={aiAssistantEnabled ? 'AI schedule' : 'AI locked — upgrade plan'}
+            onClick={() => handleAiClick('schedule')}
+            className={aiChipClass}
+          >
+            {aiAssistantEnabled ? null : <Lock className="w-3 h-3" />}
             /schedule
           </button>
         </div>

@@ -65,6 +65,14 @@ export const USECASE_TOKENS = {
     IGetUserNotificationsUseCase: 'IGetUserNotificationsUseCase',
     IMarkNotificationReadUseCase: 'IMarkNotificationReadUseCase',
 
+    // Plan
+    IGetPlansUseCase: 'IGetPlansUseCase',
+    IGetAllPlansUseCase: 'IGetAllPlansUseCase',
+    ICreatePlanUseCase: 'ICreatePlanUseCase',
+    IUpdatePlanUseCase: 'IUpdatePlanUseCase',
+    IDeletePlanUseCase: 'IDeletePlanUseCase',
+    ITogglePlanStatusUseCase: 'ITogglePlanStatusUseCase',
+
     // Poll
     IClosePollUseCase: 'IClosePollUseCase',
     ICreatePollUseCase: 'ICreatePollUseCase',
@@ -81,6 +89,7 @@ export const USECASE_TOKENS = {
     IRequestEmailChangeUseCase: 'IRequestEmailChangeUseCase',
     ISearchUserByEmailUseCase: 'ISearchUserByEmailUseCase',
     IUpdateUserProfileUseCase: 'IUpdateUserProfileUseCase',
+    ISelectUserPlanUseCase: 'ISelectUserPlanUseCase',
     IUploadProfileImageUseCase: 'IUploadProfileImageUseCase',
     IVerifyEmailChangeUseCase: 'IVerifyEmailChangeUseCase',
 

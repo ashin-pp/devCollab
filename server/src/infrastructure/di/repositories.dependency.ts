@@ -14,6 +14,7 @@ import { NotificationRepository } from '../database/repositories/notification.re
 import { AITaskRepository } from '../database/repositories/ai-task.repository';
 import { AIReminderRepository } from '../database/repositories/ai-reminder.repository';
 import { AIChatRepository } from '../database/repositories/ai-chat.repository';
+import { PlanRepository } from '../database/repositories/plan.repository';
 import { REPOSITORY_TOKENS } from "./repository.tokens";
 
 export function registerRepositories() {
@@ -32,4 +33,5 @@ export function registerRepositories() {
     container.registerSingleton(REPOSITORY_TOKENS.IAITaskRepository, AITaskRepository);
     container.registerSingleton(REPOSITORY_TOKENS.IAIReminderRepository, AIReminderRepository);
     container.registerSingleton(REPOSITORY_TOKENS.IAIChatRepository, AIChatRepository);
+    container.registerSingleton(REPOSITORY_TOKENS.IPlanRepository, PlanRepository);
 }

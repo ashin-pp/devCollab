@@ -2,6 +2,7 @@ import { inject, injectable } from 'tsyringe';
 import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
 import type { IWorkspaceMemberRepository } from "../../../application/interfaces/repositories/workspace-member.repository.interface";
 import type { IWorkspaceRepository } from "../../../application/interfaces/repositories/workspace.repository.interface";
+import type { IPlanEntitlementService } from "../../interfaces/services/plan-entitlement.service.interface";
 import type { ICreateNotificationUseCase } from "../../interfaces/use-cases/notification/create-notification.usecase.interface";
 import { WorkspaceMember } from "../../../domain/entities/workspace-member.entity";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
@@ -15,6 +16,7 @@ import { JoinWorkspaceRequestDto } from "../../dtos/workspace/request/join-works
 import { WorkspaceMemberResponseDto } from "../../dtos/workspace/response/workspace-member.response.dto";
 import { IJoinWorkspaceUseCase } from "../../interfaces/use-cases/workspace/join-workspace.usecase.interface";
 import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
+import { SERVICE_TOKENS } from "../../../infrastructure/di/service.tokens";
 import { USECASE_TOKENS } from "../../../infrastructure/di/usecase.tokens";
 
 @injectable()
@@ -23,13 +25,16 @@ export class JoinWorkspaceUseCase implements IJoinWorkspaceUseCase {
         @inject(REPOSITORY_TOKENS.IWorkspaceRepository) private _workspaceRepository: IWorkspaceRepository,
         @inject(REPOSITORY_TOKENS.IWorkspaceMemberRepository) private _workspaceMemberRepository: IWorkspaceMemberRepository,
         @inject(REPOSITORY_TOKENS.IUserRepository) private _userRepository: IUserRepository,
-        @inject(USECASE_TOKENS.ICreateNotificationUseCase) private _createNotificationUseCase: ICreateNotificationUseCase
+        @inject(USECASE_TOKENS.ICreateNotificationUseCase) private _createNotificationUseCase: ICreateNotificationUseCase,
+        @inject(SERVICE_TOKENS.IPlanEntitlementService) private _planEntitlementService: IPlanEntitlementService
     ) { }
 
     async execute(payload: JoinWorkspaceRequestDto): Promise<WorkspaceMemberResponseDto> {
         if (!payload.inviteCode || !payload.userId) {
             throw new AppError(ErrorMessage.INVITE_CODE_REQUIRED, HttpStatusCode.BAD_REQUEST);
         }
+
+        await this._planEntitlementService.resolveForUserId(payload.userId);
 
         const workspace = await this._workspaceRepository.findByInviteCode(payload.inviteCode);
 
@@ -41,8 +46,15 @@ export class JoinWorkspaceUseCase implements IJoinWorkspaceUseCase {
             throw new AppError(ErrorMessage.WORKSPACE_INACTIVE, HttpStatusCode.FORBIDDEN);
         }
 
+        const ownerEntitlement = await this._planEntitlementService.resolveForUserId(workspace.createdBy);
+        const effectiveMaxMembers = Math.min(
+            workspace.maxMembers,
+            ownerEntitlement.plan.maxMembersPerWorkspace
+        );
+
         const currentMembersCount = await this._workspaceMemberRepository.countMembersInWorkspace(workspace.id);
         workspace.setCurrentMemberCount(currentMembersCount);
+        workspace.maxMembers = effectiveMaxMembers;
 
         if (!workspace.canAddMember()) {
             throw new AppError(ErrorMessage.WORKSPACE_FULL, HttpStatusCode.BAD_REQUEST);
@@ -77,7 +89,6 @@ export class JoinWorkspaceUseCase implements IJoinWorkspaceUseCase {
         const pendingEmails = workspace.pendingInviteEmails ?? [];
         const hasPendingEmailInvite = !!userEmail && pendingEmails.includes(userEmail);
 
-        // An already-claimed email invite falls back to a normal join request rather than failing
         const initialStatus =
             hasPendingEmailInvite
                 ? (payload.isFromEmailLink ? MemberStatus.APPROVED : MemberStatus.INVITED)

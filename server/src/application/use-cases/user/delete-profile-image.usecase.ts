@@ -17,7 +17,7 @@ export class DeleteProfileImageUseCase implements IDeleteProfileImageUseCase {
         @inject(SERVICE_TOKENS.IStorageService) private _storageService: IStorageService
     ) {}
 
-    async execute(payload: {userId: string}): Promise<UserProfileResponseDto> {
+    async execute(payload: { userId: string}): Promise<UserProfileResponseDto> {
         const { userId } = payload;
         const user = await this._userRepository.findById(userId);
         if (!user) {
@@ -46,7 +46,9 @@ export class DeleteProfileImageUseCase implements IDeleteProfileImageUseCase {
             linkedin: updatedUser.linkedin,
             twitter: updatedUser.twitter,
             location: updatedUser.location,
-            title: updatedUser.title
+            title: updatedUser.title,
+            planId: updatedUser.planId ?? null,
+            subscriptionStatus: updatedUser.subscriptionStatus,
         };
     }
 }

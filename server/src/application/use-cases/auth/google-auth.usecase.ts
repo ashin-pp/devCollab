@@ -39,6 +39,7 @@ export class GoogleAuthUseCase implements IGoogleAuthUseCase {
         const { email, name, sub: googleId, picture } = googlePayload;
 
         let user = await this._userRepository.findByEmail(email);
+        let isNewUser = false;
 
         if (!user) {
             const newUser = new User(
@@ -52,6 +53,7 @@ export class GoogleAuthUseCase implements IGoogleAuthUseCase {
             newUser.isVerified = true;
 
             user = await this._userRepository.create(newUser);
+            isNewUser = true;
         } else if (!user.googleId) {
             user.googleId = googleId;
             user.isVerified = true;
@@ -78,7 +80,8 @@ export class GoogleAuthUseCase implements IGoogleAuthUseCase {
                 createdAt: user.createdAt as Date
             }, 
             accessToken, 
-            refreshToken 
+            refreshToken,
+            isNewUser,
         };
     }
 }

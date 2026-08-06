@@ -8,6 +8,7 @@ export interface CreateWorkspaceModalProps {
     onClose: () => void;
     onSuccess: (workspace: Record<string, unknown>) => void;
     existingWorkspaceNames?: string[];
+    onLimitReached?: () => void;
 }
 
 export interface CreateChannelModalProps {
@@ -114,4 +115,5 @@ export interface ChannelHeaderProps {
   setIsSettingsModalOpen: (open: boolean) => void;
   navigate: (path: string) => void;
   openAiDashboard: (tab: 'tasks' | 'reminders' | 'notifications' | 'schedule') => void;
+  aiAssistantEnabled?: boolean;
 }

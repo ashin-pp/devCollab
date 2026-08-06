@@ -10,6 +10,7 @@ import pollRoutes from "./presentation/routes/poll.routes";
 import uploadRoutes from "./presentation/routes/upload.routes";
 import notificationRoutes from "./presentation/routes/notification.routes";
 import aiRoutes from "./presentation/routes/ai.routes";
+import planRoutes from "./presentation/routes/plan.routes";
 import { errorHandler } from "./presentation/middlewares/errorHandler";
 import { SuccessMessage } from "./domain/enums/SuccessMessage";
 import { envConfig } from "./config/envConfig";
@@ -41,6 +42,7 @@ app.use("/api", dmRoutes);
 app.use("/api/polls", pollRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/plans", planRoutes);
 
 app.get("/", (req, res) => {
     const responsePayload = ApiResponse.success(SuccessMessage.API_RUNNING);

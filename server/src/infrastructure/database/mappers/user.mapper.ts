@@ -19,6 +19,8 @@ export class UserMapper implements IMapper<User, IUserModel> {
             persistence.twitter,
             persistence.location,
             persistence.title,
+            persistence.plan_id ? persistence.plan_id.toString() : persistence.plan_id === null ? null : undefined,
+            persistence.plan_selected_at ?? null,
             persistence.google_id,
             persistence.is_verified,
             (persistence.status as UserStatus) ?? UserStatus.ACTIVE,
@@ -30,7 +32,7 @@ export class UserMapper implements IMapper<User, IUserModel> {
     }
 
     toPersistence(domain: Partial<User>): Partial<IUserModel> {
-        const persistence: Partial<IUserModel> = {
+        const persistence: Record<string, unknown> = {
             name: domain.name,
             email: domain.email,
             password: domain.password,
@@ -48,6 +50,14 @@ export class UserMapper implements IMapper<User, IUserModel> {
             status: domain.status,
             last_seen: domain.lastSeen,
         };
+
+        if (domain.planId !== undefined) {
+            persistence.plan_id = domain.planId;
+        }
+
+        if (domain.planSelectedAt !== undefined) {
+            persistence.plan_selected_at = domain.planSelectedAt;
+        }
 
         return Object.fromEntries(
             Object.entries(persistence).filter(([_, value]) => value !== undefined)

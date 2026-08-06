@@ -10,6 +10,7 @@ router.use(authMiddleware);
 
 router.get("/profile", userController.getProfile);
 router.put("/profile", userController.updateProfile);
+router.put("/plan", userController.selectPlan);
 router.post("/change-password", userController.changePassword);
 router.post("/change-email/request", userController.requestEmailChange);
 router.post("/change-email/verify", userController.verifyEmailChange);

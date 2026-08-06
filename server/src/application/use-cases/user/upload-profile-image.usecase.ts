@@ -17,7 +17,7 @@ export class UploadProfileImageUseCase implements IUploadProfileImageUseCase {
         @inject(SERVICE_TOKENS.IStorageService) private _storageService: IStorageService
     ) {}
 
-    async execute(payload: {userId: string, fileBuffer: Buffer, fileName: string, contentType: string}): Promise<UserProfileResponseDto> {
+    async execute(payload: { userId: string, fileBuffer: Buffer, fileName: string, contentType: string}): Promise<UserProfileResponseDto> {
         const { userId, fileBuffer, fileName, contentType } = payload;
         const user = await this._userRepository.findById(userId);
         if (!user) {
@@ -47,7 +47,9 @@ export class UploadProfileImageUseCase implements IUploadProfileImageUseCase {
             linkedin: updatedUser.linkedin,
             twitter: updatedUser.twitter,
             location: updatedUser.location,
-            title: updatedUser.title
+            title: updatedUser.title,
+            planId: updatedUser.planId ?? null,
+            subscriptionStatus: updatedUser.subscriptionStatus,
         };
     }
 }

@@ -6,20 +6,27 @@ import type { CreateWorkspaceModalProps } from '../../types/component.types';
 import Swal from 'sweetalert2';
 import toast from 'react-hot-toast';
 import { validateWorkspaceName, validateWorkspaceTeamSize, validateWorkspaceIconFile, WORKSPACE_NAME_MAX } from '../../validation';
+import { resolveUserPlan } from '../../utils/plan-limits.utils';
+
+const isWorkspaceLimitError = (message: string) =>
+    /workspace limit/i.test(message) || /WORKSPACE_PLAN_LIMIT_REACHED/i.test(message);
 
 export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({
     isOpen,
     onClose,
     onSuccess,
     existingWorkspaceNames = [],
+    onLimitReached,
 }) => {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [logo, setLogo] = useState('');
     const [privacy, setPrivacy] = useState<'public' | 'private'>('public');
     const [teamSize, setTeamSize] = useState('');
+    const [planMemberLimit, setPlanMemberLimit] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [nameError, setNameError] = useState<string | null>(null);
+    const [teamSizeError, setTeamSizeError] = useState<string | null>(null);
 
     useEffect(() => {
         if (!isOpen) {
@@ -29,8 +36,23 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({
             setPrivacy('public');
             setTeamSize('');
             setNameError(null);
+            setTeamSizeError(null);
             setIsLoading(false);
+            setPlanMemberLimit(null);
+            return;
         }
+
+        let cancelled = false;
+        (async () => {
+            const plan = await resolveUserPlan();
+            if (!cancelled) {
+                setPlanMemberLimit(plan?.maxMembersPerWorkspace ?? null);
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
     }, [isOpen]);
 
     if (!isOpen) return null;
@@ -38,6 +60,15 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({
     const handleNameChange = (value: string) => {
         setName(value);
         setNameError(validateWorkspaceName(value, existingWorkspaceNames));
+    };
+
+    const handleTeamSizeChange = (value: string) => {
+        setTeamSize(value);
+        setTeamSizeError(
+            validateWorkspaceTeamSize(value, {
+                maxAllowed: planMemberLimit ?? undefined,
+            })
+        );
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -49,12 +80,13 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({
             return;
         }
 
-        if (teamSize) {
-            const sizeError = validateWorkspaceTeamSize(teamSize);
-            if (sizeError) {
-                toast.error(sizeError);
-                return;
-            }
+        const sizeError = validateWorkspaceTeamSize(teamSize, {
+            maxAllowed: planMemberLimit ?? undefined,
+        });
+        if (sizeError) {
+            setTeamSizeError(sizeError);
+            toast.error(sizeError);
+            return;
         }
 
         setIsLoading(true);
@@ -64,8 +96,11 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({
                 description: description.trim(),
                 logo,
                 privacy,
-                maxMembers: teamSize ? parseInt(teamSize, 10) : 50,
             };
+
+            if (teamSize.trim()) {
+                data.maxMembers = parseInt(teamSize, 10);
+            }
 
             const response = await WorkspaceService.createWorkspace(data);
 
@@ -73,10 +108,24 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({
             onSuccess(response.data);
             onClose();
         } catch (error: unknown) {
-            const err = error as { response?: { data?: { message?: string } } };
-            const message = err.response?.data?.message || 'Failed to create workspace';
+            const err = error as { response?: { data?: { message?: string; error?: { message?: string; code?: string } } } };
+            const message =
+                err.response?.data?.message ||
+                err.response?.data?.error?.message ||
+                'Failed to create workspace';
+            const errorCode = err.response?.data?.error?.code || '';
+
+            if (isWorkspaceLimitError(message) || errorCode === 'WORKSPACE_PLAN_LIMIT_REACHED') {
+                onClose();
+                onLimitReached?.();
+                return;
+            }
+
             if (/already exists/i.test(message) || /name/i.test(message)) {
                 setNameError(message);
+            }
+            if (/member/i.test(message) && /plan|limit|exceed/i.test(message)) {
+                setTeamSizeError(message);
             }
             Swal.fire('Error', message, 'error');
         } finally {
@@ -233,12 +282,29 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({
                         <input
                             type="number"
                             min={1}
-                            max={10000}
+                            max={planMemberLimit ?? undefined}
                             value={teamSize}
-                            onChange={(e) => setTeamSize(e.target.value)}
-                            placeholder="e.g. 15"
-                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            onChange={(e) => handleTeamSizeChange(e.target.value)}
+                            placeholder={
+                                planMemberLimit
+                                    ? `Max ${planMemberLimit} on your plan`
+                                    : 'e.g. 15'
+                            }
+                            aria-invalid={!!teamSizeError}
+                            className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 ${
+                                teamSizeError
+                                    ? 'border-rose-400 focus:ring-rose-500 focus:border-rose-500'
+                                    : 'border-slate-300 focus:ring-blue-500 focus:border-blue-500'
+                            }`}
                         />
+                        {teamSizeError ? (
+                            <p className="mt-1.5 text-xs font-medium text-rose-600">{teamSizeError}</p>
+                        ) : planMemberLimit ? (
+                            <p className="mt-1.5 text-[11px] text-slate-400">
+                                Your plan allows up to {planMemberLimit} members per workspace
+                                {teamSize.trim() ? '' : '. Leave empty to use the plan max.'}
+                            </p>
+                        ) : null}
                     </div>
 
                     <div className="flex items-center justify-end gap-3 pt-2">
@@ -252,7 +318,7 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({
                         </button>
                         <button
                             type="submit"
-                            disabled={isLoading || !!nameError || !name.trim()}
+                            disabled={isLoading || !!nameError || !!teamSizeError || !name.trim()}
                             className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50"
                         >
                             {isLoading ? 'Creating...' : 'Create Workspace'}

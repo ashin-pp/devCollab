@@ -14,6 +14,8 @@ export interface IUserModel extends Document {
     twitter?: string;
     location?: string;
     title?: string;
+    plan_id?: mongoose.Types.ObjectId | null;
+    plan_selected_at?: Date | null;
     google_id?: string;
     is_verified: boolean;
     status: string;
@@ -39,6 +41,8 @@ const UserSchema: Schema = new Schema({
     twitter: { type: String },
     location: { type: String },
     title: { type: String },
+    plan_id: { type: Schema.Types.ObjectId, ref: "Plan", default: null },
+    plan_selected_at: { type: Date, default: null },
     google_id: { type: String },
     is_verified: { type: Boolean, default: false },
     status: { type: String, default: "active" },

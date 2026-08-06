@@ -46,6 +46,31 @@ export class ChannelMemberRepository implements IChannelMemberRepository {
         return member ? this._mapper.toDomain(member) : null;
     }
 
+    async findInactiveByChannelAndUser(channelId: string, userId: string): Promise<ChannelMember | null> {
+        const member = await ChannelMemberModel.findOne({ channel_id: channelId, user_id: userId, is_active: false })
+            .sort({ removed_at: -1 });
+        return member ? this._mapper.toDomain(member) : null;
+    }
+
+    async reactivate(channelId: string, userId: string, status: string): Promise<ChannelMember | null> {
+        const existing = await ChannelMemberModel.findOne({
+            channel_id: channelId,
+            user_id: userId,
+            is_active: false,
+        }).sort({ removed_at: -1 });
+
+        if (!existing) {
+            return null;
+        }
+
+        existing.is_active = true;
+        existing.status = status as 'pending' | 'approved' | 'rejected' | 'blocked';
+        existing.joined_at = new Date();
+        existing.removed_at = undefined;
+        await existing.save();
+        return this._mapper.toDomain(existing);
+    }
+
     async remove(channelId: string, userId: string): Promise<boolean> {
         const result = await ChannelMemberModel.findOneAndUpdate(
             { channel_id: channelId, user_id: userId, is_active: true },

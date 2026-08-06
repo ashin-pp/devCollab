@@ -4,6 +4,7 @@ import type { IUserRepository } from "../../../application/interfaces/repositori
 import type { IWorkspaceMemberRepository } from "../../../application/interfaces/repositories/workspace-member.repository.interface";
 import type { IWorkspaceRepository } from "../../../application/interfaces/repositories/workspace.repository.interface";
 import type { IEmailService } from "../../../application/interfaces/services/email.service.interface";
+import type { IPlanEntitlementService } from "../../interfaces/services/plan-entitlement.service.interface";
 import type { ICreateNotificationUseCase } from "../../interfaces/use-cases/notification/create-notification.usecase.interface";
 import { WorkspaceMember } from "../../../domain/entities/workspace-member.entity";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
@@ -26,7 +27,8 @@ export class SendWorkspaceInviteUseCase implements ISendWorkspaceInviteUseCase {
         @inject(REPOSITORY_TOKENS.IWorkspaceMemberRepository) private _workspaceMemberRepository: IWorkspaceMemberRepository,
         @inject(REPOSITORY_TOKENS.IUserRepository) private _userRepository: IUserRepository,
         @inject(SERVICE_TOKENS.IEmailService) private _emailService: IEmailService,
-        @inject(USECASE_TOKENS.ICreateNotificationUseCase) private _createNotificationUseCase: ICreateNotificationUseCase
+        @inject(USECASE_TOKENS.ICreateNotificationUseCase) private _createNotificationUseCase: ICreateNotificationUseCase,
+        @inject(SERVICE_TOKENS.IPlanEntitlementService) private _planEntitlementService: IPlanEntitlementService
     ) {}
 
     async execute(payload: {workspaceId: string, requesterId: string, targetEmail: string}): Promise<{ success: boolean; message: string }> {
@@ -34,6 +36,8 @@ export class SendWorkspaceInviteUseCase implements ISendWorkspaceInviteUseCase {
         if (!workspaceId || !requesterId || !targetEmail) {
             throw new AppError(ErrorMessage.INVITE_FIELDS_REQUIRED, HttpStatusCode.BAD_REQUEST);
         }
+
+        await this._planEntitlementService.resolveForUserId(requesterId);
 
         const normalizedEmail = targetEmail.toLowerCase().trim();
 
@@ -49,6 +53,16 @@ export class SendWorkspaceInviteUseCase implements ISendWorkspaceInviteUseCase {
 
         if (workspace.privacy === WorkspacePrivacy.PRIVATE && requesterMember.role !== MemberRole.OWNER) {
             throw new AppError(ErrorMessage.ONLY_OWNER_CAN_INVITE_PRIVATE, HttpStatusCode.FORBIDDEN);
+        }
+
+        const ownerEntitlement = await this._planEntitlementService.resolveForUserId(workspace.createdBy);
+        const effectiveMaxMembers = Math.min(
+            workspace.maxMembers,
+            ownerEntitlement.plan.maxMembersPerWorkspace
+        );
+        const currentMembersCount = await this._workspaceMemberRepository.countMembersInWorkspace(workspace.id);
+        if (currentMembersCount >= effectiveMaxMembers) {
+            throw new AppError(ErrorMessage.WORKSPACE_FULL, HttpStatusCode.BAD_REQUEST);
         }
 
         const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
