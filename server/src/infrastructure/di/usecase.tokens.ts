@@ -65,6 +65,12 @@ export const USECASE_TOKENS = {
     IGetUserNotificationsUseCase: 'IGetUserNotificationsUseCase',
     IMarkNotificationReadUseCase: 'IMarkNotificationReadUseCase',
 
+    // Payment
+    ICreatePaymentOrderUseCase: 'ICreatePaymentOrderUseCase',
+    IVerifyPaymentUseCase: 'IVerifyPaymentUseCase',
+    IGetPaymentHistoryUseCase: 'IGetPaymentHistoryUseCase',
+    IRecordPaymentAttemptUseCase: 'IRecordPaymentAttemptUseCase',
+
     // Plan
     IGetPlansUseCase: 'IGetPlansUseCase',
     IGetAllPlansUseCase: 'IGetAllPlansUseCase',

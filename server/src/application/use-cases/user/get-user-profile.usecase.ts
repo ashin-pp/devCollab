@@ -27,6 +27,13 @@ export class GetUserProfileUseCase implements IGetUserProfileUseCase {
 
         const entitlement = await this._planEntitlementService.resolveForUser(user);
         const currentPlan = toProfilePlanSnapshot(entitlement.billingPlan);
+        const now = Date.now();
+        const paidPlanEntitlements = (user.paidPlanEntitlements ?? [])
+            .filter((item) => item.expiresAt.getTime() > now)
+            .map((item) => ({
+                planId: item.planId,
+                expiresAt: item.expiresAt.toISOString(),
+            }));
 
         return {
             id: user.id,
@@ -46,6 +53,7 @@ export class GetUserProfileUseCase implements IGetUserProfileUseCase {
             isSubscriptionExpired: entitlement.isExpired,
             subscriptionStatus: entitlement.subscriptionStatus,
             currentPlan,
+            paidPlanEntitlements,
         };
     }
 }

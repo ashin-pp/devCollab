@@ -17,4 +17,7 @@ export const envConfig = {
     
     groqApiKey: process.env.GROQ_API_KEY || "",
     geminiApiKey: process.env.GEMINI_API_KEY || "",
+
+    razorpayKeyId: process.env.RAZORPAY_KEY_ID || "",
+    razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET || "",
 };

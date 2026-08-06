@@ -19,8 +19,11 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { isAxiosError } from 'axios';
+import { useNavigate } from 'react-router-dom';
 import { UserService } from '../../api/user/user.service';
 import { PlanService, type Plan } from '../../api/plan/plan.service';
+import { isFreePlan } from '../../utils/is-free-plan';
+import { checkoutAndVerifyPlan } from '../../utils/plan-checkout';
 
 const ROLES = [
   { id: 'Developer', title: 'Developer', description: 'Coding, debugging, shipping features.', icon: Code2, accent: 'from-sky-500 to-blue-600' },
@@ -262,6 +265,7 @@ export const OnboardingEntranceOverlay = ({
 };
 
 export const OnboardingWizardModal = ({ isOpen, onComplete, initialStep = 1 }: Props) => {
+  const navigate = useNavigate();
   const [step, setStep] = useState<1 | 2>(initialStep);
   const [stepDir, setStepDir] = useState<'forward' | 'back'>('forward');
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
@@ -329,17 +333,11 @@ export const OnboardingWizardModal = ({ isOpen, onComplete, initialStep = 1 }: P
 
   if (!isOpen) return null;
 
-  const finish = async (plan?: Plan | null) => {
+  const finishWithFreePlan = async (plan: Plan) => {
     try {
-      if (plan) {
-        await UserService.selectPlan(plan.id);
-        sessionStorage.setItem('preferredPlanId', plan.id);
-        sessionStorage.setItem('preferredPlanName', plan.name);
-      } else {
-        await UserService.selectPlan(null);
-        sessionStorage.removeItem('preferredPlanId');
-        sessionStorage.removeItem('preferredPlanName');
-      }
+      await UserService.selectPlan(plan.id);
+      sessionStorage.setItem('preferredPlanId', plan.id);
+      sessionStorage.setItem('preferredPlanName', plan.name);
     } catch (err: unknown) {
       let errMsg = 'Failed to save plan';
       if (isAxiosError(err)) {
@@ -378,28 +376,52 @@ export const OnboardingWizardModal = ({ isOpen, onComplete, initialStep = 1 }: P
     }
   };
 
+  const goPaymentFailed = (plan: Plan, reason: string) => {
+    clearNeedsOnboarding();
+    onComplete();
+    const params = new URLSearchParams({
+      plan: plan.name,
+      reason,
+      next: '/billing',
+    });
+    navigate(`/billing/failed?${params.toString()}`);
+  };
+
   const handleChoosePlan = async (plan: Plan) => {
     setSelectedPlanId(plan.id);
     setIsFinishing(true);
     try {
-      await finish(plan);
-      toast.success(`${plan.name} saved to your account. Checkout with Razorpay comes next.`);
-    } catch {
-      // toast already shown in finish
+      if (isFreePlan(plan)) {
+        await finishWithFreePlan(plan);
+        toast.success(`${plan.name} is active — your free month has started.`);
+        return;
+      }
+
+      const result = await checkoutAndVerifyPlan(plan);
+      if (result.status === 'failed') {
+        goPaymentFailed(plan, result.message);
+        return;
+      }
+
+      clearNeedsOnboarding();
+      onComplete();
+      toast.success(`${plan.name} is now your plan.`);
+    } catch (err: unknown) {
+      let errMsg = 'Failed to activate plan';
+      if (isAxiosError(err)) {
+        errMsg = err.response?.data?.error?.message || err.response?.data?.message || errMsg;
+      } else if (err instanceof Error && err.message) {
+        errMsg = err.message;
+      }
+      toast.error(errMsg);
     } finally {
       setIsFinishing(false);
     }
   };
 
-  const handleSkipPlan = async () => {
-    setIsFinishing(true);
-    try {
-      await finish(null);
-    } catch {
-      // toast already shown in finish
-    } finally {
-      setIsFinishing(false);
-    }
+  const handleSkipPlan = () => {
+    toast('Keeping your free Starter plan — you can upgrade anytime from Billing.');
+    closeWithoutPlanChange();
   };
 
   const stepAnim =
@@ -442,7 +464,7 @@ export const OnboardingWizardModal = ({ isOpen, onComplete, initialStep = 1 }: P
             >
               {step === 1
                 ? 'Choose the role that best matches your day-to-day work. We use this as your profile title.'
-                : 'Start with what you need now — you can change or upgrade anytime.'}
+                : 'Free plans activate immediately. Paid plans open Razorpay checkout now.'}
             </p>
           </div>
           <button
@@ -681,12 +703,12 @@ export const OnboardingWizardModal = ({ isOpen, onComplete, initialStep = 1 }: P
                           {isPicking ? (
                             <span className="inline-flex items-center justify-center gap-2">
                               <Loader2 className="w-4 h-4 animate-spin" />
-                              Selecting…
+                              {isFreePlan(plan) ? 'Selecting…' : 'Opening checkout…'}
                             </span>
-                          ) : isPopular ? (
-                            'Get started'
+                          ) : isFreePlan(plan) ? (
+                            `Continue with ${plan.name}`
                           ) : (
-                            `Choose ${plan.name}`
+                            `Pay for ${plan.name}`
                           )}
                         </button>
                       </div>

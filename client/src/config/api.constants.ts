@@ -93,6 +93,14 @@ export const API_ENDPOINTS = {
     BASE: '/plans',
   },
 
+  // Payments
+  PAYMENTS: {
+    CREATE_ORDER: '/payments/create-order',
+    VERIFY: '/payments/verify',
+    RECORD_ATTEMPT: '/payments/record-attempt',
+    HISTORY: '/payments/history',
+  },
+
   // Poll endpoints
   POLLS: {
     CREATE: '/polls',
