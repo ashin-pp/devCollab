@@ -12,6 +12,10 @@ adminRouter.post("/reset-password", adminController.resetPassword);
 adminRouter.post("/logout", adminController.logout);
 adminRouter.get("/refresh", adminController.refresh);
 
+adminRouter.get("/dashboard", adminController.getDashboardStats);
+adminRouter.get("/sales", adminController.getSalesReport);
+adminRouter.get("/wallet", adminController.getWallet);
+
 adminRouter.get("/users", adminController.getUsers);
 adminRouter.patch("/users/:id/status", adminController.toggleUserStatus);
 

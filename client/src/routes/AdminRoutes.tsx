@@ -8,6 +8,8 @@ import { AdminUserManagementPage } from '../pages/admin/AdminUserManagementPage'
 import { AdminWorkspaceManagementPage } from '../pages/admin/AdminWorkspaceManagementPage';
 import { AdminWorkspaceMembersPage } from '../pages/admin/AdminWorkspaceMembersPage';
 import { AdminPlanManagementPage } from '../pages/admin/AdminPlanManagementPage';
+import { AdminSalesReportPage } from '../pages/admin/AdminSalesReportPage';
+import { AdminWalletPage } from '../pages/admin/AdminWalletPage';
 import { NotFoundPage } from '../pages/NotFoundPage';
 import { AdminPublicRoute } from './guards/AdminPublicRoute';
 import { AdminProtectedRoute } from './guards/AdminProtectedRoute';
@@ -30,6 +32,8 @@ export const AdminRoutes = () => {
         <Route path="workspaces" element={<AdminWorkspaceManagementPage />} />
         <Route path="workspaces/:workspaceId/members" element={<AdminWorkspaceMembersPage />} />
         <Route path="plans" element={<AdminPlanManagementPage />} />
+        <Route path="sales" element={<AdminSalesReportPage />} />
+        <Route path="wallet" element={<AdminWalletPage />} />
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />

@@ -96,4 +96,23 @@ export const AdminService = {
         const response = await api.delete(API_ENDPOINTS.ADMIN.PLAN_DETAIL(id));
         return response.data;
     },
+    getDashboardStats: async (params?: { days?: number; from?: string; to?: string }) => {
+        const response = await api.get(API_ENDPOINTS.ADMIN.DASHBOARD, { params });
+        return response.data;
+    },
+    getSalesReport: async (params?: {
+        page?: number;
+        limit?: number;
+        status?: string;
+        planName?: string;
+        from?: string;
+        to?: string;
+    }) => {
+        const response = await api.get(API_ENDPOINTS.ADMIN.SALES, { params });
+        return response.data;
+    },
+    getWallet: async (params?: { page?: number; limit?: number }) => {
+        const response = await api.get(API_ENDPOINTS.ADMIN.WALLET, { params });
+        return response.data;
+    },
 };

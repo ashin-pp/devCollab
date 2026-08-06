@@ -41,4 +41,7 @@ export const SuccessMessage = {
     PAYMENT_VERIFIED: "Payment verified and plan activated",
     PAYMENT_HISTORY_FETCHED: "Payment history fetched successfully",
     PAYMENT_ATTEMPT_RECORDED: "Payment attempt recorded",
+    ADMIN_DASHBOARD_FETCHED: "Admin dashboard stats fetched successfully",
+    ADMIN_SALES_REPORT_FETCHED: "Sales report fetched successfully",
+    ADMIN_WALLET_FETCHED: "Wallet fetched successfully",
 } as const;

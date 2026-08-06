@@ -16,6 +16,7 @@ import { AIReminderRepository } from '../database/repositories/ai-reminder.repos
 import { AIChatRepository } from '../database/repositories/ai-chat.repository';
 import { PlanRepository } from '../database/repositories/plan.repository';
 import { PaymentTransactionRepository } from '../database/repositories/payment-transaction.repository';
+import { WalletLedgerRepository } from '../database/repositories/wallet-ledger.repository';
 import { REPOSITORY_TOKENS } from "./repository.tokens";
 
 export function registerRepositories() {
@@ -36,4 +37,5 @@ export function registerRepositories() {
     container.registerSingleton(REPOSITORY_TOKENS.IAIChatRepository, AIChatRepository);
     container.registerSingleton(REPOSITORY_TOKENS.IPlanRepository, PlanRepository);
     container.registerSingleton(REPOSITORY_TOKENS.IPaymentTransactionRepository, PaymentTransactionRepository);
+    container.registerSingleton(REPOSITORY_TOKENS.IWalletLedgerRepository, WalletLedgerRepository);
 }

@@ -16,4 +16,5 @@ export interface WorkspaceDetails {
     memberCount: number;
     ownerName: string;
     ownerEmail: string;
+    ownerPlanName: string;
 }

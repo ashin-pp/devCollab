@@ -189,6 +189,7 @@ export const AdminWorkspaceManagementPage = () => {
             <thead className="text-[10px] text-slate-500 font-bold tracking-widest uppercase border-b border-[#30363d] bg-[#0d1117]">
               <tr>
                 <th className="px-6 py-4 cursor-pointer hover:text-amber-500 transition-colors" onClick={() => handleSort('name')}>WORKSPACE <SortIcon column="name" /></th>
+                <th className="px-6 py-4">OWNER_PLAN</th>
                 <th className="px-6 py-4 cursor-pointer hover:text-amber-500 transition-colors" onClick={() => handleSort('privacy')}>PRIVACY <SortIcon column="privacy" /></th>
                 <th className="px-6 py-4">MEMBERS</th>
                 <th className="px-6 py-4 cursor-pointer hover:text-amber-500 transition-colors" onClick={() => handleSort('createdAt')}>CREATED <SortIcon column="createdAt" /></th>
@@ -199,20 +200,20 @@ export const AdminWorkspaceManagementPage = () => {
             <tbody className="divide-y divide-[#30363d]">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
                     <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-amber-500" />
                     <div className="font-mono text-xs tracking-widest uppercase">FETCHING_WORKSPACE_DATA...</div>
                   </td>
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-red-500 font-mono text-xs tracking-widest uppercase">
+                  <td colSpan={7} className="px-6 py-12 text-center text-red-500 font-mono text-xs tracking-widest uppercase">
                     {error}
                   </td>
                 </tr>
               ) : workspaces.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-slate-500 font-mono text-xs tracking-widest uppercase">
+                  <td colSpan={7} className="px-6 py-12 text-center text-slate-500 font-mono text-xs tracking-widest uppercase">
                     NO_WORKSPACES_FOUND
                   </td>
                 </tr>
@@ -230,6 +231,11 @@ export const AdminWorkspaceManagementPage = () => {
                           <div className={`text-[10px] tracking-wider font-mono ${!workspace.isActive ? 'text-red-500/50' : 'text-slate-500'}`}>Owner: {workspace.ownerName}</div>
                         </div>
                       </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center px-2 py-1 rounded border border-amber-500/30 bg-amber-500/10 text-amber-400 text-[10px] font-bold tracking-widest uppercase">
+                        {workspace.ownerPlanName || 'No plan'}
+                      </span>
                     </td>
                     <td className="px-6 py-4">
                       <span className="flex items-center gap-1.5 text-slate-400 font-mono text-xs uppercase tracking-widest">

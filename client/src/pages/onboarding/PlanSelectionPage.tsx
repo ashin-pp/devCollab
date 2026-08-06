@@ -120,8 +120,13 @@ export const PlanSelectionPage = () => {
         return;
       }
 
-      afterPlanChosen(plan);
-      toast.success(`${plan.name} is now your plan.`);
+      sessionStorage.setItem('preferredPlanId', plan.id);
+      sessionStorage.setItem('preferredPlanName', plan.name);
+      const params = new URLSearchParams({
+        plan: plan.name,
+        next: '/dashboard',
+      });
+      navigate(`/billing/success?${params.toString()}`);
     } catch (err: unknown) {
       let errMsg = 'Failed to activate plan';
       if (isAxiosError(err)) {
