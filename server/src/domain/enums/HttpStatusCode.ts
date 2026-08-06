@@ -6,7 +6,10 @@ export enum HttpStatusCode {
     FORBIDDEN = 403,
     NOT_FOUND = 404,
     CONFLICT = 409,
+    PAYMENT_REQUIRED = 402,
     INTERNAL_SERVER = 500,
+    BAD_GATEWAY = 502,
+    SERVICE_UNAVAILABLE = 503,
 }
 
 

@@ -16,6 +16,11 @@ export interface IUserModel extends Document {
     title?: string;
     plan_id?: mongoose.Types.ObjectId | null;
     plan_selected_at?: Date | null;
+    paid_plan_entitlements?: Array<{
+        plan_id: mongoose.Types.ObjectId;
+        expires_at: Date;
+        payment_id?: string;
+    }>;
     google_id?: string;
     is_verified: boolean;
     status: string;
@@ -43,6 +48,17 @@ const UserSchema: Schema = new Schema({
     title: { type: String },
     plan_id: { type: Schema.Types.ObjectId, ref: "Plan", default: null },
     plan_selected_at: { type: Date, default: null },
+    paid_plan_entitlements: {
+        type: [
+            {
+                plan_id: { type: Schema.Types.ObjectId, ref: "Plan", required: true },
+                expires_at: { type: Date, required: true },
+                payment_id: { type: String },
+                _id: false,
+            },
+        ],
+        default: [],
+    },
     google_id: { type: String },
     is_verified: { type: Boolean, default: false },
     status: { type: String, default: "active" },

@@ -33,4 +33,9 @@ export interface UserProfileResponseDto {
     subscriptionStatus?: string;
     /** Effective plan (includes soft-deleted / starter fallback). */
     currentPlan?: ProfilePlanSnapshotDto | null;
+    /** Paid plans the user can switch to without paying again. */
+    paidPlanEntitlements?: Array<{
+        planId: string;
+        expiresAt: string;
+    }>;
 }

@@ -5,6 +5,7 @@ import { registerChannelUseCases } from "./channel.dependency";
 import { registerChatUseCases } from "./chat.dependency";
 import { registerDmUseCases } from "./dm.dependency";
 import { registerNotificationUseCases } from "./notification.dependency";
+import { registerPaymentUseCases } from "./payment.dependency";
 import { registerPlanUseCases } from "./plan.dependency";
 import { registerPollUseCases } from "./poll.dependency";
 import { registerUserUseCases } from "./user.dependency";
@@ -18,6 +19,7 @@ export function registerAllUseCases() {
     registerChatUseCases();
     registerDmUseCases();
     registerNotificationUseCases();
+    registerPaymentUseCases();
     registerPlanUseCases();
     registerPollUseCases();
     registerUserUseCases();

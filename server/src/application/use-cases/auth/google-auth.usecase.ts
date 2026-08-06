@@ -1,4 +1,5 @@
 import { inject, injectable } from 'tsyringe';
+import type { IPlanRepository } from "../../../application/interfaces/repositories/plan.repository.interface";
 import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
 import type { IJwtService } from "../../../application/interfaces/services/jwt.service.interface";
 import { User } from "../../../domain/entities/user.entity";
@@ -6,6 +7,7 @@ import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { UserStatus } from "../../../domain/enums/UserStatus";
 import { AppError } from "../../../domain/errors/AppError";
+import { assignStarterTrial } from "../../helpers/assign-starter-trial";
 import { GoogleAuthRequestDto } from "../../dtos/auth/request/google-auth.dto";
 import { AuthResponseDto } from "../../dtos/auth/response/auth.response.dto";
 import { IGoogleAuthUseCase } from "../../interfaces/use-cases/auth/google-auth.usecase.interface";
@@ -16,6 +18,7 @@ import { SERVICE_TOKENS } from "../../../infrastructure/di/service.tokens";
 export class GoogleAuthUseCase implements IGoogleAuthUseCase {
     constructor(
         @inject(REPOSITORY_TOKENS.IUserRepository) private _userRepository: IUserRepository,
+        @inject(REPOSITORY_TOKENS.IPlanRepository) private _planRepository: IPlanRepository,
         @inject(SERVICE_TOKENS.IJwtService) private _jwtService: IJwtService
     ) {}
 
@@ -51,6 +54,7 @@ export class GoogleAuthUseCase implements IGoogleAuthUseCase {
 
             newUser.googleId = googleId;
             newUser.isVerified = true;
+            await assignStarterTrial(newUser, this._planRepository);
 
             user = await this._userRepository.create(newUser);
             isNewUser = true;

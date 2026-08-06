@@ -89,9 +89,7 @@ export class PlanEntitlementService implements IPlanEntitlementService {
         planExpiresAt.setDate(planExpiresAt.getDate() + Math.max(1, plan.durationDays || 1));
 
         const status = this.mapPlanNameToStatus(plan.name);
-        const isStarterNamed = plan.name.toLowerCase().includes(SubscriptionStatus.STARTER);
-        // Starter is the free fallback — do not soft-lock chat or create flows on its cycle.
-        const isExpired = isStarterNamed ? false : Date.now() > planExpiresAt.getTime();
+        const isExpired = Date.now() > planExpiresAt.getTime();
 
         return {
             plan,

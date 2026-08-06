@@ -15,4 +15,5 @@ export const REPOSITORY_TOKENS = {
     INotificationRepository: 'INotificationRepository',
     IPollRepository: 'IPollRepository',
     IPlanRepository: 'IPlanRepository',
+    IPaymentTransactionRepository: 'IPaymentTransactionRepository',
 } as const;

@@ -37,4 +37,8 @@ export const SuccessMessage = {
     PLAN_STATUS_UPDATED: "Plan status updated successfully",
     PLAN_DELETED: "Plan deleted successfully",
     PLAN_SELECTED: "Plan selected successfully",
+    PAYMENT_ORDER_CREATED: "Payment order created successfully",
+    PAYMENT_VERIFIED: "Payment verified and plan activated",
+    PAYMENT_HISTORY_FETCHED: "Payment history fetched successfully",
+    PAYMENT_ATTEMPT_RECORDED: "Payment attempt recorded",
 } as const;

@@ -104,10 +104,21 @@ export const ErrorMessage = {
     PLAN_INACTIVE: "This plan is not currently available",
     CANNOT_DELETE_STARTER_PLAN: "The Starter plan cannot be deleted because it is the fallback for expired or unassigned users.",
     STARTER_PLAN_NOT_CONFIGURED: "Starter plan is not configured. Please contact support.",
+    FREE_TRIAL_ENDED: "Your free Starter month has ended. Upgrade to a paid plan to continue.",
     SUBSCRIPTION_EXPIRED: "Your subscription has expired. Renew or upgrade your plan to continue.",
     VIDEO_CALLS_DISABLED: "Video calls are not available on your current plan. Upgrade to enable them.",
     WORKSPACE_PLAN_LIMIT_REACHED: "Your plan's workspace limit has been reached. Upgrade to create more workspaces.",
     WORKSPACE_MEMBER_PLAN_LIMIT: "Max members cannot exceed your plan limit. Upgrade to increase the member cap.",
     WORKSPACE_MAX_MEMBERS_BELOW_CURRENT: "Max members cannot be lower than the current number of members.",
     AI_ASSISTANT_DISABLED: "AI Assistant is not available on your current plan. Upgrade to enable it.",
+
+    // Payments
+    PAYMENT_NOT_CONFIGURED: "Payment gateway is not configured. Please contact support.",
+    FREE_PLAN_NO_PAYMENT: "Free plans do not require payment. Select the plan instead.",
+    PAYMENT_REQUIRED: "Payment is required to activate this plan.",
+    PLAN_ALREADY_ENTITLED: "You already have an active entitlement for this plan. Switch to it from billing.",
+    PAYMENT_ORDER_FAILED: "Failed to create payment order. Please try again.",
+    PAYMENT_SIGNATURE_INVALID: "Payment verification failed. Signature mismatch.",
+    PAYMENT_ORDER_MISMATCH: "Payment order does not match this plan or user.",
+    PAYMENT_VERIFY_FAILED: "Payment verification failed. Please try again or contact support.",
 } as const;

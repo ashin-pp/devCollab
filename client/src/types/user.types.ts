@@ -50,4 +50,8 @@ export interface UserProfile {
   isSubscriptionExpired?: boolean;
   subscriptionStatus?: string;
   currentPlan?: ProfilePlanSnapshot | null;
+  paidPlanEntitlements?: Array<{
+    planId: string;
+    expiresAt: string;
+  }>;
 }

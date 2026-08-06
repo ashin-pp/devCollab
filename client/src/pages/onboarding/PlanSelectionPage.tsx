@@ -12,6 +12,8 @@ import { isAxiosError } from 'axios';
 import { PlanService, type Plan } from '../../api/plan/plan.service';
 import { UserService } from '../../api/user/user.service';
 import { pathAfterAuth } from '../../utils/pendingInvite';
+import { isFreePlan } from '../../utils/is-free-plan';
+import { checkoutAndVerifyPlan } from '../../utils/plan-checkout';
 
 const formatPrice = (plan: Plan) => {
   const symbol = plan.currency === 'INR' ? '₹' : plan.currency === 'USD' ? '$' : `${plan.currency} `;
@@ -82,26 +84,9 @@ export const PlanSelectionPage = () => {
     return 0;
   }, [plans.length]);
 
-  const finish = async (chosenPlan?: Plan | null) => {
-    try {
-      if (chosenPlan) {
-        await UserService.selectPlan(chosenPlan.id);
-        sessionStorage.setItem('preferredPlanId', chosenPlan.id);
-        sessionStorage.setItem('preferredPlanName', chosenPlan.name);
-      } else {
-        await UserService.selectPlan(null);
-        sessionStorage.removeItem('preferredPlanId');
-        sessionStorage.removeItem('preferredPlanName');
-      }
-    } catch (err: unknown) {
-      let errMsg = 'Failed to save plan';
-      if (isAxiosError(err)) {
-        errMsg = err.response?.data?.error?.message || err.response?.data?.message || errMsg;
-      }
-      toast.error(errMsg);
-      throw err;
-    }
-
+  const afterPlanChosen = (plan: Plan) => {
+    sessionStorage.setItem('preferredPlanId', plan.id);
+    sessionStorage.setItem('preferredPlanName', plan.name);
     if (fromCreateWorkspace) {
       navigate('/dashboard?createWorkspace=1');
       return;
@@ -109,29 +94,52 @@ export const PlanSelectionPage = () => {
     navigate(pathAfterAuth());
   };
 
+  const goPaymentFailed = (plan: Plan, reason: string) => {
+    const params = new URLSearchParams({
+      plan: plan.name,
+      reason,
+      next: '/billing',
+    });
+    navigate(`/billing/failed?${params.toString()}`);
+  };
+
   const handleChoose = async (plan: Plan) => {
     setSelectedId(plan.id);
     setIsContinuing(true);
     try {
-      await finish(plan);
-      toast.success(`${plan.name} saved to your account. Checkout with Razorpay comes next.`);
-    } catch {
-      // toast already shown
+      if (isFreePlan(plan)) {
+        await UserService.selectPlan(plan.id);
+        afterPlanChosen(plan);
+        toast.success(`${plan.name} is active — your free month has started.`);
+        return;
+      }
+
+      const result = await checkoutAndVerifyPlan(plan);
+      if (result.status === 'failed') {
+        goPaymentFailed(plan, result.message);
+        return;
+      }
+
+      afterPlanChosen(plan);
+      toast.success(`${plan.name} is now your plan.`);
+    } catch (err: unknown) {
+      let errMsg = 'Failed to activate plan';
+      if (isAxiosError(err)) {
+        errMsg = err.response?.data?.error?.message || err.response?.data?.message || errMsg;
+      }
+      toast.error(errMsg);
     } finally {
       setIsContinuing(false);
     }
   };
 
-  const handleSkip = async () => {
-    setIsContinuing(true);
-    try {
-      await finish(null);
-      toast('You can choose a plan anytime from Plans & Billing.');
-    } catch {
-      // toast already shown
-    } finally {
-      setIsContinuing(false);
+  const handleSkip = () => {
+    toast('Keeping your free Starter plan — you can upgrade anytime from Billing.');
+    if (fromCreateWorkspace) {
+      navigate('/dashboard?createWorkspace=1');
+      return;
     }
+    navigate(pathAfterAuth());
   };
 
   return (
@@ -254,7 +262,7 @@ export const PlanSelectionPage = () => {
                         : 'bg-white border border-slate-300 hover:bg-slate-50 text-slate-800'
                     }`}
                   >
-                    {isPopular ? 'Complete Setup' : `Choose ${plan.name}`}
+                    {isFreePlan(plan) ? `Continue with ${plan.name}` : `Pay for ${plan.name}`}
                   </button>
                 </div>
               );
