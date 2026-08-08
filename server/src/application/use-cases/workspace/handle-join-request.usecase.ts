@@ -5,6 +5,8 @@ import type { IPlanEntitlementService } from "../../interfaces/services/plan-ent
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { MemberStatus } from "../../../domain/enums/MemberStatus";
+import { NotificationTitle } from "../../../domain/enums/NotificationMessage";
+import { SuccessMessage } from "../../../domain/enums/SuccessMessage";
 import { AppError } from "../../../domain/errors/AppError";
 import { WorkspaceMemberResponseDto } from "../../dtos/workspace/response/workspace-member.response.dto";
 
@@ -24,9 +26,6 @@ export class HandleJoinRequestUseCase implements IHandleJoinRequestUseCase {
 
     async execute(payload: {workspaceId: string, requestUserId: string, action: 'approve' | 'reject', targetUserId: string}): Promise<WorkspaceMemberResponseDto | { message: string }> {
         const { workspaceId, requestUserId, action, targetUserId } = payload;
-        if (!workspaceId || !targetUserId || !action) {
-            throw new AppError(ErrorMessage.MISSING_REQUIRED_FIELDS, HttpStatusCode.BAD_REQUEST);
-        }
 
         await this._planEntitlementService.resolveForUserId(requestUserId);
 
@@ -67,7 +66,7 @@ export class HandleJoinRequestUseCase implements IHandleJoinRequestUseCase {
                 await this._createNotificationUseCase.execute({
                     userId: targetUserId,
                     type: 'JOIN_REQUEST_APPROVED',
-                    title: 'Join Request Approved',
+                    title: NotificationTitle.JOIN_REQUEST_APPROVED,
                     message: `Your request to join the workspace "${workspace.name}" has been approved.`,
                     relatedId: workspaceId
                 });
@@ -81,11 +80,9 @@ export class HandleJoinRequestUseCase implements IHandleJoinRequestUseCase {
                 status: updatedMember!.status,
                 joinedAt: updatedMember!.joinedAt as Date
             };
-        } else if (action === 'reject') {
-            await this._workspaceMemberRepository.remove(workspaceId, targetUserId);
-            return { message: "Request rejected successfully" };
         } else {
-            throw new AppError(ErrorMessage.INVALID_ACTION, HttpStatusCode.BAD_REQUEST);
+            await this._workspaceMemberRepository.remove(workspaceId, targetUserId);
+            return { message: SuccessMessage.JOIN_REQUEST_REJECTED };
         }
     }
 }

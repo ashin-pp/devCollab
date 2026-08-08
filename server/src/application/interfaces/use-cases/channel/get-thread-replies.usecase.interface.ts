@@ -1,9 +1,9 @@
-import { Message } from "../../../../domain/entities/message.entity";
+import { ThreadRepliesResponseDto } from "../../../dtos/channel/response/message.response.dto";
 
 export interface IGetThreadRepliesUseCase {
     execute(payload: {
         threadRootId: string;
         channelId: string;
         viewerId: string;
-    }): Promise<{ rootMessage: Message; replies: Message[] }>;
+    }): Promise<ThreadRepliesResponseDto>;
 }

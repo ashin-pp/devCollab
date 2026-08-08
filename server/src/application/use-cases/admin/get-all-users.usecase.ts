@@ -21,50 +21,62 @@ export class GetAllUsersUseCase implements IGetAllUsersUseCase {
         const page = params.page || 1;
         const limit = params.limit || 10;
         
-        const query: Record<string, unknown> = {};
+        const andConditions: Record<string, unknown>[] = [];
+
         if (params.search) {
-            query.$or = [
-                { name: { $regex: params.search, $options: 'i' } },
-                { email: { $regex: params.search, $options: 'i' } }
-            ];
+            andConditions.push({
+                $or: [
+                    { name: { $regex: params.search, $options: 'i' } },
+                    { email: { $regex: params.search, $options: 'i' } }
+                ]
+            });
         }
         
-        if (params.filter) {
-            if (params.filter === 'active') {
-                query.status = 'active';
-            } else if (params.filter === 'blocked') {
-                query.status = 'blocked';
-            }
+        if (params.filter === 'active') {
+            andConditions.push({ status: 'active' });
+        } else if (params.filter === 'blocked') {
+            andConditions.push({ status: 'blocked' });
         }
+
+        if (params.planId === 'none') {
+            andConditions.push({
+                $or: [{ plan_id: null }, { plan_id: { $exists: false } }]
+            });
+        } else if (params.planId) {
+            andConditions.push({ plan_id: params.planId });
+        }
+
+        const query: Record<string, unknown> =
+            andConditions.length > 0 ? { $and: andConditions } : {};
         
         let sort: Record<string, 1 | -1> | undefined;
         if (params.sortBy) {
-            sort = { [params.sortBy]: params.sortOrder === 'desc' ? -1 : 1 };
+            const sortField =
+                params.sortBy === 'createdAt' ? 'created_at'
+                : params.sortBy === 'status' ? 'status'
+                : params.sortBy === 'name' ? 'name'
+                : params.sortBy;
+            sort = { [sortField]: params.sortOrder === 'desc' ? -1 : 1 };
         } else {
-            sort = { createdAt: -1 };
+            sort = { created_at: -1 };
         }
 
         const { data, total } = await this._userRepository.findPaginated(query, page, limit, sort);
-        const planNameById = new Map<string, string>();
+        const planNameById = await this.buildPlanNameMap();
 
-        const users = await Promise.all(
-            data.map(async (user) => {
-                const planName = await this.resolvePlanName(user.planId, planNameById);
-                return {
-                    id: user.id,
-                    name: user.name,
-                    email: user.email,
-                    profileImage: user.profileImage,
-                    status: user.status,
-                    subscriptionStatus: user.subscriptionStatus,
-                    isVerified: user.isVerified,
-                    planId: user.planId,
-                    planName,
-                    createdAt: user.createdAt,
-                    lastSeen: user.lastSeen,
-                };
-            })
-        );
+        const users = data.map((user) => ({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            profileImage: user.profileImage,
+            status: user.status,
+            subscriptionStatus: user.subscriptionStatus,
+            isVerified: user.isVerified,
+            planId: user.planId ?? null,
+            planName: this.resolvePlanName(user.planId, planNameById),
+            createdAt: user.createdAt,
+            lastSeen: user.lastSeen,
+        }));
         
         return {
             data: users,
@@ -75,17 +87,22 @@ export class GetAllUsersUseCase implements IGetAllUsersUseCase {
         };
     }
 
-    private async resolvePlanName(
-        planId: string | null | undefined,
-        cache: Map<string, string>
-    ): Promise<string> {
-        if (!planId) return 'No plan';
-        const cached = cache.get(planId);
-        if (cached) return cached;
+    private async buildPlanNameMap(): Promise<Map<string, string>> {
+        const plans = await this._planRepository.findAll();
+        const map = new Map<string, string>();
+        for (const plan of plans) {
+            if (plan.id) {
+                map.set(plan.id, plan.name.trim() || 'Unknown plan');
+            }
+        }
+        return map;
+    }
 
-        const plan = await this._planRepository.findById(planId);
-        const name = plan?.name?.trim() || 'Unknown plan';
-        cache.set(planId, name);
-        return name;
+    private resolvePlanName(
+        planId: string | null | undefined,
+        planNameById: Map<string, string>
+    ): string {
+        if (!planId) return 'No plan';
+        return planNameById.get(planId) ?? 'Unknown plan';
     }
 }

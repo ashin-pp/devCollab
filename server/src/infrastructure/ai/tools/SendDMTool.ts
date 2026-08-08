@@ -23,7 +23,7 @@ export const createSendDMTool = (
                 const conversation = await startConversationUseCase.execute(workspaceId, userId, userId);
                 
                 // Send DM
-                await sendDirectMessageUseCase.execute(conversation.id as string, userId, content, MessageType.TEXT);
+                await sendDirectMessageUseCase.execute(conversation.id as string, userId, content, MessageType.AI);
                 
                 return "Successfully sent the summary to the user's DM.";
             } catch (error) {

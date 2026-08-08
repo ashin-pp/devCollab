@@ -437,7 +437,7 @@ export const WorkspaceChannelPage = () => {
                senderId: 'ai-system',
                senderName: 'Agentic AI',
                content: aiResponse,
-               messageType: 'text',
+               messageType: 'ai',
                createdAt: new Date().toISOString()
              };
              setMessages(prev => [...prev, systemMsg]);

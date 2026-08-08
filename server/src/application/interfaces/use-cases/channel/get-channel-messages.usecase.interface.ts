@@ -1,4 +1,4 @@
-import { Message } from "../../../../domain/entities/message.entity";
+import { MessageResponseDto } from "../../../dtos/channel/response/message.response.dto";
 
 export interface IGetChannelMessagesUseCase {
     execute(payload: {
@@ -6,5 +6,5 @@ export interface IGetChannelMessagesUseCase {
         page?: number;
         limit?: number;
         viewerId: string;
-    }): Promise<Message[]>;
+    }): Promise<MessageResponseDto[]>;
 }

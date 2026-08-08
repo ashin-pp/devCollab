@@ -26,7 +26,7 @@ export class UnblockChannelMemberUseCase implements IUnblockChannelMemberUseCase
         }
 
         if (channel.privacy !== 'public') {
-            throw new AppError("Blocking/Unblocking members is only supported in public channels.", HttpStatusCode.BAD_REQUEST);
+            throw new AppError(ErrorMessage.CHANNEL_BLOCK_PUBLIC_ONLY, HttpStatusCode.BAD_REQUEST);
         }
 
         const isCreator = channel.createdBy === requesterId;
@@ -38,7 +38,7 @@ export class UnblockChannelMemberUseCase implements IUnblockChannelMemberUseCase
         }
 
         if (!isCreator && !isWorkspaceOwner) {
-            throw new AppError("Only the channel creator or workspace owner can unblock members.", HttpStatusCode.FORBIDDEN);
+            throw new AppError(ErrorMessage.CHANNEL_UNBLOCK_PERMISSION, HttpStatusCode.FORBIDDEN);
         }
 
         const targetMember = await this._channelMemberRepository.findByChannelAndUser(channelId, memberId);
@@ -47,7 +47,7 @@ export class UnblockChannelMemberUseCase implements IUnblockChannelMemberUseCase
             // Restore the user to approved status so they reappear in the members list
             await this._channelMemberRepository.updateStatus(channelId, memberId, ChannelMemberStatus.APPROVED);
         } else {
-            throw new AppError("User is not a member of this channel.", HttpStatusCode.NOT_FOUND);
+            throw new AppError(ErrorMessage.CHANNEL_MEMBER_NOT_FOUND, HttpStatusCode.NOT_FOUND);
         }
     }
 }

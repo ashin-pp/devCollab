@@ -19,10 +19,20 @@ import type { PaymentTransactionStatus } from "../../domain/types/payment-transa
 import { envConfig } from "../../config/envConfig";
 import { AppConstants } from "../../domain/constants";
 import { HttpStatusCode } from "../../domain/enums/HttpStatusCode";
+import { Role } from "../../domain/enums/Role";
 import { SuccessMessage } from "../../domain/enums/SuccessMessage";
 import { USECASE_TOKENS } from "../../infrastructure/di/usecase.tokens";
 import { ApiResponse } from "../http/helpers/implementation/apiResponse";
 import { catchAsync } from "../utils/catch-async";
+import type {
+    adminDashboardQuerySchema,
+    adminSalesQuerySchema,
+    adminUsersQuerySchema,
+    adminWalletQuerySchema,
+    adminWorkspaceMembersQuerySchema,
+    adminWorkspacesQuerySchema,
+} from "../validators/admin.schema";
+import type { z } from "zod";
 
 @injectable()
 export class AdminController {
@@ -62,7 +72,7 @@ export class AdminController {
                 admin: {
                   id: admin.id,
                   email: admin.email,
-                  role: 'admin'
+                  role: Role.ADMIN
                 }, 
                 accessToken 
               });
@@ -104,7 +114,7 @@ export class AdminController {
                 admin: {
                   id: admin.id,
                   email: admin.email,
-                  role: 'admin'
+                  role: Role.ADMIN
                 }, 
                 accessToken 
               });
@@ -112,14 +122,16 @@ export class AdminController {
         })
 
   public getUsers = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        const page = parseInt(req.query.page as string) || 1;
-        const limit = parseInt(req.query.limit as string) || AppConstants.DEFAULT_PAGE_LIMIT;
-        const search = req.query.search as string;
-        const filter = req.query.filter as string;
-        const sortBy = req.query.sortBy as string;
-        const sortOrder = req.query.sortOrder as 'asc' | 'desc';
+        const query = req.query as unknown as z.infer<typeof adminUsersQuerySchema>;
+        const page = query.page ?? 1;
+        const limit = query.limit ?? AppConstants.DEFAULT_PAGE_LIMIT;
+        const search = query.search;
+        const filter = query.filter;
+        const planId = query.planId;
+        const sortBy = query.sortBy;
+        const sortOrder = query.sortOrder;
 
-        const users = await this._getAllUsersUseCase.execute({ page, limit, search, filter, sortBy, sortOrder });
+        const users = await this._getAllUsersUseCase.execute({ page, limit, search, filter, planId, sortBy, sortOrder });
         const response = ApiResponse.success(SuccessMessage.USERS_FETCHED, users);
         res.status(HttpStatusCode.OK).json(response);
         })
@@ -132,14 +144,16 @@ export class AdminController {
         })
 
   public getWorkspaces = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        const page = parseInt(req.query.page as string) || 1;
-        const limit = parseInt(req.query.limit as string) || AppConstants.DEFAULT_PAGE_LIMIT;
-        const search = req.query.search as string;
-        const filter = req.query.filter as string;
-        const sortBy = req.query.sortBy as string;
-        const sortOrder = req.query.sortOrder as 'asc' | 'desc';
+        const query = req.query as unknown as z.infer<typeof adminWorkspacesQuerySchema>;
+        const page = query.page ?? 1;
+        const limit = query.limit ?? AppConstants.DEFAULT_PAGE_LIMIT;
+        const search = query.search;
+        const filter = query.filter;
+        const planId = query.planId;
+        const sortBy = query.sortBy;
+        const sortOrder = query.sortOrder;
 
-        const workspaces = await this._getAllWorkspacesUseCase.execute({ params: { page, limit, search, filter, sortBy, sortOrder } });
+        const workspaces = await this._getAllWorkspacesUseCase.execute({ params: { page, limit, search, filter, planId, sortBy, sortOrder } });
         const response = ApiResponse.success(SuccessMessage.WORKSPACES_FETCHED, workspaces);
         res.status(HttpStatusCode.OK).json(response);
         })
@@ -148,18 +162,19 @@ export class AdminController {
         const id = req.params.id as string;
         const { isActive } = req.body;
         await this._adminToggleWorkspaceStatusUseCase.execute({ workspaceId: id, isActive });
-        const response = ApiResponse.success(`Workspace status changed to ${isActive ? 'active' : 'deactivated'}`);
+        const response = ApiResponse.success(SuccessMessage.WORKSPACE_STATUS_UPDATED);
         res.status(HttpStatusCode.OK).json(response);
         })
 
   public getWorkspaceMembers = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         const workspaceId = req.params.id as string;
-        const page = parseInt(req.query.page as string) || 1;
-        const limit = parseInt(req.query.limit as string) || AppConstants.DEFAULT_PAGE_LIMIT;
-        const search = req.query.search as string;
-        const filter = req.query.filter as string;
-        const sortBy = req.query.sortBy as string;
-        const sortOrder = req.query.sortOrder as 'asc' | 'desc';
+        const query = req.query as unknown as z.infer<typeof adminWorkspaceMembersQuerySchema>;
+        const page = query.page ?? 1;
+        const limit = query.limit ?? AppConstants.DEFAULT_PAGE_LIMIT;
+        const search = query.search;
+        const filter = query.filter;
+        const sortBy = query.sortBy;
+        const sortOrder = query.sortOrder;
 
         const members = await this._adminGetWorkspaceMembersUseCase.execute({ workspaceId, params: { page, limit, search, filter, sortBy, sortOrder } });
         const response = ApiResponse.success(SuccessMessage.WORKSPACE_MEMBERS_FETCHED, members);
@@ -170,46 +185,42 @@ export class AdminController {
         const { workspaceId, userId } = req.params;
         const { status } = req.body;
         await this._adminUpdateWorkspaceMemberStatusUseCase.execute({ workspaceId: workspaceId as string, userId: userId as string, status });
-        const response = ApiResponse.success(`Member status updated to ${status}`);
+        const response = ApiResponse.success(SuccessMessage.MEMBER_STATUS_UPDATED);
         res.status(HttpStatusCode.OK).json(response);
         })
 
   public getDashboardStats = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        const days = parseInt(req.query.days as string, 10);
-        const from = req.query.from as string | undefined;
-        const to = req.query.to as string | undefined;
+        const query = req.query as unknown as z.infer<typeof adminDashboardQuerySchema>;
         const stats = await this._getAdminDashboardStatsUseCase.execute({
-            days: Number.isFinite(days) ? days : undefined,
-            from,
-            to,
+            days: query.days,
+            from: query.from,
+            to: query.to,
         });
         const response = ApiResponse.success(SuccessMessage.ADMIN_DASHBOARD_FETCHED, stats);
         res.status(HttpStatusCode.OK).json(response);
         })
 
   public getSalesReport = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        const page = parseInt(req.query.page as string, 10) || 1;
-        const limit = parseInt(req.query.limit as string, 10) || AppConstants.DEFAULT_PAGE_LIMIT;
-        const status = req.query.status as PaymentTransactionStatus | undefined;
-        const planName = req.query.planName as string | undefined;
-        const from = req.query.from as string | undefined;
-        const to = req.query.to as string | undefined;
+        const query = req.query as unknown as z.infer<typeof adminSalesQuerySchema>;
+        const page = query.page ?? 1;
+        const limit = query.limit ?? AppConstants.DEFAULT_PAGE_LIMIT;
 
         const report = await this._getAdminSalesReportUseCase.execute({
             page,
             limit,
-            status,
-            planName,
-            from,
-            to,
+            status: query.status as PaymentTransactionStatus | undefined,
+            planName: query.planName,
+            from: query.from,
+            to: query.to,
         });
         const response = ApiResponse.success(SuccessMessage.ADMIN_SALES_REPORT_FETCHED, report);
         res.status(HttpStatusCode.OK).json(response);
         })
 
   public getWallet = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        const page = parseInt(req.query.page as string, 10) || 1;
-        const limit = parseInt(req.query.limit as string, 10) || AppConstants.DEFAULT_PAGE_LIMIT;
+        const query = req.query as unknown as z.infer<typeof adminWalletQuerySchema>;
+        const page = query.page ?? 1;
+        const limit = query.limit ?? AppConstants.DEFAULT_PAGE_LIMIT;
         const wallet = await this._getAdminWalletUseCase.execute({ page, limit });
         const response = ApiResponse.success(SuccessMessage.ADMIN_WALLET_FETCHED, wallet);
         res.status(HttpStatusCode.OK).json(response);

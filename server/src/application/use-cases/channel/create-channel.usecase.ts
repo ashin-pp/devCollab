@@ -10,7 +10,7 @@ import { CreateChannelRequestDto } from "../../dtos/channel/request/create-chann
 import { ChannelResponseDto } from "../../dtos/channel/response/channel.response.dto";
 import { ICreateChannelUseCase } from "../../interfaces/use-cases/channel/create-channel.usecase.interface";
 import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
-import { isValidChannelName, normalizeChannelName } from "../../../shared/utils/name-validation.util";
+import { normalizeChannelName } from "../../../shared/utils/name-validation.util";
 
 @injectable()
 export class CreateChannelUseCase implements ICreateChannelUseCase {
@@ -21,19 +21,7 @@ export class CreateChannelUseCase implements ICreateChannelUseCase {
 
     async execute(payload: CreateChannelRequestDto): Promise<ChannelResponseDto> {
         const { workspaceId, description, createdBy, privacy } = payload;
-        const name = normalizeChannelName(payload.name ?? '');
-
-        if (!name) {
-            throw new AppError(ErrorMessage.CHANNEL_NAME_EMPTY, HttpStatusCode.BAD_REQUEST);
-        }
-
-        if (!isValidChannelName(name)) {
-            throw new AppError(ErrorMessage.CHANNEL_NAME_INVALID, HttpStatusCode.BAD_REQUEST);
-        }
-
-        if (!workspaceId || !createdBy) {
-            throw new AppError(ErrorMessage.INVALID_CHANNEL_PARAMS, HttpStatusCode.BAD_REQUEST);
-        }
+        const name = normalizeChannelName(payload.name);
 
         const existing = await this._channelRepository.findByWorkspaceAndName(workspaceId, name);
         if (existing) {

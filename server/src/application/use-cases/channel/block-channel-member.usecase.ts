@@ -28,7 +28,7 @@ export class BlockChannelMemberUseCase implements IBlockChannelMemberUseCase {
         }
 
         if (channel.privacy !== 'public') {
-            throw new AppError("Blocking members is only supported in public channels.", HttpStatusCode.BAD_REQUEST);
+            throw new AppError(ErrorMessage.CHANNEL_BLOCK_PUBLIC_ONLY, HttpStatusCode.BAD_REQUEST);
         }
 
         const isCreator = channel.createdBy === requesterId;
@@ -40,11 +40,11 @@ export class BlockChannelMemberUseCase implements IBlockChannelMemberUseCase {
         }
 
         if (!isCreator && !isWorkspaceOwner) {
-            throw new AppError("Only the channel creator or workspace owner can block members.", HttpStatusCode.FORBIDDEN);
+            throw new AppError(ErrorMessage.CHANNEL_BLOCK_PERMISSION, HttpStatusCode.FORBIDDEN);
         }
 
         if (memberId === requesterId) {
-            throw new AppError("You cannot block yourself from the channel.", HttpStatusCode.BAD_REQUEST);
+            throw new AppError(ErrorMessage.CANNOT_BLOCK_SELF_FROM_CHANNEL, HttpStatusCode.BAD_REQUEST);
         }
 
         const targetMember = await this._channelMemberRepository.findByChannelAndUser(channelId, memberId);
@@ -63,7 +63,7 @@ export class BlockChannelMemberUseCase implements IBlockChannelMemberUseCase {
                 removedBy: requestUser?.name || 'Admin'
             };
         } else {
-            throw new AppError("User is not a member of this channel.", HttpStatusCode.NOT_FOUND);
+            throw new AppError(ErrorMessage.CHANNEL_MEMBER_NOT_FOUND, HttpStatusCode.NOT_FOUND);
         }
     }
 }

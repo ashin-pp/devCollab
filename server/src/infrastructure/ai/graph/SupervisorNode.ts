@@ -24,7 +24,8 @@ function routeFromSlashCommand(text: string): AgentName | null {
     const match = cleaned.match(/^(?:@\S+\s+)*\/(task|notify|remind|schedule|summary)\b/i);
     if (!match) return null;
 
-    switch (match[1].toLowerCase()) {
+    const command = match[1]?.toLowerCase();
+    switch (command) {
         case "task":
             return "TaskAgent";
         case "notify":

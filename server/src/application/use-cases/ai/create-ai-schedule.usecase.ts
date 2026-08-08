@@ -7,6 +7,7 @@ import type {
 } from "../../interfaces/use-cases/ai/create-ai-schedule.usecase.interface";
 import type { ICreateAIReminderUseCase } from "../../interfaces/use-cases/ai/create-ai-reminder.usecase.interface";
 import type { ICreateNotificationUseCase } from "../../interfaces/use-cases/notification/create-notification.usecase.interface";
+import { NotificationTitle } from "../../../domain/enums/NotificationMessage";
 import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 import { USECASE_TOKENS } from "../../../infrastructure/di/usecase.tokens";
 
@@ -64,13 +65,13 @@ export class CreateAIScheduleUseCase implements ICreateAIScheduleUseCase {
             this._createNotificationUseCase.execute({
                 userId: dto.organizerId,
                 type: "GENERAL",
-                title: "Meeting scheduled",
+                title: NotificationTitle.MEETING_SCHEDULED,
                 message: notifyMessage,
             }),
             this._createNotificationUseCase.execute({
                 userId: dto.participantId,
                 type: "GENERAL",
-                title: "Meeting scheduled",
+                title: NotificationTitle.MEETING_SCHEDULED,
                 message: notifyMessage,
             }),
         ]);

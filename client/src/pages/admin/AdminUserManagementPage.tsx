@@ -1,6 +1,6 @@
 import { AdminLayout } from '../../layouts/AdminLayout';
-import { Search, ChevronDown, SlidersHorizontal, ChevronLeft, ChevronRight, Users, Activity, Ban, Loader2, User as UserIcon, ArrowUp, ArrowDown } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Search, ChevronDown, SlidersHorizontal, ChevronLeft, ChevronRight, Users, Activity, Ban, User as UserIcon, ArrowUp, ArrowDown } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AdminService } from '../../api/admin/admin.service';
 import toast from 'react-hot-toast';
@@ -8,17 +8,22 @@ import { isAxiosError } from 'axios';
 import Swal from 'sweetalert2';
 
 import type { User } from '../../types/auth.types';
+import { AdminDataTable, type AdminDataTableColumn } from '../../components/admin/AdminDataTable';
+
+type PlanOption = { id: string; name: string };
 
 export const AdminUserManagementPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [users, setUsers] = useState<User[]>([]);
+  const [plans, setPlans] = useState<PlanOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchParams.get('search') || '');
   const [filterStatus, setFilterStatus] = useState(searchParams.get('filter') || 'ALL'); // ALL, ACTIVE, BLOCKED
+  const [filterPlanId, setFilterPlanId] = useState(searchParams.get('planId') || 'ALL');
   
   const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1'));
   const [sortBy, setSortBy] = useState(searchParams.get('sortBy') || 'createdAt');
@@ -34,6 +39,24 @@ export const AdminUserManagementPage = () => {
     return () => clearTimeout(handler);
   }, [searchTerm]);
 
+  useEffect(() => {
+    const loadPlans = async () => {
+      try {
+        const response = await AdminService.getPlans();
+        const data = response.data ?? [];
+        const list = Array.isArray(data) ? data : [];
+        setPlans(
+          list
+            .filter((plan: PlanOption) => plan?.id && plan?.name)
+            .map((plan: PlanOption) => ({ id: plan.id, name: plan.name }))
+        );
+      } catch {
+        // Plan filter options are optional; table still works without them.
+      }
+    };
+    loadPlans();
+  }, []);
+
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
@@ -46,6 +69,7 @@ export const AdminUserManagementPage = () => {
         limit: itemsPerPage,
         search: debouncedSearchTerm || undefined,
         filter: filterQuery,
+        planId: filterPlanId === 'ALL' ? undefined : filterPlanId,
         sortBy,
         sortOrder
       });
@@ -75,7 +99,7 @@ export const AdminUserManagementPage = () => {
 
   useEffect(() => {
     fetchUsers();
-  }, [currentPage, debouncedSearchTerm, filterStatus, sortBy, sortOrder]);
+  }, [currentPage, debouncedSearchTerm, filterStatus, filterPlanId, sortBy, sortOrder]);
 
   // Sync state to URL
   useEffect(() => {
@@ -83,10 +107,11 @@ export const AdminUserManagementPage = () => {
     if (currentPage > 1) params.set('page', currentPage.toString());
     if (debouncedSearchTerm) params.set('search', debouncedSearchTerm);
     if (filterStatus !== 'ALL') params.set('filter', filterStatus);
+    if (filterPlanId !== 'ALL') params.set('planId', filterPlanId);
     if (sortBy !== 'createdAt') params.set('sortBy', sortBy);
     if (sortOrder !== 'desc') params.set('sortOrder', sortOrder);
     setSearchParams(params, { replace: true });
-  }, [currentPage, debouncedSearchTerm, filterStatus, sortBy, sortOrder, setSearchParams]);
+  }, [currentPage, debouncedSearchTerm, filterStatus, filterPlanId, sortBy, sortOrder, setSearchParams]);
 
   const handleSort = (column: string) => {
     if (sortBy === column) {
@@ -138,7 +163,92 @@ export const AdminUserManagementPage = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearchTerm, filterStatus]);
+  }, [debouncedSearchTerm, filterStatus, filterPlanId]);
+
+  const columns = useMemo<AdminDataTableColumn<User>[]>(
+    () => [
+      {
+        id: 'user',
+        header: (
+          <span className="cursor-pointer hover:text-amber-500 transition-colors" onClick={() => handleSort('name')}>
+            USER <SortIcon column="name" />
+          </span>
+        ),
+        cell: (user) => (
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 bg-slate-800 rounded border ${user.isBlocked ? 'border-red-500/30 text-red-500/50' : 'border-[#30363d] text-slate-500'} flex items-center justify-center shrink-0 relative`}>
+              {user.isBlocked && <div className="absolute inset-0 bg-red-500/20 z-10"></div>}
+              <UserIcon className="w-5 h-5 z-20" />
+            </div>
+            <div>
+              <div className={`font-bold text-sm ${user.isBlocked ? 'text-red-200' : 'text-white'}`}>{user.name}</div>
+              <div className={`text-[10px] tracking-wider font-mono ${user.isBlocked ? 'text-red-500/50' : 'text-slate-500'}`}>{user.email}</div>
+            </div>
+          </div>
+        ),
+      },
+      {
+        id: 'plan',
+        header: 'PLAN',
+        cell: (user) => (
+          <span className="inline-flex items-center px-2 py-1 rounded border border-amber-500/30 bg-amber-500/10 text-amber-400 text-[10px] font-bold tracking-widest uppercase">
+            {user.planName || 'No plan'}
+          </span>
+        ),
+      },
+      {
+        id: 'joinDate',
+        header: (
+          <span className="cursor-pointer hover:text-amber-500 transition-colors" onClick={() => handleSort('createdAt')}>
+            JOIN DATE <SortIcon column="createdAt" />
+          </span>
+        ),
+        cellClassName: 'font-mono text-xs text-slate-400',
+        cell: (user) =>
+          user.createdAt
+            ? new Date(user.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '_').toUpperCase()
+            : 'N/A',
+      },
+      {
+        id: 'lastActive',
+        header: 'LAST ACTIVE',
+        cellClassName: 'font-mono text-xs text-slate-300 font-bold',
+        cell: (user) => (user.isVerified ? 'VERIFIED' : 'PENDING'),
+      },
+      {
+        id: 'status',
+        header: (
+          <span className="cursor-pointer hover:text-amber-500 transition-colors" onClick={() => handleSort('status')}>
+            STATUS <SortIcon column="status" />
+          </span>
+        ),
+        cell: (user) => (
+          <span className={`flex items-center gap-2 text-xs font-bold tracking-wider ${user.isBlocked ? 'text-red-400' : 'text-emerald-500'}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${user.isBlocked ? 'bg-red-500' : 'bg-emerald-500'}`}></span>
+            {user.isBlocked ? 'BLOCKED' : 'ACTIVE'}
+          </span>
+        ),
+      },
+      {
+        id: 'actions',
+        header: 'ACTIONS',
+        headerClassName: 'text-right',
+        cellClassName: 'text-right',
+        cell: (user) => (
+          <button
+            onClick={() => handleToggleStatus(user.id, !!user.isBlocked)}
+            className={`text-[10px] font-bold px-3 py-1.5 rounded transition-colors uppercase tracking-widest ${user.isBlocked
+              ? 'text-black bg-amber-500 hover:bg-amber-400 border border-amber-500'
+              : 'text-slate-400 border border-[#30363d] hover:bg-[#30363d]'
+              }`}
+          >
+            {user.isBlocked ? 'UNBLOCK' : 'BLOCK'}
+          </button>
+        ),
+      },
+    ],
+    [sortBy, sortOrder, users]
+  );
 
   return (
     <AdminLayout>
@@ -152,157 +262,7 @@ export const AdminUserManagementPage = () => {
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <div className="flex-1 relative">
-          <Search className="w-4 h-4 text-slate-500 absolute left-4 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Search users by name, email, or ID..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-[#161b22] border border-[#30363d] text-white pl-11 pr-4 py-3 rounded-md focus:outline-none focus:border-amber-500 text-sm font-sans"
-          />
-        </div>
-        <div className="flex gap-4">
-          <div className="relative">
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="appearance-none bg-[#161b22] border border-[#30363d] text-white pl-4 pr-10 py-3 rounded-md focus:outline-none focus:border-amber-500 text-sm font-bold tracking-wider cursor-pointer h-full"
-            >
-              <option value="ALL">ALL USERS</option>
-              <option value="ACTIVE">ACTIVE ONLY</option>
-              <option value="BLOCKED">BLOCKED ONLY</option>
-            </select>
-            <ChevronDown className="w-4 h-4 text-slate-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-          </div>
-          <button className="bg-[#161b22] border border-[#30363d] text-slate-400 hover:text-amber-500 hover:border-amber-500/50 p-3 rounded-md transition-colors flex items-center justify-center">
-            <SlidersHorizontal className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      <div className="bg-[#161b22] border border-[#30363d] rounded-lg overflow-hidden mb-8">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="text-[10px] text-slate-500 font-bold tracking-widest uppercase border-b border-[#30363d] bg-[#0d1117]">
-              <tr>
-                <th className="px-6 py-4 cursor-pointer hover:text-amber-500 transition-colors" onClick={() => handleSort('name')}>USER <SortIcon column="name" /></th>
-                <th className="px-6 py-4">PLAN</th>
-                <th className="px-6 py-4 cursor-pointer hover:text-amber-500 transition-colors" onClick={() => handleSort('createdAt')}>JOIN DATE <SortIcon column="createdAt" /></th>
-                <th className="px-6 py-4">LAST ACTIVE</th>
-                <th className="px-6 py-4 cursor-pointer hover:text-amber-500 transition-colors" onClick={() => handleSort('status')}>STATUS <SortIcon column="status" /></th>
-                <th className="px-6 py-4 text-right">ACTIONS</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#30363d]">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
-                    <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-amber-500" />
-                    <div className="font-mono text-xs tracking-widest uppercase">FETCHING_USER_DATA...</div>
-                  </td>
-                </tr>
-              ) : error ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-red-500 font-mono text-xs tracking-widest uppercase">
-                    {error}
-                  </td>
-                </tr>
-              ) : users.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-slate-500 font-mono text-xs tracking-widest uppercase">
-                    NO_USERS_FOUND
-                  </td>
-                </tr>
-              ) : (
-                users.map(user => (
-                  <tr key={user.id} className={`hover:bg-[#0d1117]/50 transition-colors group ${user.isBlocked ? 'bg-red-500/5' : ''}`}>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 bg-slate-800 rounded border ${user.isBlocked ? 'border-red-500/30 text-red-500/50' : 'border-[#30363d] text-slate-500'} flex items-center justify-center shrink-0 relative`}>
-                          {user.isBlocked && <div className="absolute inset-0 bg-red-500/20 z-10"></div>}
-                          <UserIcon className="w-5 h-5 z-20" />
-                        </div>
-                        <div>
-                          <div className={`font-bold text-sm ${user.isBlocked ? 'text-red-200' : 'text-white'}`}>{user.name}</div>
-                          <div className={`text-[10px] tracking-wider font-mono ${user.isBlocked ? 'text-red-500/50' : 'text-slate-500'}`}>{user.email}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center px-2 py-1 rounded border border-amber-500/30 bg-amber-500/10 text-amber-400 text-[10px] font-bold tracking-widest uppercase">
-                        {user.planName || 'No plan'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 font-mono text-xs text-slate-400">
-                      {user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '_').toUpperCase() : 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 font-mono text-xs text-slate-300 font-bold">
-                      {user.isVerified ? 'VERIFIED' : 'PENDING'}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`flex items-center gap-2 text-xs font-bold tracking-wider ${user.isBlocked ? 'text-red-400' : 'text-emerald-500'}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${user.isBlocked ? 'bg-red-500' : 'bg-emerald-500'}`}></span>
-                        {user.isBlocked ? 'BLOCKED' : 'ACTIVE'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() => handleToggleStatus(user.id, !!user.isBlocked)}
-                        className={`text-[10px] font-bold px-3 py-1.5 rounded transition-colors uppercase tracking-widest ${user.isBlocked
-                          ? 'text-black bg-amber-500 hover:bg-amber-400 border border-amber-500'
-                          : 'text-slate-400 border border-[#30363d] hover:bg-[#30363d]'
-                          }`}
-                      >
-                        {user.isBlocked ? 'UNBLOCK' : 'BLOCK'}
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="bg-[#0d1117] border-t border-[#30363d] p-4 flex items-center justify-between">
-          <div className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
-            DISPLAYING: [ {totalUsers === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, totalUsers)} ] OF {totalUsers} ENTRIES
-          </div>
-          <div className="flex gap-1">
-            <button
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="w-8 h-8 flex items-center justify-center text-slate-500 border border-[#30363d] rounded hover:bg-[#30363d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-              <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`w-8 h-8 flex items-center justify-center font-bold rounded border ${currentPage === page
-                  ? 'bg-amber-500 text-black border-amber-500'
-                  : 'text-slate-400 border-[#30363d] hover:bg-[#30363d] transition-colors'
-                  }`}
-              >
-                {page}
-              </button>
-            ))}
-
-            <button
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages || totalPages === 0}
-              className="w-8 h-8 flex items-center justify-center text-slate-500 border border-[#30363d] rounded hover:bg-[#30363d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <div className="bg-[#161b22] border border-[#30363d] p-6 rounded-lg relative overflow-hidden group">
           <div className="absolute top-4 right-4 text-[#30363d] group-hover:text-slate-700 transition-colors">
             <Users className="w-8 h-8" />
@@ -327,6 +287,100 @@ export const AdminUserManagementPage = () => {
           <div className="text-3xl font-bold text-white tracking-wider">{blockedUsers}</div>
         </div>
       </div>
+
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="flex-1 relative">
+          <Search className="w-4 h-4 text-slate-500 absolute left-4 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder="Search users by name, email, or ID..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-[#161b22] border border-[#30363d] text-white pl-11 pr-4 py-3 rounded-md focus:outline-none focus:border-amber-500 text-sm font-sans"
+          />
+        </div>
+        <div className="flex gap-4 flex-wrap">
+          <div className="relative">
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="appearance-none bg-[#161b22] border border-[#30363d] text-white pl-4 pr-10 py-3 rounded-md focus:outline-none focus:border-amber-500 text-sm font-bold tracking-wider cursor-pointer h-full"
+            >
+              <option value="ALL">ALL USERS</option>
+              <option value="ACTIVE">ACTIVE ONLY</option>
+              <option value="BLOCKED">BLOCKED ONLY</option>
+            </select>
+            <ChevronDown className="w-4 h-4 text-slate-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+          <div className="relative">
+            <select
+              value={filterPlanId}
+              onChange={(e) => setFilterPlanId(e.target.value)}
+              className="appearance-none bg-[#161b22] border border-[#30363d] text-white pl-4 pr-10 py-3 rounded-md focus:outline-none focus:border-amber-500 text-sm font-bold tracking-wider cursor-pointer h-full min-w-[10rem]"
+            >
+              <option value="ALL">ALL PLANS</option>
+              {plans.map((plan) => (
+                <option key={plan.id} value={plan.id}>
+                  {plan.name.toUpperCase()}
+                </option>
+              ))}
+              <option value="none">NO PLAN</option>
+            </select>
+            <ChevronDown className="w-4 h-4 text-slate-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+          <button className="bg-[#161b22] border border-[#30363d] text-slate-400 hover:text-amber-500 hover:border-amber-500/50 p-3 rounded-md transition-colors flex items-center justify-center">
+            <SlidersHorizontal className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      <AdminDataTable
+        columns={columns}
+        rows={users}
+        getRowKey={(user) => user.id}
+        isLoading={isLoading}
+        error={error}
+        loadingMessage="FETCHING_USER_DATA..."
+        emptyMessage="NO_USERS_FOUND"
+        rowClassName={(user) => (user.isBlocked ? 'group bg-red-500/5' : 'group')}
+        footer={
+          <div className="p-4 flex items-center justify-between">
+            <div className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+              DISPLAYING: [ {totalUsers === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, totalUsers)} ] OF {totalUsers} ENTRIES
+            </div>
+            <div className="flex gap-1">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="w-8 h-8 flex items-center justify-center text-slate-500 border border-[#30363d] rounded hover:bg-[#30363d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-8 h-8 flex items-center justify-center font-bold rounded border ${currentPage === page
+                    ? 'bg-amber-500 text-black border-amber-500'
+                    : 'text-slate-400 border-[#30363d] hover:bg-[#30363d] transition-colors'
+                    }`}
+                >
+                  {page}
+                </button>
+              ))}
+
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages || totalPages === 0}
+                className="w-8 h-8 flex items-center justify-center text-slate-500 border border-[#30363d] rounded hover:bg-[#30363d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        }
+      />
 
     </AdminLayout>
   );

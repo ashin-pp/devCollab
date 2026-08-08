@@ -15,7 +15,7 @@ function resolveConfigDir(): string {
   for (const dir of candidates) {
     if (fs.existsSync(path.join(dir, 'credentials.json'))) return dir;
   }
-  return candidates[0];
+  return candidates[0] as string;
 }
 
 const CONFIG_DIR = resolveConfigDir();
@@ -29,7 +29,7 @@ function createOAuthClient(): OAuth2Client {
     client_id,
     client_secret,
     redirect_uris?.[0] || 'http://localhost:3000'
-  );
+  ) as unknown as OAuth2Client;
 }
 
 function persistToken(tokens: Record<string, unknown>): void {

@@ -78,6 +78,9 @@ export const createScheduleTool = (
                 const organizer = userRepository
                     ? await userRepository.findById(organizerId)
                     : null;
+                const participantUser = userRepository
+                    ? await userRepository.findById(participant.id)
+                    : null;
 
                 const authClient = await GoogleAuthService.authorize();
                 const calendar = google.calendar({ version: "v3", auth: authClient as any });
@@ -91,7 +94,7 @@ export const createScheduleTool = (
                         description: "1:1 video call scheduled via DevCollab AI Assistant",
                         start: { dateTime: start.toISOString(), timeZone },
                         end: { dateTime: endsAt.toISOString(), timeZone },
-                        attendees: [organizer?.email, participant.email]
+                        attendees: [organizer?.email, participantUser?.email]
                             .filter(Boolean)
                             .map((email) => ({ email: email as string })),
                         conferenceData: {
@@ -113,7 +116,6 @@ export const createScheduleTool = (
                     const fetched = await calendar.events.get({
                         calendarId: "primary",
                         eventId: googleEventId,
-                        conferenceDataVersion: 1,
                     });
                     meetLink = extractMeetLink(fetched.data);
                 }

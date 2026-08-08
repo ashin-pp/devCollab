@@ -3,6 +3,7 @@ import * as schedule from "node-schedule";
 import { inject, injectable } from 'tsyringe';
 import type { IAIReminderRepository } from "../../../application/interfaces/repositories/ai-reminder.repository.interface";
 import { AIReminder } from "../../../domain/entities/ai-reminder.entity";
+import { NotificationTitle } from "../../../domain/enums/NotificationMessage";
 import type { IChannelRepository } from "../../../application/interfaces/repositories/channel.repository.interface";
 import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
 import { ICreateAIReminderUseCase } from "../../interfaces/use-cases/ai/create-ai-reminder.usecase.interface";
@@ -48,7 +49,7 @@ export class CreateAIReminderUseCase implements ICreateAIReminderUseCase {
                 await this._createNotificationUseCase.execute({
                     userId: data.userId,
                     type: 'GENERAL',
-                    title: 'AI Reminder',
+                    title: NotificationTitle.AI_REMINDER,
                     message: finalMessage
                 });
 

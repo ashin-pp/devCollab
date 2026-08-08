@@ -4,6 +4,8 @@ import { ChevronDown, MessageSquare } from 'lucide-react';
 import type { ChannelMessageListProps } from '../../../types/component.types';
 import { renderMessageContent } from '../../../utils/renderMessageContent';
 import { getMessageId } from '../../../utils/message.utils';
+import { isAgentMessage } from '../../../utils/agentMessage.utils';
+import { AgentReplyCard } from '../shared/AgentReplyCard';
 
 const NEAR_BOTTOM_PX = 100;
 
@@ -235,6 +237,28 @@ export const ChannelMessageList = ({
               <div key={messageId} id={`channel-msg-${messageId}`} className="flex justify-center my-3">
                 <div className="text-slate-400 text-xs text-center px-3 py-1 font-medium bg-slate-50/80 rounded-full border border-slate-100">
                   {msg.content}
+                </div>
+              </div>
+            );
+          }
+
+          if (isAgentMessage(msg)) {
+            return (
+              <div key={messageId} id={`channel-msg-${messageId}`}>
+                {isFirstUnread && (
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="h-px bg-red-200 flex-1" />
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-red-500">
+                      New messages
+                    </span>
+                    <div className="h-px bg-red-200 flex-1" />
+                  </div>
+                )}
+                <div className="flex justify-start">
+                  <AgentReplyCard
+                    content={msg.content}
+                    timestamp={msg.createdAt ? format(new Date(msg.createdAt), 'h:mm a') : 'Now'}
+                  />
                 </div>
               </div>
             );

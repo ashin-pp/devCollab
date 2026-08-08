@@ -33,10 +33,7 @@ export class CreatePaymentOrderUseCase implements ICreatePaymentOrderUseCase {
             throw new AppError(ErrorMessage.USER_NOT_FOUND, HttpStatusCode.NOT_FOUND);
         }
 
-        const planId = payload.data.planId?.trim();
-        if (!planId) {
-            throw new AppError(ErrorMessage.MISSING_REQUIRED_FIELDS, HttpStatusCode.BAD_REQUEST);
-        }
+        const planId = payload.data.planId.trim();
 
         const plan = await this._planRepository.findById(planId);
         if (!plan || !plan.id) {

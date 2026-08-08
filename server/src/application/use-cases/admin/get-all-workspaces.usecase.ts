@@ -26,33 +26,48 @@ export class GetAllWorkspacesUseCase implements IGetAllWorkspacesUseCase {
         const page = params.page || 1;
         const limit = params.limit || 10;
         
-        const query: Record<string, unknown> = {};
+        const andConditions: Record<string, unknown>[] = [];
+
         if (params.search) {
-            query.name = { $regex: params.search, $options: 'i' };
+            andConditions.push({ name: { $regex: params.search, $options: 'i' } });
         }
 
-        if (params.filter) {
-            if (params.filter === 'active') {
-                query.is_active = true;
-            } else if (params.filter === 'deactivated') {
-                query.is_active = false;
-            }
+        if (params.filter === 'active') {
+            andConditions.push({ is_active: true });
+        } else if (params.filter === 'deactivated') {
+            andConditions.push({ is_active: false });
         }
+
+        if (params.planId === 'none' || params.planId) {
+            const ownerIds = await this.findOwnerIdsByPlan(params.planId);
+            if (ownerIds.length === 0) {
+                return { data: [], total: 0, page, limit, totalPages: 0 };
+            }
+            andConditions.push({ created_by: { $in: ownerIds } });
+        }
+
+        const query: Record<string, unknown> =
+            andConditions.length > 0 ? { $and: andConditions } : {};
         
         let sort: Record<string, 1 | -1> | undefined;
         if (params.sortBy) {
-            sort = { [params.sortBy]: params.sortOrder === 'desc' ? -1 : 1 };
+            const sortField =
+                params.sortBy === 'createdAt' ? 'created_at'
+                : params.sortBy === 'name' ? 'name'
+                : params.sortBy === 'privacy' ? 'privacy'
+                : params.sortBy === 'isActive' ? 'is_active'
+                : params.sortBy;
+            sort = { [sortField]: params.sortOrder === 'desc' ? -1 : 1 };
         } else {
-            sort = { createdAt: -1 };
+            sort = { created_at: -1 };
         }
 
         const { data: workspaces, total } = await this._workspaceRepository.findPaginated(query, page, limit, sort);
-        const planNameById = new Map<string, string>();
+        const planNameById = await this.buildPlanNameMap();
 
         const workspacesWithDetails = await Promise.all(workspaces.map(async (workspace) => {
             const memberCount = await this._workspaceMemberRepository.countMembersInWorkspace(workspace.id!);
             const owner = await this._userRepository.findById(workspace.createdBy);
-            const ownerPlanName = await this.resolveOwnerPlanName(owner?.planId, planNameById);
             
             return {
                 id: workspace.id,
@@ -65,7 +80,8 @@ export class GetAllWorkspacesUseCase implements IGetAllWorkspacesUseCase {
                 memberCount,
                 ownerName: owner?.name || 'Unknown',
                 ownerEmail: owner?.email || 'Unknown',
-                ownerPlanName,
+                ownerPlanName: this.resolvePlanName(owner?.planId, planNameById),
+                ownerPlanId: owner?.planId ?? null,
             };
         }));
 
@@ -78,17 +94,32 @@ export class GetAllWorkspacesUseCase implements IGetAllWorkspacesUseCase {
         };
     }
 
-    private async resolveOwnerPlanName(
-        planId: string | null | undefined,
-        cache: Map<string, string>
-    ): Promise<string> {
-        if (!planId) return 'No plan';
-        const cached = cache.get(planId);
-        if (cached) return cached;
+    private async findOwnerIdsByPlan(planId: string): Promise<string[]> {
+        const planQuery =
+            planId === 'none'
+                ? { $or: [{ plan_id: null }, { plan_id: { $exists: false } }] }
+                : { plan_id: planId };
 
-        const plan = await this._planRepository.findById(planId);
-        const name = plan?.name?.trim() || 'Unknown plan';
-        cache.set(planId, name);
-        return name;
+        const { data } = await this._userRepository.findPaginated(planQuery, 1, 10_000);
+        return data.map((user) => user.id).filter((id): id is string => Boolean(id));
+    }
+
+    private async buildPlanNameMap(): Promise<Map<string, string>> {
+        const plans = await this._planRepository.findAll();
+        const map = new Map<string, string>();
+        for (const plan of plans) {
+            if (plan.id) {
+                map.set(plan.id, plan.name.trim() || 'Unknown plan');
+            }
+        }
+        return map;
+    }
+
+    private resolvePlanName(
+        planId: string | null | undefined,
+        planNameById: Map<string, string>
+    ): string {
+        if (!planId) return 'No plan';
+        return planNameById.get(planId) ?? 'Unknown plan';
     }
 }

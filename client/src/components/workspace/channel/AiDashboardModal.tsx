@@ -411,18 +411,6 @@ export const AiDashboardModal: React.FC<AiDashboardModalProps> = ({
               );
             })}
           </nav>
-
-          <div className="border-t border-slate-100 p-4">
-            <div className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200/70">
-              <p className="text-xs font-semibold text-slate-700">Quick tip</p>
-              <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
-                Type <span className="font-semibold text-slate-700">/task</span>,{' '}
-                <span className="font-semibold text-slate-700">/remind</span>,{' '}
-                <span className="font-semibold text-slate-700">/notify</span> or{' '}
-                <span className="font-semibold text-slate-700">/schedule</span> in any channel.
-              </p>
-            </div>
-          </div>
         </aside>
 
         {/* Main */}

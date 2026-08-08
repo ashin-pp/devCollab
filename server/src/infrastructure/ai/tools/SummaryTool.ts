@@ -29,7 +29,12 @@ export const createSummaryTool = (
                     channelId,
                     userId
                 });
-                let messages = (unreadMessages || []).filter(isSummarizable).slice(-20);
+                let messages: Array<{
+                    messageType?: string;
+                    content?: string;
+                    senderName?: string;
+                    senderId?: string;
+                }> = (unreadMessages || []).filter(isSummarizable).slice(-20);
                 let usedUnread = messages.length > 0;
 
                 if (!usedUnread && getChannelMessagesUseCase) {

@@ -84,6 +84,7 @@ export const ErrorMessage = {
     CANNOT_VIEW_CHANNEL_MEMBERS: "You do not have permission to view members of this channel",
     CHANNEL_NAME_EMPTY: "Channel name cannot be empty",
     CHANNEL_NAME_INVALID: "Channel name must be 2–80 characters and use letters, numbers, hyphens, or underscores",
+    CHANNEL_NAME_SLUG_INVALID: "Channel name must be a valid slug (lowercase letters, numbers, - or _)",
     CHANNEL_NAME_EXISTS: "A channel with this name already exists in this workspace",
     FAILED_TO_UPDATE_CHANNEL: "Failed to update channel",
     FAILED_TO_DELETE_CHANNEL: "Failed to delete channel",
@@ -98,6 +99,34 @@ export const ErrorMessage = {
     PARENT_MESSAGE_NOT_FOUND: "Parent message not found",
     INVALID_THREAD_REPLY: "Cannot reply to a message that is already a thread reply",
     INVALID_REPLY_VISIBILITY: "Reply visibility must be everyone or author",
+
+    // Channel (extra)
+    CHANNEL_BLOCKED_BY_ADMIN: "This channel has been blocked by the workspace admin or owner.",
+    CHANNEL_SEND_BLOCKED: "You have been blocked from sending messages in this channel.",
+    CHANNEL_SEND_FORBIDDEN: "You do not have permission to send messages in this channel.",
+    CHANNEL_JOIN_BLOCKED: "You have been blocked from joining this channel.",
+    CHANNEL_BLOCK_PUBLIC_ONLY: "Blocking members is only supported in public channels.",
+    CHANNEL_BLOCK_PERMISSION: "Only the channel creator or workspace owner can block members.",
+    CHANNEL_UNBLOCK_PERMISSION: "Only the channel creator or workspace owner can unblock members.",
+    CANNOT_BLOCK_SELF_FROM_CHANNEL: "You cannot block yourself from the channel.",
+
+    // Poll
+    POLL_NOT_FOUND: "Poll not found",
+    POLL_CREATOR_CLOSE_ONLY: "Only the creator can close this poll",
+    POLL_CREATOR_DELETE_ONLY: "Only the creator can delete this poll",
+    POLL_ALREADY_CLOSED: "Poll is already closed",
+    POLL_INACTIVE: "Poll is no longer active",
+    POLL_EXPIRED: "Poll has expired",
+    POLL_EXPIRY_MUST_BE_FUTURE: "Expiry time must be in the future",
+    POLL_EXPIRY_AFTER_START: "Expiry time must be after start time",
+    FAILED_TO_CLOSE_POLL: "Failed to close poll",
+    FAILED_TO_UPDATE_POLL: "Failed to update poll",
+    FAILED_TO_DELETE_POLL: "Failed to delete poll",
+
+    // Upload / misc
+    ONLY_IMAGE_UPLOADS: "Not an image! Please upload only images.",
+    INVALID_FILE_DATA: "Invalid file data",
+    SOCKET_AUTH_ERROR: "Authentication error",
 
     // Plan
     PLAN_NOT_FOUND: "Plan not found",
@@ -121,4 +150,8 @@ export const ErrorMessage = {
     PAYMENT_SIGNATURE_INVALID: "Payment verification failed. Signature mismatch.",
     PAYMENT_ORDER_MISMATCH: "Payment order does not match this plan or user.",
     PAYMENT_VERIFY_FAILED: "Payment verification failed. Please try again or contact support.",
+
+    VALIDATION_FAILED: "Request validation failed",
+    NO_FILE_UPLOADED: "No file uploaded",
+    MESSAGE_CONTENT_OR_IMAGE_REQUIRED: "Message content or image is required",
 } as const;

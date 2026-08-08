@@ -10,7 +10,7 @@ import { UpdateChannelDetailsRequestDto } from "../../dtos/channel/request/updat
 import { ChannelResponseDto } from "../../dtos/channel/response/channel.response.dto";
 import { IUpdateChannelUseCase } from "../../interfaces/use-cases/channel/update-channel.usecase.interface";
 import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
-import { isValidChannelName, normalizeChannelName } from "../../../shared/utils/name-validation.util";
+import { normalizeChannelName } from "../../../shared/utils/name-validation.util";
 
 @injectable()
 export class UpdateChannelUseCase implements IUpdateChannelUseCase {
@@ -22,9 +22,6 @@ export class UpdateChannelUseCase implements IUpdateChannelUseCase {
 
     async execute(payload: UpdateChannelDetailsRequestDto): Promise<ChannelResponseDto> {
         const { workspaceId, channelId, requestUserId, updateData } = payload;
-        if (!workspaceId || !channelId) {
-            throw new AppError(ErrorMessage.INVALID_PARAMS, HttpStatusCode.BAD_REQUEST);
-        }
 
         const channel = await this._channelRepository.findById(channelId);
         if (!channel || channel.workspaceId !== workspaceId) {
@@ -40,15 +37,8 @@ export class UpdateChannelUseCase implements IUpdateChannelUseCase {
             }
         }
 
-        if (updateData.name?.trim() === '') {
-            throw new AppError(ErrorMessage.CHANNEL_NAME_EMPTY, HttpStatusCode.BAD_REQUEST);
-        }
-
         if (updateData.name) {
             const normalizedName = normalizeChannelName(updateData.name);
-            if (!normalizedName || !isValidChannelName(normalizedName)) {
-                throw new AppError(ErrorMessage.CHANNEL_NAME_INVALID, HttpStatusCode.BAD_REQUEST);
-            }
 
             if (normalizedName.toLowerCase() !== channel.name.toLowerCase()) {
                 const existing = await this._channelRepository.findByWorkspaceAndName(workspaceId, normalizedName);

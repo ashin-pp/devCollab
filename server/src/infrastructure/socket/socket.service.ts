@@ -1,6 +1,7 @@
 import { Server as HttpServer } from "http";
 import { Server as SocketIOServer, Socket } from "socket.io";
 import { envConfig } from "../../config/envConfig";
+import { ErrorMessage } from "../../domain/enums/ErrorMessage";
 import { JwtService } from "../services/jwt.service";
 import { logger } from "../../infrastructure/di/container";
 import { Message } from "../../domain/entities/message.entity";
@@ -43,7 +44,7 @@ export class SocketService {
                 const token = cookies.access_token || socket.handshake.auth.token;
 
                 if (!token) {
-                    return next(new Error('Authentication error'));
+                    return next(new Error(ErrorMessage.SOCKET_AUTH_ERROR));
                 }
 
                 const decoded = this._jwtService.verifyAccessToken(token);
@@ -51,10 +52,10 @@ export class SocketService {
                     (socket as AuthenticatedSocket).user = decoded as { id: string;[key: string]: unknown };
                     next();
                 } else {
-                    next(new Error('Authentication error'));
+                    next(new Error(ErrorMessage.SOCKET_AUTH_ERROR));
                 }
             } catch (_err) {
-                next(new Error('Authentication error'));
+                next(new Error(ErrorMessage.SOCKET_AUTH_ERROR));
             }
         });
 

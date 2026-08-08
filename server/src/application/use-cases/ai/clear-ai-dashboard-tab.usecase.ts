@@ -9,8 +9,6 @@ import type {
     IClearAIDashboardTabUseCase,
 } from "../../interfaces/use-cases/ai/clear-ai-dashboard-tab.usecase.interface";
 import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
-import { AppError } from "../../../domain/errors/AppError";
-import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 
 @injectable()
 export class ClearAIDashboardTabUseCase implements IClearAIDashboardTabUseCase {
@@ -53,8 +51,6 @@ export class ClearAIDashboardTabUseCase implements IClearAIDashboardTabUseCase {
                     dto.workspaceId
                 );
                 break;
-            default:
-                throw new AppError("Invalid dashboard tab", HttpStatusCode.BAD_REQUEST);
         }
 
         return { tab: dto.tab, cleared };

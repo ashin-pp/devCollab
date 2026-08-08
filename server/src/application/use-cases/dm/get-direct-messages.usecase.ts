@@ -3,11 +3,12 @@ import type { IConversationRepository } from "../../../application/interfaces/re
 import type { IDirectMessageRepository } from "../../../application/interfaces/repositories/direct-message.repository.interface";
 import type { IWorkspaceRepository } from "../../interfaces/repositories/workspace.repository.interface";
 import type { IPlanEntitlementService } from "../../interfaces/services/plan-entitlement.service.interface";
-import { DirectMessage } from "../../../domain/entities/direct-message.entity";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { AppError } from "../../../domain/errors/AppError";
+import { DirectMessageResponseDto } from "../../dtos/dm/response/direct-message.response.dto";
 import { IGetDirectMessagesUseCase } from "../../interfaces/use-cases/dm/get-direct-messages.usecase.interface";
+import { toDirectMessageResponseDto } from "../../mappers/direct-message.mapper";
 import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 import { SERVICE_TOKENS } from "../../../infrastructure/di/service.tokens";
 
@@ -20,7 +21,12 @@ export class GetDirectMessagesUseCase implements IGetDirectMessagesUseCase {
         @inject(SERVICE_TOKENS.IPlanEntitlementService) private _planEntitlementService: IPlanEntitlementService
     ) {}
 
-    async execute(conversationId: string, userId: string, limit: number = 50, skip: number = 0): Promise<DirectMessage[]> {
+    async execute(
+        conversationId: string,
+        userId: string,
+        limit: number = 50,
+        skip: number = 0
+    ): Promise<DirectMessageResponseDto[]> {
         await this._planEntitlementService.resolveForUserId(userId);
 
         const conversation = await this._conversationRepository.findById(conversationId);
@@ -43,6 +49,7 @@ export class GetDirectMessagesUseCase implements IGetDirectMessagesUseCase {
             }
         }
 
-        return await this._dmRepository.findByConversationId(conversationId, limit, skip, since);
+        const messages = await this._dmRepository.findByConversationId(conversationId, limit, skip, since);
+        return messages.map(toDirectMessageResponseDto);
     }
 }

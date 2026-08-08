@@ -15,10 +15,6 @@ export class CreatePlanUseCase implements ICreatePlanUseCase {
     ) {}
 
     async execute(payload: CreatePlanRequestDto & { createdBy: string }): Promise<PlanResponseDto> {
-        if (!payload.name?.trim() || payload.price == null || !payload.durationDays) {
-            throw new AppError(ErrorMessage.MISSING_REQUIRED_FIELDS, HttpStatusCode.BAD_REQUEST);
-        }
-
         if (!payload.createdBy) {
             throw new AppError(ErrorMessage.UNAUTHORIZED, HttpStatusCode.UNAUTHORIZED);
         }

@@ -20,14 +20,6 @@ export class AdminResetPasswordUseCase implements IAdminResetPasswordUseCase {
     ) { }
 
     async execute(data: ResetPasswordRequestDto): Promise<void> {
-        if (data.newPassword.trim().length < 6) {
-            throw new AppError(ErrorMessage.PASSWORD_TOO_SHORT, HttpStatusCode.BAD_REQUEST);
-        }
-
-        if (data.newPassword !== data.confirmPassword) {
-            throw new AppError(ErrorMessage.PASSWORDS_DO_NOT_MATCH, HttpStatusCode.BAD_REQUEST);
-        }
-
         const admin = await this._adminRepository.findByEmail(data.email);
         if (!admin || !admin.id) {
             throw new AppError(ErrorMessage.ADMIN_NOT_FOUND, HttpStatusCode.NOT_FOUND);

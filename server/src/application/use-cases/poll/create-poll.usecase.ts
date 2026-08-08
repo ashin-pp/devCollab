@@ -1,4 +1,3 @@
-import { USECASE_TOKENS } from "../../../infrastructure/di/usecase.tokens";
 import mongoose from "mongoose";
 import { inject, injectable } from 'tsyringe';
 import type { IChannelMemberRepository } from "../../../application/interfaces/repositories/channel-member.repository.interface";
@@ -7,7 +6,10 @@ import type { IPollRepository } from "../../../application/interfaces/repositori
 import type { IWorkspaceMemberRepository } from "../../../application/interfaces/repositories/workspace-member.repository.interface";
 import type { IWorkspaceRepository } from "../../../application/interfaces/repositories/workspace.repository.interface";
 import { Poll } from "../../../domain/entities/poll.entity";
+import { NotificationTitle } from "../../../domain/enums/NotificationMessage";
+import { PollResponseDto } from "../../dtos/poll/response/poll.response.dto";
 import { ICreatePollUseCase } from "../../interfaces/use-cases/poll/create-poll.usecase.interface";
+import { toPollResponseDto } from "../../mappers/poll.mapper";
 import { CreateNotificationUseCase } from "../notification/create-notification.usecase";
 import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
@@ -30,19 +32,7 @@ export class CreatePollUseCase implements ICreatePollUseCase {
         channelId?: string;
         expiresAt?: Date;
         startsAt?: Date;
-    }): Promise<Poll> {
-        if (!data.workspaceId || !data.question || !data.options || data.options.length < 2) {
-            throw new Error("Invalid poll data");
-        }
-
-        if (data.expiresAt && new Date(data.expiresAt).getTime() <= Date.now()) {
-            throw new Error("Expiry time must be in the future");
-        }
-
-        if (data.startsAt && data.expiresAt && new Date(data.startsAt).getTime() >= new Date(data.expiresAt).getTime()) {
-            throw new Error("Expiry time must be after start time");
-        }
-
+    }): Promise<PollResponseDto> {
         const pollOptions = data.options.map(opt => ({
             id: new mongoose.Types.ObjectId().toString(),
             text: opt,
@@ -110,13 +100,13 @@ export class CreatePollUseCase implements ICreatePollUseCase {
                 await this._createNotificationUseCase.execute({
                     userId,
                     type: 'POLL_CREATED',
-                    title: 'New Poll Created',
+                    title: NotificationTitle.NEW_POLL_CREATED,
                     message: notificationMessage,
                     relatedId: savedPoll.id
                 }).catch(err => console.error("Failed to send poll notification", err));
             }
         }
 
-        return savedPoll;
+        return toPollResponseDto(savedPoll);
     }
 }

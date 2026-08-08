@@ -9,6 +9,7 @@ import { ChannelMemberRole, ChannelMemberStatus } from "../../../domain/enums/Ch
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { MemberRole } from "../../../domain/enums/MemberRole";
+import { SuccessMessage } from "../../../domain/enums/SuccessMessage";
 import { AppError } from "../../../domain/errors/AppError";
 import { JoinChannelRequestDto } from "../../dtos/channel/request/join-channel-request.dto";
 import { IJoinChannelUseCase } from "../../interfaces/use-cases/channel/join-channel.usecase.interface";
@@ -45,22 +46,22 @@ export class JoinChannelUseCase implements IJoinChannelUseCase {
         const existingMember = await this._channelMemberRepository.findByChannelAndUser(channelId, userId);
         if (existingMember) {
             if (existingMember.status === ChannelMemberStatus.BLOCKED) {
-                throw new AppError("You have been blocked from joining this channel.", HttpStatusCode.FORBIDDEN);
+                throw new AppError(ErrorMessage.CHANNEL_JOIN_BLOCKED, HttpStatusCode.FORBIDDEN);
             } else if (existingMember.status === ChannelMemberStatus.APPROVED) {
                 throw new AppError(ErrorMessage.ALREADY_CHANNEL_MEMBER, HttpStatusCode.BAD_REQUEST);
             } else if (existingMember.status === ChannelMemberStatus.PENDING) {
                 if (isWorkspaceOwner) {
                     await this._channelMemberRepository.updateStatus(channelId, userId, ChannelMemberStatus.APPROVED);
-                    return { success: true, status: ChannelMemberStatus.APPROVED, message: 'Successfully joined the channel' };
+                    return { success: true, status: ChannelMemberStatus.APPROVED, message: SuccessMessage.CHANNEL_JOINED };
                 }
                 throw new AppError(ErrorMessage.CHANNEL_JOIN_REQUEST_PENDING, HttpStatusCode.BAD_REQUEST);
             } else if (existingMember.status === ChannelMemberStatus.REJECTED) {
                 if (isWorkspaceOwner) {
                     await this._channelMemberRepository.updateStatus(channelId, userId, ChannelMemberStatus.APPROVED);
-                    return { success: true, status: ChannelMemberStatus.APPROVED, message: 'Successfully joined the channel' };
+                    return { success: true, status: ChannelMemberStatus.APPROVED, message: SuccessMessage.CHANNEL_JOINED };
                 }
                 await this._channelMemberRepository.updateStatus(channelId, userId, ChannelMemberStatus.PENDING);
-                return { success: true, status: ChannelMemberStatus.PENDING, message: 'Join request submitted' };
+                return { success: true, status: ChannelMemberStatus.PENDING, message: SuccessMessage.CHANNEL_JOIN_REQUESTED };
             }
         }
 
@@ -78,7 +79,7 @@ export class JoinChannelUseCase implements IJoinChannelUseCase {
             return {
                 success: true,
                 status: newStatus,
-                message: newStatus === ChannelMemberStatus.APPROVED ? 'Successfully joined the channel' : 'Join request submitted',
+                message: newStatus === ChannelMemberStatus.APPROVED ? SuccessMessage.CHANNEL_JOINED : SuccessMessage.CHANNEL_JOIN_REQUESTED,
                 userName: user?.name || 'A user'
             };
         }
@@ -99,7 +100,7 @@ export class JoinChannelUseCase implements IJoinChannelUseCase {
         return {
             success: true,
             status: newStatus,
-            message: newStatus === ChannelMemberStatus.APPROVED ? 'Successfully joined the channel' : 'Join request submitted',
+            message: newStatus === ChannelMemberStatus.APPROVED ? SuccessMessage.CHANNEL_JOINED : SuccessMessage.CHANNEL_JOIN_REQUESTED,
             userName: user?.name || 'A user'
         };
     }

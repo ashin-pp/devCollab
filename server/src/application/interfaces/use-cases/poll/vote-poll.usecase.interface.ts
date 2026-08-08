@@ -1,5 +1,5 @@
-import { Poll } from "../../../../domain/entities/poll.entity";
+import { PollResponseDto } from "../../../dtos/poll/response/poll.response.dto";
 
 export interface IVotePollUseCase {
-    execute(pollId: string, userId: string, optionId: string): Promise<Poll>;
+    execute(pollId: string, userId: string, optionId: string): Promise<PollResponseDto>;
 }

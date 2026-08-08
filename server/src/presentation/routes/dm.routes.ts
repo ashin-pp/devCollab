@@ -1,25 +1,46 @@
 import { Router } from "express";
 import { authMiddleware } from "../middlewares/authMiddleware";
 import { dmController } from "../../infrastructure/di/container";
+import { validate } from "../middlewares/validate.middleware";
+import {
+    conversationParamsSchema,
+    dmMessagesQuerySchema,
+    sendDmBodySchema,
+    startConversationBodySchema,
+    startConversationParamsSchema,
+} from "../validators/dm.schema";
 
 const router = Router();
 
-// Apply auth middleware to all DM routes
 router.use(authMiddleware);
 
-// Start a new conversation or get existing one
-router.post('/workspaces/:workspaceId/dm', dmController.startConversation);
-
-// Get all conversations for a user in a workspace
-router.get('/workspaces/:workspaceId/dm/conversations', dmController.getConversations);
-
-// Get messages for a specific conversation
-router.get('/dm/conversations/:conversationId/messages', dmController.getMessages);
-
-// Send a message
-router.post('/dm/conversations/:conversationId/messages', dmController.sendMessage);
-
-// Mark messages as seen
-router.post('/dm/conversations/:conversationId/seen', dmController.markAsSeen);
+router.post(
+    "/workspaces/:workspaceId/dm",
+    validate({
+        params: startConversationParamsSchema,
+        body: startConversationBodySchema,
+    }),
+    dmController.startConversation
+);
+router.get(
+    "/workspaces/:workspaceId/dm/conversations",
+    validate({ params: startConversationParamsSchema }),
+    dmController.getConversations
+);
+router.get(
+    "/dm/conversations/:conversationId/messages",
+    validate({ params: conversationParamsSchema, query: dmMessagesQuerySchema }),
+    dmController.getMessages
+);
+router.post(
+    "/dm/conversations/:conversationId/messages",
+    validate({ params: conversationParamsSchema, body: sendDmBodySchema }),
+    dmController.sendMessage
+);
+router.post(
+    "/dm/conversations/:conversationId/seen",
+    validate({ params: conversationParamsSchema }),
+    dmController.markAsSeen
+);
 
 export default router;

@@ -9,6 +9,7 @@ import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { MemberRole } from "../../../domain/enums/MemberRole";
 import { MemberStatus } from "../../../domain/enums/MemberStatus";
+import { NotificationTitle } from "../../../domain/enums/NotificationMessage";
 import { WorkspacePrivacy } from "../../../domain/enums/WorkspacePrivacy";
 import { AppError } from "../../../domain/errors/AppError";
 import { logger } from "../../../infrastructure/di/container";
@@ -30,10 +31,6 @@ export class JoinWorkspaceUseCase implements IJoinWorkspaceUseCase {
     ) { }
 
     async execute(payload: JoinWorkspaceRequestDto): Promise<WorkspaceMemberResponseDto> {
-        if (!payload.inviteCode || !payload.userId) {
-            throw new AppError(ErrorMessage.INVITE_CODE_REQUIRED, HttpStatusCode.BAD_REQUEST);
-        }
-
         await this._planEntitlementService.resolveForUserId(payload.userId);
 
         const workspace = await this._workspaceRepository.findByInviteCode(payload.inviteCode);
@@ -116,7 +113,7 @@ export class JoinWorkspaceUseCase implements IJoinWorkspaceUseCase {
             await this._createNotificationUseCase.execute({
                 userId: workspace.createdBy,
                 type: 'JOIN_REQUEST',
-                title: 'New Join Request',
+                title: NotificationTitle.NEW_JOIN_REQUEST,
                 message: `${requesterName} requested to join your workspace "${workspace.name}".`,
                 relatedId: workspace.id
             }).catch((err: unknown) =>

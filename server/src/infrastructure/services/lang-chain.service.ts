@@ -142,7 +142,7 @@ export class LangChainService implements IAIService {
             conversation.id as string,
             userId,
             content,
-            MessageType.TEXT
+            MessageType.AI
         );
     }
 
@@ -195,7 +195,12 @@ export class LangChainService implements IAIService {
             userId: context.userId,
         });
 
-        let messages = (unreadMessages || []).filter((m) => this.isSummarizableMessage(m)).slice(-15);
+        let messages: Array<{
+            messageType?: string;
+            content?: string;
+            senderName?: string;
+            senderId?: string;
+        }> = (unreadMessages || []).filter((m) => this.isSummarizableMessage(m)).slice(-15);
         let usedUnread = messages.length > 0;
 
         // Opening a channel marks it read, so unread is often empty by the time /summary runs.

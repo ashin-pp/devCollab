@@ -1,6 +1,7 @@
 import { injectable } from 'tsyringe';
 import { IAITaskRepository } from "../../../application/interfaces/repositories/ai-task.repository.interface";
 import { AITask } from "../../../domain/entities/ai-task.entity";
+import { AITaskStatus } from "../../../domain/enums/AITaskStatus";
 import { AITaskModel } from "../models/ai-task.model";
 
 import { AITaskMapper } from "../mappers/ai-task.mapper";
@@ -76,8 +77,8 @@ export class AITaskRepository implements IAITaskRepository {
         const result = await AITaskModel.deleteMany({
             workspace_id: workspaceId,
             $or: [{ assigned_to: userId }, { created_by: userId }],
-            status: { $in: ['done', 'completed'] },
-        });
+            status: { $in: [AITaskStatus.DONE, "completed"] },
+        } as Record<string, unknown>);
         return result.deletedCount ?? 0;
     }
 }

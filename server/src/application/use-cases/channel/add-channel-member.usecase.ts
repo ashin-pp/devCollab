@@ -25,9 +25,6 @@ export class AddChannelMemberUseCase implements IAddChannelMemberUseCase {
 
     async execute(payload: AddChannelMemberRequestDto): Promise<ChannelMemberResponseDto[]> {
         const { workspaceId, channelId, userIds, requestUserId } = payload;
-        if (!workspaceId || !channelId || !userIds || userIds.length === 0) {
-            throw new AppError(ErrorMessage.INVALID_INPUT_PARAMS, HttpStatusCode.BAD_REQUEST);
-        }
 
         const channel = await this._channelRepository.findById(channelId);
         if (!channel || channel.workspaceId !== workspaceId) {

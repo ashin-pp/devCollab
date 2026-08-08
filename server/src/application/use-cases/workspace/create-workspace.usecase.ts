@@ -15,7 +15,6 @@ import { WorkspaceResponseDto } from "../../dtos/workspace/response/workspace.re
 import { ICreateWorkspaceUseCase } from "../../interfaces/use-cases/workspace/create-workspace.usecase.interface";
 import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 import { SERVICE_TOKENS } from "../../../infrastructure/di/service.tokens";
-import { isValidWorkspaceName } from "../../../shared/utils/name-validation.util";
 
 @injectable()
 export class CreateWorkspaceUseCase implements ICreateWorkspaceUseCase {
@@ -26,15 +25,11 @@ export class CreateWorkspaceUseCase implements ICreateWorkspaceUseCase {
     ) { }
 
     async execute(payload: CreateWorkspaceRequestDto): Promise<WorkspaceResponseDto> {
-        const name = payload.name?.trim() ?? '';
-
-        if (!name || !payload.createdBy) {
-            throw new AppError(ErrorMessage.WORKSPACE_NAME_REQUIRED, HttpStatusCode.BAD_REQUEST);
+        if (!payload.createdBy) {
+            throw new AppError(ErrorMessage.UNAUTHORIZED, HttpStatusCode.UNAUTHORIZED);
         }
 
-        if (!isValidWorkspaceName(name)) {
-            throw new AppError(ErrorMessage.WORKSPACE_NAME_INVALID, HttpStatusCode.BAD_REQUEST);
-        }
+        const name = payload.name.trim();
 
         const entitlement = await this._planEntitlementService.assertSubscriptionActive(payload.createdBy);
         const ownedWorkspaces = await this._workspaceRepository.findAllByUserId(payload.createdBy);
@@ -50,10 +45,7 @@ export class CreateWorkspaceUseCase implements ICreateWorkspaceUseCase {
         const inviteCode = crypto.randomBytes(4).toString('hex').toUpperCase();
         const planMax = entitlement.plan.maxMembersPerWorkspace;
 
-        if (
-            payload.maxMembers !== undefined &&
-            (!Number.isFinite(payload.maxMembers) || payload.maxMembers < 1 || payload.maxMembers > planMax)
-        ) {
+        if (payload.maxMembers !== undefined && payload.maxMembers > planMax) {
             throw new AppError(ErrorMessage.WORKSPACE_MEMBER_PLAN_LIMIT, HttpStatusCode.FORBIDDEN);
         }
 

@@ -39,9 +39,6 @@ export class VerifyPaymentUseCase implements IVerifyPaymentUseCase {
         }
 
         const { planId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = payload.data;
-        if (!planId?.trim() || !razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-            throw new AppError(ErrorMessage.PAYMENT_VERIFY_FAILED, HttpStatusCode.BAD_REQUEST);
-        }
 
         const plan = await this._planRepository.findById(planId.trim());
         if (!plan || !plan.id) {

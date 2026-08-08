@@ -1,11 +1,10 @@
 import { format, isToday } from 'date-fns';
 import { Loader2, Check, CheckCheck } from 'lucide-react';
 import { DMAvatar } from './DMAvatar';
+import { AgentReplyCard } from '../shared/AgentReplyCard';
 import type { DirectMessage } from '../../../types/dm.types';
-
-const renderMessageContent = (content: string) => {
-  return <span dangerouslySetInnerHTML={{ __html: content }} />;
-};
+import { isAgentMessage } from '../../../utils/agentMessage.utils';
+import { renderMessageContent } from '../../../utils/renderMessageContent';
 
 interface DMMessageListProps {
   messages: DirectMessage[];
@@ -40,8 +39,9 @@ export const DMMessageList = ({
         <div className="space-y-0.5">
           {messages.map((msg, index) => {
             const isMine = msg.senderId === currentUser?.id;
+            const isAgent = isAgentMessage(msg);
             const prevMsg = messages[index - 1];
-            const isGrouped = prevMsg?.senderId === msg.senderId;
+            const isGrouped = !isAgent && prevMsg?.senderId === msg.senderId && !isAgentMessage(prevMsg);
             const msgDate = msg.createdAt ? new Date(msg.createdAt) : new Date();
             const prevDate = prevMsg?.createdAt ? new Date(prevMsg.createdAt) : new Date(0);
             const showTimestamp =
@@ -63,6 +63,14 @@ export const DMMessageList = ({
                   </div>
                 )}
 
+                {isAgent ? (
+                  <div className={`flex justify-start ${isGrouped && !showTimestamp ? 'mt-0.5' : 'mt-3'}`}>
+                    <AgentReplyCard
+                      content={msg.content}
+                      timestamp={msg.createdAt ? format(msgDate, 'h:mm a') : undefined}
+                    />
+                  </div>
+                ) : (
                 <div
                   className={`flex items-end gap-2.5 group ${isMine ? 'flex-row-reverse' : 'flex-row'} ${
                     isGrouped && !showTimestamp ? 'mt-0.5' : 'mt-3'
@@ -114,6 +122,7 @@ export const DMMessageList = ({
                     </div>
                   </div>
                 </div>
+                )}
               </div>
             );
           })}

@@ -25,14 +25,6 @@ export class CreateAdminUseCase implements ICreateAdminUseCase {
             throw new AppError(ErrorMessage.EMAIL_ALREADY_EXISTS, HttpStatusCode.CONFLICT);
         }
 
-        if (!data.password || data.password.trim().length < 6) {
-            throw new AppError(ErrorMessage.PASSWORD_TOO_SHORT, HttpStatusCode.BAD_REQUEST);
-        }
-
-        if (data.password !== data.confirmPassword) {
-            throw new AppError(ErrorMessage.PASSWORDS_DO_NOT_MATCH, HttpStatusCode.BAD_REQUEST);
-        }
-
         const hashedPassword = await this._hashService.hash(data.password!);
 
         const newAdmin = new Admin(

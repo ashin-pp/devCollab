@@ -5,7 +5,7 @@ export interface IDirectMessageDocument extends Document {
     senderId: mongoose.Types.ObjectId;
     content: string;
     isSeen: boolean;
-    messageType: 'text' | 'image';
+    messageType: 'text' | 'image' | 'ai';
     imageUrl?: string;
     isEdited: boolean;
     createdAt: Date;
@@ -19,11 +19,11 @@ const DirectMessageSchema: Schema = new Schema(
         content: { 
             type: String, 
             required: function(this: any) {
-                return this.messageType === 'text';
+                return this.messageType === 'text' || this.messageType === 'ai';
             }
         },
         isSeen: { type: Boolean, default: false },
-        messageType: { type: String, enum: ['text', 'image'], default: 'text' },
+        messageType: { type: String, enum: ['text', 'image', 'ai'], default: 'text' },
         imageUrl: { type: String },
         isEdited: { type: Boolean, default: false }
     },
