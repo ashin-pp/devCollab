@@ -1,6 +1,4 @@
-// API Endpoint Constants
 export const API_ENDPOINTS = {
-  // Auth endpoints
   AUTH: {
     LOGIN: '/auth/login',
     REGISTER: '/auth/register',
@@ -14,7 +12,6 @@ export const API_ENDPOINTS = {
     RESET_PASSWORD: '/auth/reset-password',
   },
 
-  // User endpoints
   USER: {
     PROFILE: '/users/profile',
     PLAN: '/users/plan',
@@ -25,7 +22,6 @@ export const API_ENDPOINTS = {
     SEARCH: '/users/search',
   },
 
-  // Workspace endpoints
   WORKSPACES: {
     BASE: '/workspaces',
     JOIN: '/workspaces/join',
@@ -42,7 +38,6 @@ export const API_ENDPOINTS = {
     SEND_INVITE: (workspaceId: string) => `/workspaces/${workspaceId}/send-invite`,
   },
 
-  // Channel endpoints
   CHANNELS: {
     LIST: (workspaceId: string) => `/workspaces/${workspaceId}/channels`,
     DETAIL: (workspaceId: string, channelId: string) => `/workspaces/${workspaceId}/channels/${channelId}`,
@@ -62,7 +57,6 @@ export const API_ENDPOINTS = {
     THREAD: (workspaceId: string, channelId: string, messageId: string) => `/workspaces/${workspaceId}/channels/${channelId}/messages/${messageId}/thread`,
   },
 
-  // DM endpoints
   DM: {
     START_CONVERSATION: (workspaceId: string) => `/workspaces/${workspaceId}/dm`,
     CONVERSATIONS: (workspaceId: string) => `/workspaces/${workspaceId}/dm/conversations`,
@@ -70,7 +64,6 @@ export const API_ENDPOINTS = {
     MARK_SEEN: (conversationId: string) => `/dm/conversations/${conversationId}/seen`,
   },
 
-  // Admin endpoints
   ADMIN: {
     LOGIN: '/admin/login',
     LOGOUT: '/admin/logout',
@@ -91,12 +84,10 @@ export const API_ENDPOINTS = {
     WALLET: '/admin/wallet',
   },
 
-  // User-facing plans
   PLANS: {
     BASE: '/plans',
   },
 
-  // Payments
   PAYMENTS: {
     CREATE_ORDER: '/payments/create-order',
     VERIFY: '/payments/verify',
@@ -104,7 +95,6 @@ export const API_ENDPOINTS = {
     HISTORY: '/payments/history',
   },
 
-  // Poll endpoints
   POLLS: {
     CREATE: '/polls',
     VOTE: (pollId: string) => `/polls/${pollId}/vote`,
@@ -112,12 +102,10 @@ export const API_ENDPOINTS = {
     CHANNEL: (channelId: string) => `/polls/channel/${channelId}`,
   },
 
-  // Upload endpoints
   UPLOAD: {
     IMAGE: '/upload/image',
   },
 
-  // Notification endpoints
   NOTIFICATIONS: {
     BASE: '/notifications',
     MARK_READ: (id: string) => `/notifications/${id}/read`,
@@ -125,8 +113,12 @@ export const API_ENDPOINTS = {
     CLEAR_ALL: '/notifications/clear-all',
   },
 
-  // AI endpoints
   AI: {
     PROCESS: '/ai/process',
+    DASHBOARD: '/ai/dashboard',
+    DASHBOARD_CLEAR: '/ai/dashboard/clear',
+    TASK_STATUS: (taskId: string) => `/ai/tasks/${taskId}/status`,
+    VIDEO_TOKEN: (scheduleId: string) => `/ai/schedules/${scheduleId}/video-token`,
+    DM_CALL: '/ai/schedules/dm-call',
   }
 };

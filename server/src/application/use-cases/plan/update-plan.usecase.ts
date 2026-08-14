@@ -15,21 +15,6 @@ export class UpdatePlanUseCase implements IUpdatePlanUseCase {
     ) {}
 
     async execute(payload: UpdatePlanRequestDto): Promise<PlanResponseDto> {
-        if (!payload.planId || !payload.name?.trim() || payload.price == null || !payload.durationDays) {
-            throw new AppError(ErrorMessage.MISSING_REQUIRED_FIELDS, HttpStatusCode.BAD_REQUEST);
-        }
-
-        if (
-            !Number.isFinite(payload.maxWorkspaces) ||
-            payload.maxWorkspaces < 1 ||
-            !Number.isFinite(payload.maxMembersPerWorkspace) ||
-            payload.maxMembersPerWorkspace < 1 ||
-            !Number.isFinite(payload.messageRetentionDays) ||
-            payload.messageRetentionDays < 1
-        ) {
-            throw new AppError(ErrorMessage.MISSING_REQUIRED_FIELDS, HttpStatusCode.BAD_REQUEST);
-        }
-
         const existing = await this._planRepository.findById(payload.planId);
         if (!existing) {
             throw new AppError(ErrorMessage.PLAN_NOT_FOUND, HttpStatusCode.NOT_FOUND);

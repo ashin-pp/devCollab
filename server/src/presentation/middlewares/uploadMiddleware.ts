@@ -1,5 +1,6 @@
 import multer from "multer";
 import { AppError } from "../../domain/errors/AppError";
+import { ErrorMessage } from "../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../domain/enums/HttpStatusCode";
 import { AppConstants } from "../../domain/constants";
 
@@ -11,7 +12,7 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilt
     if (file.mimetype.startsWith('image/')) {
         cb(null, true);
     } else {
-        cb(new AppError('Not an image! Please upload only images.', HttpStatusCode.BAD_REQUEST));
+        cb(new AppError(ErrorMessage.ONLY_IMAGE_UPLOADS, HttpStatusCode.BAD_REQUEST));
     }
 };
 

@@ -14,10 +14,6 @@ export class VerifyInviteCodeUseCase implements IVerifyInviteCodeUseCase {
     ) { }
 
     async execute(payload: { inviteCode: string }): Promise<Partial<WorkspaceResponseDto>> {
-        if (!payload.inviteCode) {
-            throw new AppError(ErrorMessage.INVITE_CODE_REQUIRED, HttpStatusCode.BAD_REQUEST);
-        }
-
         const workspace = await this._workspaceRepository.findByInviteCode(payload.inviteCode);
 
         if (!workspace || !workspace.id) {

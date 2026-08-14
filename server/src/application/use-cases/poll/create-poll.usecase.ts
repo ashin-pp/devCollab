@@ -1,4 +1,3 @@
-import { USECASE_TOKENS } from "../../../infrastructure/di/usecase.tokens";
 import mongoose from "mongoose";
 import { inject, injectable } from 'tsyringe';
 import type { IChannelMemberRepository } from "../../../application/interfaces/repositories/channel-member.repository.interface";
@@ -7,7 +6,10 @@ import type { IPollRepository } from "../../../application/interfaces/repositori
 import type { IWorkspaceMemberRepository } from "../../../application/interfaces/repositories/workspace-member.repository.interface";
 import type { IWorkspaceRepository } from "../../../application/interfaces/repositories/workspace.repository.interface";
 import { Poll } from "../../../domain/entities/poll.entity";
+import { NotificationTitle } from "../../../domain/enums/NotificationMessage";
+import { PollResponseDto } from "../../dtos/poll/response/poll.response.dto";
 import { ICreatePollUseCase } from "../../interfaces/use-cases/poll/create-poll.usecase.interface";
+import { toPollResponseDto } from "../../mappers/poll.mapper";
 import { CreateNotificationUseCase } from "../notification/create-notification.usecase";
 import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
@@ -30,19 +32,7 @@ export class CreatePollUseCase implements ICreatePollUseCase {
         channelId?: string;
         expiresAt?: Date;
         startsAt?: Date;
-    }): Promise<Poll> {
-        if (!data.workspaceId || !data.question || !data.options || data.options.length < 2) {
-            throw new Error("Invalid poll data");
-        }
-
-        if (data.expiresAt && new Date(data.expiresAt).getTime() <= Date.now()) {
-            throw new Error("Expiry time must be in the future");
-        }
-
-        if (data.startsAt && data.expiresAt && new Date(data.startsAt).getTime() >= new Date(data.expiresAt).getTime()) {
-            throw new Error("Expiry time must be after start time");
-        }
-
+    }): Promise<PollResponseDto> {
         const pollOptions = data.options.map(opt => ({
             id: new mongoose.Types.ObjectId().toString(),
             text: opt,
@@ -62,13 +52,11 @@ export class CreatePollUseCase implements ICreatePollUseCase {
 
         const savedPoll = await this._pollRepository.create(newPoll);
 
-        // Send Notifications
         if (this._createNotificationUseCase) {
             let membersToNotify: string[] = [];
             let notificationMessage = '';
 
             if (data.channelId && this._channelMemberRepository) {
-                // Channel Poll - notify channel members
                 const channelMembers = await this._channelMemberRepository.findByChannelId(data.channelId);
                 membersToNotify = channelMembers.map((m: any) => m.userId).filter((id: any) => id !== data.createdBy);
                 
@@ -90,7 +78,6 @@ export class CreatePollUseCase implements ICreatePollUseCase {
                 
                 notificationMessage = `A new poll has been created in ${channelName} channel inside ${workspaceName} workspace`;
             } else if (this._workspaceMemberRepository) {
-                // Workspace Poll - notify workspace members
                 const workspaceMembers = await this._workspaceMemberRepository.findAllByWorkspaceId(data.workspaceId);
                 membersToNotify = workspaceMembers.map((m: any) => m.userId).filter((id: any) => id !== data.createdBy);
                 
@@ -105,18 +92,17 @@ export class CreatePollUseCase implements ICreatePollUseCase {
                 notificationMessage = `A new poll has been created in the ${workspaceName} workspace polls`;
             }
 
-            // Send notification to each member
             for (const userId of membersToNotify) {
                 await this._createNotificationUseCase.execute({
                     userId,
                     type: 'POLL_CREATED',
-                    title: 'New Poll Created',
+                    title: NotificationTitle.NEW_POLL_CREATED,
                     message: notificationMessage,
                     relatedId: savedPoll.id
                 }).catch(err => console.error("Failed to send poll notification", err));
             }
         }
 
-        return savedPoll;
+        return toPollResponseDto(savedPoll);
     }
 }

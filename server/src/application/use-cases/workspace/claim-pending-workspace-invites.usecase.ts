@@ -5,6 +5,7 @@ import type { ICreateNotificationUseCase } from "../../interfaces/use-cases/noti
 import { WorkspaceMember } from "../../../domain/entities/workspace-member.entity";
 import { MemberRole } from "../../../domain/enums/MemberRole";
 import { MemberStatus } from "../../../domain/enums/MemberStatus";
+import { NotificationTitle } from "../../../domain/enums/NotificationMessage";
 import { logger } from "../../../infrastructure/di/container";
 import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 import { USECASE_TOKENS } from "../../../infrastructure/di/usecase.tokens";
@@ -58,7 +59,7 @@ export class ClaimPendingWorkspaceInvitesUseCase implements IClaimPendingWorkspa
                 await this._createNotificationUseCase.execute({
                     userId: payload.userId,
                     type: 'WORKSPACE_INVITE',
-                    title: 'Workspace Invitation',
+                    title: NotificationTitle.WORKSPACE_INVITATION,
                     message: `You have been invited to join the workspace "${workspace.name}".`,
                     relatedId: workspace.id
                 }).catch((err: unknown) =>

@@ -5,7 +5,7 @@ export interface IWorkspaceRepository {
     findById(id: string): Promise<Workspace | null>;
     findByInviteCode(inviteCode: string): Promise<Workspace | null>;
     findByNameIgnoreCase(name: string): Promise<Workspace | null>;
-    findAllByUserId(userId: string): Promise<Workspace[]>; // Workspaces created by or joined by user
+    findAllByUserId(userId: string): Promise<Workspace[]>;
     update(id: string, workspaceData: Partial<Workspace>): Promise<Workspace | null>;
     delete(id: string): Promise<boolean>;
     findAll(): Promise<Workspace[]>;

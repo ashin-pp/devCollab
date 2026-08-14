@@ -20,14 +20,6 @@ export class ResetPasswordUseCase implements IResetPasswordUseCase {
     ) { }
 
     async execute(payload: ResetPasswordRequestDto): Promise<void> {
-        if (payload.newPassword.trim().length < 6) {
-            throw new AppError(ErrorMessage.PASSWORD_TOO_SHORT, HttpStatusCode.BAD_REQUEST);
-        }
-
-        if (payload.newPassword !== payload.confirmPassword) {
-            throw new AppError(ErrorMessage.PASSWORDS_DO_NOT_MATCH, HttpStatusCode.BAD_REQUEST);
-        }
-
         const user = await this._userRepository.findByEmail(payload.email);
         if (!user || !user.id) {
             throw new AppError(ErrorMessage.USER_NOT_FOUND, HttpStatusCode.NOT_FOUND);

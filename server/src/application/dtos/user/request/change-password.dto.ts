@@ -1,4 +1,5 @@
 export interface ChangePasswordRequestDto {
-    currentPassword?: string;
-    newPassword?: string;
+    currentPassword: string;
+    newPassword: string;
+    confirmPassword?: string;
 }

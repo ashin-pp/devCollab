@@ -7,7 +7,9 @@ import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { MessageType } from "../../../domain/enums/MessageType";
 import { AppError } from "../../../domain/errors/AppError";
+import { DirectMessageResponseDto } from "../../dtos/dm/response/direct-message.response.dto";
 import { ISendDirectMessageUseCase } from "../../interfaces/use-cases/dm/send-direct-message.usecase.interface";
+import { toDirectMessageResponseDto } from "../../mappers/direct-message.mapper";
 import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 import { SERVICE_TOKENS } from "../../../infrastructure/di/service.tokens";
 
@@ -25,7 +27,7 @@ export class SendDirectMessageUseCase implements ISendDirectMessageUseCase {
         content: string,
         messageType: MessageType = MessageType.TEXT,
         imageUrl?: string
-    ): Promise<DirectMessage> {
+    ): Promise<DirectMessageResponseDto> {
         await this._planEntitlementService.resolveForUserId(senderId);
 
         const conversation = await this._conversationRepository.findById(conversationId);
@@ -42,6 +44,6 @@ export class SendDirectMessageUseCase implements ISendDirectMessageUseCase {
 
         await this._conversationRepository.updateLastMessageTime(conversationId, new Date());
 
-        return savedMessage;
+        return toDirectMessageResponseDto(savedMessage);
     }
 }

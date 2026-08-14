@@ -24,8 +24,14 @@ export class UserRepository extends MongoBaseRepository<User, IUserModel> implem
     }
 
     async findByName(name: string): Promise<User | null> {
-        // Case-insensitive partial match
         const found = await this._model.findOne({ name: { $regex: new RegExp(name, 'i') } });
         return found ? this._mapper.toDomain(found) : null;
+    }
+
+    async findByIds(ids: string[]): Promise<User[]> {
+        const unique = Array.from(new Set(ids.filter(Boolean)));
+        if (unique.length === 0) return [];
+        const found = await this._model.find({ _id: { $in: unique } });
+        return found.map((doc) => this._mapper.toDomain(doc));
     }
 }

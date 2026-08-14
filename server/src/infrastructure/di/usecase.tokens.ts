@@ -1,5 +1,4 @@
 export const USECASE_TOKENS = {
-    // Admin
     IAdminForgotPasswordUseCase: 'IAdminForgotPasswordUseCase',
     IAdminLoginUseCase: 'IAdminLoginUseCase',
     IAdminRefreshTokenUseCase: 'IAdminRefreshTokenUseCase',
@@ -15,13 +14,17 @@ export const USECASE_TOKENS = {
     IGetAdminSalesReportUseCase: 'IGetAdminSalesReportUseCase',
     IGetAdminWalletUseCase: 'IGetAdminWalletUseCase',
 
-    // AI
     ICreateAIReminderUseCase: 'ICreateAIReminderUseCase',
     ICreateAITaskUseCase: 'ICreateAITaskUseCase',
+    ICreateAIScheduleUseCase: 'ICreateAIScheduleUseCase',
+    IJoinAIScheduleVideoUseCase: 'IJoinAIScheduleVideoUseCase',
+    IStartDmVideoCallUseCase: 'IStartDmVideoCallUseCase',
+    IGetAIDashboardUseCase: 'IGetAIDashboardUseCase',
+    IClearAIDashboardTabUseCase: 'IClearAIDashboardTabUseCase',
+    IUpdateAITaskStatusUseCase: 'IUpdateAITaskStatusUseCase',
     IHandleAiCommandUseCase: 'IHandleAiCommandUseCase',
     ISaveAIChatUseCase: 'ISaveAIChatUseCase',
 
-    // Auth
     IForgotPasswordUseCase: 'IForgotPasswordUseCase',
     IGoogleAuthUseCase: 'IGoogleAuthUseCase',
     ILoginUserUseCase: 'ILoginUserUseCase',
@@ -32,7 +35,6 @@ export const USECASE_TOKENS = {
     IVerifyOtpUseCase: 'IVerifyOtpUseCase',
     IVerifyResetOtpUseCase: 'IVerifyResetOtpUseCase',
 
-    // Channel
     IAddChannelMemberUseCase: 'IAddChannelMemberUseCase',
     IBlockChannelMemberUseCase: 'IBlockChannelMemberUseCase',
     ICreateChannelUseCase: 'ICreateChannelUseCase',
@@ -55,26 +57,22 @@ export const USECASE_TOKENS = {
     IUpdateChannelUseCase: 'IUpdateChannelUseCase',
     IUploadChatImageUseCase: 'IUploadChatImageUseCase',
 
-    // DM
     IGetConversationsUseCase: 'IGetConversationsUseCase',
     IGetDirectMessagesUseCase: 'IGetDirectMessagesUseCase',
     IMarkMessageAsSeenUseCase: 'IMarkMessageAsSeenUseCase',
     ISendDirectMessageUseCase: 'ISendDirectMessageUseCase',
     IStartConversationUseCase: 'IStartConversationUseCase',
 
-    // Notification
     IClearUserNotificationsUseCase: 'IClearUserNotificationsUseCase',
     ICreateNotificationUseCase: 'ICreateNotificationUseCase',
     IGetUserNotificationsUseCase: 'IGetUserNotificationsUseCase',
     IMarkNotificationReadUseCase: 'IMarkNotificationReadUseCase',
 
-    // Payment
     ICreatePaymentOrderUseCase: 'ICreatePaymentOrderUseCase',
     IVerifyPaymentUseCase: 'IVerifyPaymentUseCase',
     IGetPaymentHistoryUseCase: 'IGetPaymentHistoryUseCase',
     IRecordPaymentAttemptUseCase: 'IRecordPaymentAttemptUseCase',
 
-    // Plan
     IGetPlansUseCase: 'IGetPlansUseCase',
     IGetAllPlansUseCase: 'IGetAllPlansUseCase',
     ICreatePlanUseCase: 'ICreatePlanUseCase',
@@ -82,7 +80,6 @@ export const USECASE_TOKENS = {
     IDeletePlanUseCase: 'IDeletePlanUseCase',
     ITogglePlanStatusUseCase: 'ITogglePlanStatusUseCase',
 
-    // Poll
     IClosePollUseCase: 'IClosePollUseCase',
     ICreatePollUseCase: 'ICreatePollUseCase',
     IDeletePollUseCase: 'IDeletePollUseCase',
@@ -90,7 +87,6 @@ export const USECASE_TOKENS = {
     IGetWorkspacePollsUseCase: 'IGetWorkspacePollsUseCase',
     IVotePollUseCase: 'IVotePollUseCase',
 
-    // User
     IChangePasswordUseCase: 'IChangePasswordUseCase',
     IDeleteProfileImageUseCase: 'IDeleteProfileImageUseCase',
     IGetUserByNameUseCase: 'IGetUserByNameUseCase',
@@ -102,7 +98,6 @@ export const USECASE_TOKENS = {
     IUploadProfileImageUseCase: 'IUploadProfileImageUseCase',
     IVerifyEmailChangeUseCase: 'IVerifyEmailChangeUseCase',
 
-    // Workspace
     IBlockWorkspaceMemberUseCase: 'IBlockWorkspaceMemberUseCase',
     ICreateWorkspaceUseCase: 'ICreateWorkspaceUseCase',
     IClaimPendingWorkspaceInvitesUseCase: 'IClaimPendingWorkspaceInvitesUseCase',

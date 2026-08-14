@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { AppError } from "../../domain/errors/AppError";
+import { ErrorMessage } from "../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../domain/enums/HttpStatusCode";
 import { ChannelModel } from "../../infrastructure/database/models/channel.model";
 
@@ -14,11 +15,11 @@ export const checkChannelActive = async (req: Request, res: Response, next: Next
         const channel = await ChannelModel.findById(channelId);
         
         if (!channel) {
-            throw new AppError('Channel not found', HttpStatusCode.NOT_FOUND);
+            throw new AppError(ErrorMessage.CHANNEL_NOT_FOUND, HttpStatusCode.NOT_FOUND);
         }
 
         if (!channel.is_active) {
-            throw new AppError('This channel has been blocked by the workspace admin or owner.', HttpStatusCode.FORBIDDEN);
+            throw new AppError(ErrorMessage.CHANNEL_BLOCKED_BY_ADMIN, HttpStatusCode.FORBIDDEN);
         }
 
         next();

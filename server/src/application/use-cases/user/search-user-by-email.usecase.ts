@@ -15,9 +15,6 @@ export class SearchUserByEmailUseCase implements ISearchUserByEmailUseCase {
 
     async execute(payload: {email: string}): Promise<Partial<UserProfileResponseDto>> {
         const { email } = payload;
-        if (!email) {
-            throw new AppError(ErrorMessage.EMAIL_REQUIRED_FOR_SEARCH, HttpStatusCode.BAD_REQUEST);
-        }
 
         const user = await this._userRepository.findByEmail(email.toLowerCase());
 

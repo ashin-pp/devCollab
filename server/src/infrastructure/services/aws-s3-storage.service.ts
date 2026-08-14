@@ -27,7 +27,6 @@ export class AwsS3StorageService implements IStorageService {
     }
 
     async uploadFile(fileBuffer: Buffer, fileName: string, contentType: string): Promise<string> {
-        // We'll place it in a 'devcollab/profiles' folder in the bucket
         const key = `devcollab/profiles/${Date.now()}-${fileName}`;
 
         const command = new PutObjectCommand({
@@ -39,7 +38,6 @@ export class AwsS3StorageService implements IStorageService {
 
         await this.s3Client.send(command);
 
-        // Return the public URL to the uploaded object
         return `https://${this.bucketName}.s3.${envConfig.awsRegion || 'us-east-1'}.amazonaws.com/${key}`;
     }
 
@@ -47,8 +45,6 @@ export class AwsS3StorageService implements IStorageService {
         if (!fileUrl) return;
 
         try {
-            // Extract the key from the file URL
-            // e.g. https://my-bucket.s3.us-east-1.amazonaws.com/devcollab/profiles/1612345678-file.jpg
             const urlParts = fileUrl.split('.amazonaws.com/');
             if (urlParts.length !== 2) return;
             

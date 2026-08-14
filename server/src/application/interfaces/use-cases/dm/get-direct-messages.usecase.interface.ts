@@ -1,5 +1,10 @@
-import { DirectMessage } from "../../../../domain/entities/direct-message.entity";
+import { DirectMessageResponseDto } from "../../../dtos/dm/response/direct-message.response.dto";
 
 export interface IGetDirectMessagesUseCase {
-    execute(conversationId: string, userId: string, limit: number, skip: number): Promise<DirectMessage[]>;
+    execute(
+        conversationId: string,
+        userId: string,
+        limit: number,
+        skip: number
+    ): Promise<DirectMessageResponseDto[]>;
 }

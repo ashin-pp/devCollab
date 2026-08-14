@@ -90,7 +90,7 @@ export const OtpVerificationPage = () => {
       await AuthService.sendOtp(email);
       toast.success('OTP resent successfully!');
     } catch (err: unknown) {
-      setResendTimer(0); // Reset timer if failed
+      setResendTimer(0);
       let errMsg = 'Failed to resend OTP.';
       if (isAxiosError(err)) {
         errMsg = err.response?.data?.error?.message || err.response?.data?.message || errMsg;

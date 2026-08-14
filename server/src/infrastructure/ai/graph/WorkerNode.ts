@@ -1,9 +1,20 @@
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
-import { HumanMessage, BaseMessage } from "@langchain/core/messages";
+import { HumanMessage, BaseMessage, ToolMessage } from "@langchain/core/messages";
 import { ChatGroq } from "@langchain/groq";
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { IAgentState } from "./AgentState";
 import { AgentName } from "../constants/AgentConstants";
+
+function lastToolText(messages: BaseMessage[]): string {
+    for (const message of [...messages].reverse()) {
+        const isTool =
+            message instanceof ToolMessage || message.getType() === "tool";
+        if (!isTool) continue;
+        const text = String(message.content ?? "").trim();
+        if (text) return text;
+    }
+    return "";
+}
 
 export const createWorkerNode = (
     model: ChatGroq, 
@@ -28,14 +39,18 @@ export const createWorkerNode = (
 
         const lastMessage = result.messages[result.messages.length - 1];
 
-        
         if (!lastMessage) {
             console.warn(`[WorkerNode] ${name} returned no final message.`);
             return { messages: [] };
         }
 
+        let reply = String(lastMessage.content ?? "");
+        if (name === "ScheduleAgent") {
+            const toolText = lastToolText(result.messages);
+            if (toolText) reply = toolText;
+        }
 
-        const finalContent = `[Worker ${name}]: ${lastMessage.content} (Action Completed Successfully)`;
+        const finalContent = `[Worker ${name}]: ${reply} (Action Completed Successfully)`;
 
         return {
             messages: [

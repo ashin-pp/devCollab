@@ -1,6 +1,8 @@
 import { inject, injectable } from 'tsyringe';
 import type { IChannelMemberRepository } from "../../../application/interfaces/repositories/channel-member.repository.interface";
+import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
+import { SuccessMessage } from "../../../domain/enums/SuccessMessage";
 import { IMarkChannelAsReadUseCase } from "../../interfaces/use-cases/channel/mark-channel-as-read.usecase.interface";
 import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 
@@ -17,7 +19,7 @@ export class MarkChannelAsReadUseCase implements IMarkChannelAsReadUseCase {
         if (!membership) {
             return {
                 success: false,
-                message: 'Not a member of this channel',
+                message: ErrorMessage.NOT_CHANNEL_MEMBER,
                 statusCode: HttpStatusCode.FORBIDDEN
             };
         }
@@ -26,7 +28,7 @@ export class MarkChannelAsReadUseCase implements IMarkChannelAsReadUseCase {
 
         return {
             success: true,
-            message: 'Channel marked as read',
+            message: SuccessMessage.CHANNEL_MARKED_READ,
             statusCode: HttpStatusCode.OK
         };
     }

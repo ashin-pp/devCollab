@@ -37,10 +37,8 @@ export const ChannelMembersSidebar = ({
   const isCreator = user?.id === channelCreatorId;
   const canRemoveMembers = isWorkspaceOwner || (isCreator && channelPrivacy === 'private');
   
-  // Expose tabs to owners or creators
   const hasElevatedPrivileges = isCreator || isWorkspaceOwner;
 
-  // Reset state when sidebar closes
   useEffect(() => {
     if (!isOpen) {
       setActiveTab('members');
@@ -61,7 +59,6 @@ export const ChannelMembersSidebar = ({
     }
   }, [isOpen, workspaceId, channelId]);
 
-  // Listen to socket events for real-time updates
   useEffect(() => {
     if (!socket || !isOpen || !channelId) return;
 
@@ -209,7 +206,7 @@ export const ChannelMembersSidebar = ({
         toast.success(action === 'approve' ? 'Request approved' : 'Request rejected');
         setRequests(prev => prev.filter(r => r.userId !== userId));
         if (action === 'approve') {
-          fetchMembers(); // refresh members list
+          fetchMembers();
         }
       }
     } catch (error: unknown) {

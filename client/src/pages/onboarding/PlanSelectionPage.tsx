@@ -26,7 +26,7 @@ const formatCycle = (days: number) => {
   return `${days} days`;
 };
 
-const buildFeatures = (plan: Plan, isPopular: boolean, previousName?: string) => {
+const buildFeatures = (plan: Plan, previousName?: string) => {
   const features: string[] = [];
   if (previousName) {
     features.push(`INCLUDES ${previousName.toUpperCase()} PLAN`);
@@ -42,9 +42,6 @@ const buildFeatures = (plan: Plan, isPopular: boolean, previousName?: string) =>
   if (plan.videoCallsEnabled) features.push('Video calls enabled');
   if (plan.multiAiAgents) features.push('Multi AI agents');
   if (plan.pinBoardEnabled) features.push('Pin board');
-  if (isPopular && !previousName) {
-    // keep first popular card focused
-  }
   return features;
 };
 
@@ -206,7 +203,7 @@ export const PlanSelectionPage = () => {
             {plans.map((plan, index) => {
               const isPopular = index === popularIndex;
               const previousName = index > 0 ? plans[index - 1]?.name : undefined;
-              const features = buildFeatures(plan, isPopular, previousName);
+              const features = buildFeatures(plan, previousName);
               const Icon = index === 0 ? User : index === plans.length - 1 ? Building2 : Rocket;
               const isSelected = selectedId === plan.id;
 

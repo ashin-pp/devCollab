@@ -6,6 +6,7 @@ export interface INotificationDocument extends Document {
   title: string;
   message: string;
   relatedId?: string;
+  actorId?: mongoose.Types.ObjectId;
   isRead: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -14,10 +15,11 @@ export interface INotificationDocument extends Document {
 const NotificationSchema: Schema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    type: { type: String, required: true, enum: ['POLL_CREATED', 'JOIN_REQUEST', 'JOIN_REQUEST_APPROVED', 'WORKSPACE_INVITE', 'GENERAL', 'WORKSPACE', 'CHANNEL', 'DIRECT_MESSAGE', 'MENTION'] },
+    type: { type: String, required: true, enum: ['POLL_CREATED', 'JOIN_REQUEST', 'JOIN_REQUEST_APPROVED', 'WORKSPACE_INVITE', 'GENERAL', 'WORKSPACE', 'CHANNEL', 'DIRECT_MESSAGE', 'MENTION', 'AI_NOTIFY'] },
     title: { type: String, required: true },
     message: { type: String, required: true },
     relatedId: { type: String },
+    actorId: { type: Schema.Types.ObjectId, ref: 'User' },
     isRead: { type: Boolean, default: false },
   },
   {

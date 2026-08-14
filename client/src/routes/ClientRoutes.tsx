@@ -24,6 +24,7 @@ import { BillingSuccessPage } from '../pages/billing/BillingSuccessPage';
 import { BillingFailedPage } from '../pages/billing/BillingFailedPage';
 import { BackgroundSelectionPage } from '../pages/onboarding/BackgroundSelectionPage';
 import { PlanSelectionPage } from '../pages/onboarding/PlanSelectionPage';
+import { VideoCallPage } from '../pages/call/VideoCallPage';
 
 export const ClientRoutes = () => {
   return (
@@ -44,6 +45,7 @@ export const ClientRoutes = () => {
         <Route path="billing/failed" element={<BillingFailedPage />} />
         <Route path="onboarding/background" element={<BackgroundSelectionPage />} />
         <Route path="onboarding/plans" element={<PlanSelectionPage />} />
+        <Route path="call/:scheduleId" element={<VideoCallPage />} />
 
         {/* Workspace Routes */}
         <Route path="workspace/:workspaceId" element={<Navigate to="dashboard" replace />} />

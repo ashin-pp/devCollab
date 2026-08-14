@@ -1,5 +1,5 @@
 export type ReplyVisibility = 'everyone' | 'author';
-export type MessageType = 'text' | 'image' | 'system';
+export type MessageType = 'text' | 'image' | 'system' | 'ai';
 
 export interface MessageData {
   id: string;

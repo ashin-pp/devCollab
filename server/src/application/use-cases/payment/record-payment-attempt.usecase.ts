@@ -30,15 +30,8 @@ export class RecordPaymentAttemptUseCase implements IRecordPaymentAttemptUseCase
         }
 
         const status = payload.data.status;
-        if (status !== "failed" && status !== "cancelled") {
-            throw new AppError(ErrorMessage.MISSING_REQUIRED_FIELDS, HttpStatusCode.BAD_REQUEST);
-        }
-
-        const planId = payload.data.planId?.trim();
-        const razorpayOrderId = payload.data.razorpayOrderId?.trim();
-        if (!planId || !razorpayOrderId) {
-            throw new AppError(ErrorMessage.MISSING_REQUIRED_FIELDS, HttpStatusCode.BAD_REQUEST);
-        }
+        const planId = payload.data.planId.trim();
+        const razorpayOrderId = payload.data.razorpayOrderId.trim();
 
         const existing = await this._paymentTransactionRepository.findByOrderId(razorpayOrderId);
         if (existing?.id) {

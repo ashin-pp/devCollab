@@ -1,4 +1,3 @@
-// DMListPage just redirects to the DMChatPage which handles the full split layout.
 import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 

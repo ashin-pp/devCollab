@@ -11,6 +11,7 @@ export interface WorkspaceResponseDto {
     maxMembers: number;
     isActive: boolean;
     aiAssistantEnabled?: boolean;
+    ownerPlanName?: string;
     createdAt?: Date;
     updatedAt?: Date;
 }

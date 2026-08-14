@@ -1,6 +1,6 @@
 import { AdminLayout } from '../../layouts/AdminLayout';
-import { Search, ChevronDown, SlidersHorizontal, ChevronLeft, ChevronRight, Users, UserCheck, Ban, Loader2, User as UserIcon, ArrowLeft, ArrowUp, ArrowDown } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Search, ChevronDown, SlidersHorizontal, ChevronLeft, ChevronRight, Users, UserCheck, Ban, User as UserIcon, ArrowLeft, ArrowUp, ArrowDown } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { AdminService } from '../../api/admin/admin.service';
 import toast from 'react-hot-toast';
@@ -9,6 +9,7 @@ import { isAxiosError } from 'axios';
 import Swal from 'sweetalert2';
 
 import type { WorkspaceMember } from '../../types/workspace.types';
+import { AdminDataTable, type AdminDataTableColumn } from '../../components/admin/AdminDataTable';
 
 export const AdminWorkspaceMembersPage = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>();
@@ -21,7 +22,7 @@ export const AdminWorkspaceMembersPage = () => {
 
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchParams.get('search') || '');
-  const [filterStatus, setFilterStatus] = useState(searchParams.get('filter') || 'ALL'); // ALL, APPROVED, PENDING, BLOCKED
+  const [filterStatus, setFilterStatus] = useState(searchParams.get('filter') || 'ALL');
   
   const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1'));
   const [sortBy, setSortBy] = useState(searchParams.get('sortBy') || 'joinedAt');
@@ -79,7 +80,6 @@ export const AdminWorkspaceMembersPage = () => {
     fetchMembers();
   }, [workspaceId, currentPage, debouncedSearchTerm, filterStatus, sortBy, sortOrder]);
 
-  // Sync state to URL
   useEffect(() => {
     const params = new URLSearchParams();
     if (currentPage > 1) params.set('page', currentPage.toString());
@@ -144,6 +144,92 @@ export const AdminWorkspaceMembersPage = () => {
     setCurrentPage(1);
   }, [debouncedSearchTerm, filterStatus]);
 
+  const columns = useMemo<AdminDataTableColumn<WorkspaceMember>[]>(
+    () => [
+      {
+        id: 'member',
+        header: 'MEMBER',
+        cell: (member) => (
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 bg-slate-800 rounded border ${member.status === 'blocked' ? 'border-red-500/30 text-red-500/50' : 'border-[#30363d] text-slate-500'} flex items-center justify-center shrink-0 relative overflow-hidden`}>
+              {member.status === 'blocked' && <div className="absolute inset-0 bg-red-500/20 z-10"></div>}
+              {member.userAvatar ? (
+                <img src={member.userAvatar} alt={member.userName} className="w-full h-full object-cover z-20 relative" />
+              ) : (
+                <UserIcon className="w-5 h-5 z-20 relative" />
+              )}
+            </div>
+            <div>
+              <div className={`font-bold text-sm ${member.status === 'blocked' ? 'text-red-200' : 'text-white'}`}>{member.userName}</div>
+              <div className={`text-[10px] tracking-wider font-mono ${member.status === 'blocked' ? 'text-red-500/50' : 'text-slate-500'}`}>{member.userEmail}</div>
+            </div>
+          </div>
+        ),
+      },
+      {
+        id: 'role',
+        header: (
+          <span className="cursor-pointer hover:text-amber-500 transition-colors" onClick={() => handleSort('role')}>
+            ROLE <SortIcon column="role" />
+          </span>
+        ),
+        cell: (member) => (
+          <span className={`px-2 py-1 rounded text-[9px] font-bold tracking-wider uppercase border ${member.role === 'owner' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 'bg-[#30363d]/50 text-slate-400 border-[#30363d]'}`}>
+            {member.role}
+          </span>
+        ),
+      },
+      {
+        id: 'joinDate',
+        header: (
+          <span className="cursor-pointer hover:text-amber-500 transition-colors" onClick={() => handleSort('joinedAt')}>
+            JOIN DATE <SortIcon column="joinedAt" />
+          </span>
+        ),
+        cellClassName: 'font-mono text-xs text-slate-400',
+        cell: (member) =>
+          new Date(member.joinedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '_').toUpperCase(),
+      },
+      {
+        id: 'status',
+        header: (
+          <span className="cursor-pointer hover:text-amber-500 transition-colors" onClick={() => handleSort('status')}>
+            STATUS <SortIcon column="status" />
+          </span>
+        ),
+        cell: (member) => (
+          <span className={`flex items-center gap-2 text-xs font-bold tracking-wider ${member.status === 'blocked' ? 'text-red-400' : member.status === 'approved' ? 'text-emerald-500' : 'text-amber-500'}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${member.status === 'blocked' ? 'bg-red-500' : member.status === 'approved' ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+            {member.status.toUpperCase()}
+          </span>
+        ),
+      },
+      {
+        id: 'actions',
+        header: 'ACTIONS',
+        headerClassName: 'text-right',
+        cellClassName: 'text-right',
+        cell: (member) =>
+          member.role !== 'owner' ? (
+            <button
+              onClick={() => handleUpdateStatus(member.userId, member.status === 'blocked' ? 'approved' : 'blocked')}
+              className={`text-[10px] font-bold px-3 py-1.5 rounded transition-colors uppercase tracking-widest ${member.status === 'blocked'
+                ? 'text-black bg-amber-500 hover:bg-amber-400 border border-amber-500'
+                : 'text-red-500 border border-[#30363d] hover:bg-[#30363d]'
+                }`}
+            >
+              {member.status === 'blocked' ? 'UNBLOCK' : 'BLOCK'}
+            </button>
+          ) : (
+            <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">
+              PROTECTED
+            </span>
+          ),
+      },
+    ],
+    [sortBy, sortOrder, members, workspaceId]
+  );
+
   return (
     <AdminLayout>
 
@@ -197,131 +283,54 @@ export const AdminWorkspaceMembersPage = () => {
         </div>
       </div>
 
-      <div className="bg-[#161b22] border border-[#30363d] rounded-lg overflow-hidden mb-8">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="text-[10px] text-slate-500 font-bold tracking-widest uppercase border-b border-[#30363d] bg-[#0d1117]">
-              <tr>
-                <th className="px-6 py-4">MEMBER</th>
-                <th className="px-6 py-4 cursor-pointer hover:text-amber-500 transition-colors" onClick={() => handleSort('role')}>ROLE <SortIcon column="role" /></th>
-                <th className="px-6 py-4 cursor-pointer hover:text-amber-500 transition-colors" onClick={() => handleSort('joinedAt')}>JOIN DATE <SortIcon column="joinedAt" /></th>
-                <th className="px-6 py-4 cursor-pointer hover:text-amber-500 transition-colors" onClick={() => handleSort('status')}>STATUS <SortIcon column="status" /></th>
-                <th className="px-6 py-4 text-right">ACTIONS</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#30363d]">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
-                    <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-amber-500" />
-                    <div className="font-mono text-xs tracking-widest uppercase">FETCHING_MEMBER_DATA...</div>
-                  </td>
-                </tr>
-              ) : error ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-red-500 font-mono text-xs tracking-widest uppercase">
-                    {error}
-                  </td>
-                </tr>
-              ) : members.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500 font-mono text-xs tracking-widest uppercase">
-                    NO_MEMBERS_FOUND
-                  </td>
-                </tr>
-              ) : (
-                members.map(member => (
-                  <tr key={member.id} className={`hover:bg-[#0d1117]/50 transition-colors group ${member.status === 'blocked' ? 'bg-red-500/5' : ''}`}>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 bg-slate-800 rounded border ${member.status === 'blocked' ? 'border-red-500/30 text-red-500/50' : 'border-[#30363d] text-slate-500'} flex items-center justify-center shrink-0 relative overflow-hidden`}>
-                          {member.status === 'blocked' && <div className="absolute inset-0 bg-red-500/20 z-10"></div>}
-                          {member.userAvatar ? (
-                            <img src={member.userAvatar} alt={member.userName} className="w-full h-full object-cover z-20 relative" />
-                          ) : (
-                            <UserIcon className="w-5 h-5 z-20 relative" />
-                          )}
-                        </div>
-                        <div>
-                          <div className={`font-bold text-sm ${member.status === 'blocked' ? 'text-red-200' : 'text-white'}`}>{member.userName}</div>
-                          <div className={`text-[10px] tracking-wider font-mono ${member.status === 'blocked' ? 'text-red-500/50' : 'text-slate-500'}`}>{member.userEmail}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded text-[9px] font-bold tracking-wider uppercase border ${member.role === 'owner' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 'bg-[#30363d]/50 text-slate-400 border-[#30363d]'}`}>
-                        {member.role}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 font-mono text-xs text-slate-400">
-                      {new Date(member.joinedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '_').toUpperCase()}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`flex items-center gap-2 text-xs font-bold tracking-wider ${member.status === 'blocked' ? 'text-red-400' : member.status === 'approved' ? 'text-emerald-500' : 'text-amber-500'}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${member.status === 'blocked' ? 'bg-red-500' : member.status === 'approved' ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
-                        {member.status.toUpperCase()}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      {member.role !== 'owner' ? (
-                        <button
-                          onClick={() => handleUpdateStatus(member.userId, member.status === 'blocked' ? 'approved' : 'blocked')}
-                          className={`text-[10px] font-bold px-3 py-1.5 rounded transition-colors uppercase tracking-widest ${member.status === 'blocked'
-                            ? 'text-black bg-amber-500 hover:bg-amber-400 border border-amber-500'
-                            : 'text-red-500 border border-[#30363d] hover:bg-[#30363d]'
-                            }`}
-                        >
-                          {member.status === 'blocked' ? 'UNBLOCK' : 'BLOCK'}
-                        </button>
-                      ) : (
-                        <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">
-                          PROTECTED
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="bg-[#0d1117] border-t border-[#30363d] p-4 flex items-center justify-between">
-          <div className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
-            DISPLAYING: [ {totalMembers === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, totalMembers)} ] OF {totalMembers} ENTRIES
-          </div>
-          <div className="flex gap-1">
-            <button
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="w-8 h-8 flex items-center justify-center text-slate-500 border border-[#30363d] rounded hover:bg-[#30363d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+      <AdminDataTable
+        className="mb-8"
+        columns={columns}
+        rows={members}
+        getRowKey={(member) => member.id}
+        isLoading={isLoading}
+        error={error}
+        loadingMessage="FETCHING_MEMBER_DATA..."
+        emptyMessage="NO_MEMBERS_FOUND"
+        rowClassName={(member) => (member.status === 'blocked' ? 'group bg-red-500/5' : 'group')}
+        footer={
+          <div className="p-4 flex items-center justify-between">
+            <div className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+              DISPLAYING: [ {totalMembers === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, totalMembers)} ] OF {totalMembers} ENTRIES
+            </div>
+            <div className="flex gap-1">
               <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`w-8 h-8 flex items-center justify-center font-bold rounded border ${currentPage === page
-                  ? 'bg-amber-500 text-black border-amber-500'
-                  : 'text-slate-400 border-[#30363d] hover:bg-[#30363d] transition-colors'
-                  }`}
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="w-8 h-8 flex items-center justify-center text-slate-500 border border-[#30363d] rounded hover:bg-[#30363d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {page}
+                <ChevronLeft className="w-4 h-4" />
               </button>
-            ))}
 
-            <button
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages || totalPages === 0}
-              className="w-8 h-8 flex items-center justify-center text-slate-500 border border-[#30363d] rounded hover:bg-[#30363d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-8 h-8 flex items-center justify-center font-bold rounded border ${currentPage === page
+                    ? 'bg-amber-500 text-black border-amber-500'
+                    : 'text-slate-400 border-[#30363d] hover:bg-[#30363d] transition-colors'
+                    }`}
+                >
+                  {page}
+                </button>
+              ))}
+
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages || totalPages === 0}
+                className="w-8 h-8 flex items-center justify-center text-slate-500 border border-[#30363d] rounded hover:bg-[#30363d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-        </div>
-      </div>
+        }
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-[#161b22] border border-[#30363d] p-6 rounded-lg relative overflow-hidden group">

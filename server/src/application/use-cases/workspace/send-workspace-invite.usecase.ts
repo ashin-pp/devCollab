@@ -11,6 +11,7 @@ import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { MemberRole } from "../../../domain/enums/MemberRole";
 import { MemberStatus } from "../../../domain/enums/MemberStatus";
+import { NotificationTitle } from "../../../domain/enums/NotificationMessage";
 import { SuccessMessage } from "../../../domain/enums/SuccessMessage";
 import { WorkspacePrivacy } from "../../../domain/enums/WorkspacePrivacy";
 import { AppError } from "../../../domain/errors/AppError";
@@ -33,9 +34,6 @@ export class SendWorkspaceInviteUseCase implements ISendWorkspaceInviteUseCase {
 
     async execute(payload: {workspaceId: string, requesterId: string, targetEmail: string}): Promise<{ success: boolean; message: string }> {
         const { workspaceId, requesterId, targetEmail } = payload;
-        if (!workspaceId || !requesterId || !targetEmail) {
-            throw new AppError(ErrorMessage.INVITE_FIELDS_REQUIRED, HttpStatusCode.BAD_REQUEST);
-        }
 
         await this._planEntitlementService.resolveForUserId(requesterId);
 
@@ -132,7 +130,7 @@ export class SendWorkspaceInviteUseCase implements ISendWorkspaceInviteUseCase {
         await this._createNotificationUseCase.execute({
             userId: targetUser.id,
             type: 'WORKSPACE_INVITE',
-            title: 'Workspace Invitation',
+            title: NotificationTitle.WORKSPACE_INVITATION,
             message: `You have been invited to join the workspace "${workspace.name}".`,
             relatedId: workspace.id
         }).catch(err => logger.error(`Failed to create invite notification: ${err instanceof Error ? err.message : String(err)}`));

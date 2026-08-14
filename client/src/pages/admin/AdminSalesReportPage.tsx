@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { isAxiosError } from 'axios';
 import toast from 'react-hot-toast';
@@ -8,11 +8,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
-  Loader2,
   Wallet,
 } from 'lucide-react';
 import { AdminLayout } from '../../layouts/AdminLayout';
 import { AdminService } from '../../api/admin/admin.service';
+import { AdminDataTable, type AdminDataTableColumn } from '../../components/admin/AdminDataTable';
 
 type SalesItem = {
   id: string;
@@ -190,6 +190,66 @@ export const AdminSalesReportPage = () => {
     toast.success('PDF downloaded');
   };
 
+  const columns = useMemo<AdminDataTableColumn<SalesItem>[]>(
+    () => [
+      {
+        id: 'date',
+        header: <span className="font-bold">Date</span>,
+        cellClassName: 'text-slate-400 font-mono text-xs whitespace-nowrap',
+        cell: (item) =>
+          new Date(item.createdAt).toLocaleString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+      },
+      {
+        id: 'user',
+        header: <span className="font-bold">User</span>,
+        cell: (item) => (
+          <>
+            <div className="text-white text-xs font-medium">
+              {item.userName || 'Unknown'}
+            </div>
+            <div className="text-slate-500 text-[11px]">{item.userEmail || item.userId}</div>
+          </>
+        ),
+      },
+      {
+        id: 'plan',
+        header: <span className="font-bold">Plan</span>,
+        cellClassName: 'text-slate-300 text-xs',
+        cell: (item) => item.planName,
+      },
+      {
+        id: 'amount',
+        header: <span className="font-bold">Amount</span>,
+        cellClassName: 'text-white font-mono text-xs',
+        cell: (item) => formatMoney(item.amount, item.currency),
+      },
+      {
+        id: 'status',
+        header: <span className="font-bold">Status</span>,
+        cell: (item) => (
+          <span
+            className={`inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest border rounded ${statusClass(item.status)}`}
+          >
+            {item.status}
+          </span>
+        ),
+      },
+      {
+        id: 'order',
+        header: <span className="font-bold">Order</span>,
+        cellClassName: 'text-slate-500 font-mono text-[11px] max-w-[140px] truncate',
+        cell: (item) => <span title={item.razorpayOrderId}>{item.razorpayOrderId}</span>,
+      },
+    ],
+    []
+  );
+
   return (
     <AdminLayout>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4 border-b border-[#30363d] pb-6">
@@ -227,145 +287,94 @@ export const AdminSalesReportPage = () => {
         <SummaryTile label="CANCELLED" value={String(summary?.cancelledCount ?? 0)} />
       </div>
 
-      <div className="bg-[#161b22] border border-[#30363d] rounded-lg overflow-hidden">
-        <div className="p-4 border-b border-[#30363d] flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
-          <div className="flex flex-wrap gap-3">
-            <select
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="bg-[#0d1117] border border-[#30363d] text-xs text-white px-3 py-2 rounded tracking-widest uppercase"
-            >
-              <option value="ALL">All Status</option>
-              <option value="success">Success</option>
-              <option value="failed">Failed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
+      <AdminDataTable
+        compact
+        columns={columns}
+        rows={items}
+        getRowKey={(item) => item.id}
+        isLoading={isLoading}
+        loadingMessage="Loading sales…"
+        emptyMessage="NO_TRANSACTIONS_FOUND"
+        toolbar={
+          <div className="p-4 flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
+            <div className="flex flex-wrap gap-3">
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="bg-[#0d1117] border border-[#30363d] text-xs text-white px-3 py-2 rounded tracking-widest uppercase"
+              >
+                <option value="ALL">All Status</option>
+                <option value="success">Success</option>
+                <option value="failed">Failed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
 
-            <select
-              value={planFilter}
-              onChange={(e) => {
-                setPlanFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="bg-[#0d1117] border border-[#30363d] text-xs text-white px-3 py-2 rounded tracking-widest"
-            >
-              <option value="ALL">All Plans</option>
-              {planNames.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
-
-            <input
-              type="date"
-              value={from}
-              onChange={(e) => {
-                setFrom(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="bg-[#0d1117] border border-[#30363d] text-xs text-white px-3 py-2 rounded"
-            />
-            <input
-              type="date"
-              value={to}
-              onChange={(e) => {
-                setTo(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="bg-[#0d1117] border border-[#30363d] text-xs text-white px-3 py-2 rounded"
-            />
-          </div>
-        </div>
-
-        {isLoading ? (
-          <div className="flex items-center justify-center py-20 text-slate-400 gap-2">
-            <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
-            Loading sales…
-          </div>
-        ) : items.length === 0 ? (
-          <div className="py-20 text-center text-slate-500 text-sm tracking-widest">
-            NO_TRANSACTIONS_FOUND
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="text-[10px] uppercase tracking-widest text-slate-500 border-b border-[#30363d] bg-[#0d1117]/50">
-                <tr>
-                  <th className="px-4 py-3 font-bold">Date</th>
-                  <th className="px-4 py-3 font-bold">User</th>
-                  <th className="px-4 py-3 font-bold">Plan</th>
-                  <th className="px-4 py-3 font-bold">Amount</th>
-                  <th className="px-4 py-3 font-bold">Status</th>
-                  <th className="px-4 py-3 font-bold">Order</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item) => (
-                  <tr key={item.id} className="border-b border-[#30363d]/60 hover:bg-[#0d1117]/40">
-                    <td className="px-4 py-3 text-slate-400 font-mono text-xs whitespace-nowrap">
-                      {new Date(item.createdAt).toLocaleString('en-GB', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="text-white text-xs font-medium">
-                        {item.userName || 'Unknown'}
-                      </div>
-                      <div className="text-slate-500 text-[11px]">{item.userEmail || item.userId}</div>
-                    </td>
-                    <td className="px-4 py-3 text-slate-300 text-xs">{item.planName}</td>
-                    <td className="px-4 py-3 text-white font-mono text-xs">
-                      {formatMoney(item.amount, item.currency)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest border rounded ${statusClass(item.status)}`}
-                      >
-                        {item.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-slate-500 font-mono text-[11px] max-w-[140px] truncate" title={item.razorpayOrderId}>
-                      {item.razorpayOrderId}
-                    </td>
-                  </tr>
+              <select
+                value={planFilter}
+                onChange={(e) => {
+                  setPlanFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="bg-[#0d1117] border border-[#30363d] text-xs text-white px-3 py-2 rounded tracking-widest"
+              >
+                <option value="ALL">All Plans</option>
+                {planNames.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+              </select>
 
-        <div className="flex items-center justify-between px-4 py-3 border-t border-[#30363d]">
-          <div className="text-[10px] text-slate-500 tracking-widest uppercase">
-            Page {currentPage} / {totalPages}
+              <input
+                type="date"
+                value={from}
+                onChange={(e) => {
+                  setFrom(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="bg-[#0d1117] border border-[#30363d] text-xs text-white px-3 py-2 rounded"
+              />
+              <input
+                type="date"
+                value={to}
+                onChange={(e) => {
+                  setTo(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="bg-[#0d1117] border border-[#30363d] text-xs text-white px-3 py-2 rounded"
+              />
+            </div>
           </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              disabled={currentPage <= 1}
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              className="p-2 border border-[#30363d] rounded text-slate-400 hover:text-amber-500 disabled:opacity-40"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              disabled={currentPage >= totalPages}
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              className="p-2 border border-[#30363d] rounded text-slate-400 hover:text-amber-500 disabled:opacity-40"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
+        }
+        footer={
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="text-[10px] text-slate-500 tracking-widest uppercase">
+              Page {currentPage} / {totalPages}
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={currentPage <= 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className="p-2 border border-[#30363d] rounded text-slate-400 hover:text-amber-500 disabled:opacity-40"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                className="p-2 border border-[#30363d] rounded text-slate-400 hover:text-amber-500 disabled:opacity-40"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-        </div>
-      </div>
+        }
+      />
     </AdminLayout>
   );
 };

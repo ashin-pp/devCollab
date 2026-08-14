@@ -43,7 +43,6 @@ export interface MemberData {
     githubUrl?: string;
     linkedinUrl?: string;
     twitterUrl?: string;
-    // Also include the backend field names for compatibility
     github?: string;
     linkedin?: string;
     twitter?: string;
@@ -66,6 +65,7 @@ export interface Workspace {
   ownerName: string;
   ownerEmail: string;
   ownerPlanName?: string;
+  ownerPlanId?: string | null;
   memberStatus?: string;
   aiAssistantEnabled?: boolean;
 }

@@ -289,7 +289,7 @@ export const Hero = () => {
                   {/* Textarea */}
                   <textarea 
                     className="w-full bg-transparent p-3 outline-none resize-none text-[15px] text-slate-700 placeholder:text-slate-400 min-h-[80px]" 
-                    placeholder="Message #development (Use /task, /notify, /remind, /schedule, /summary or type /fix for AI assistant)..."
+                    placeholder="Message #development (Use /task, /notify, /remind, /schedule, /summary)..."
                     readOnly
                   ></textarea>
                   {/* Bottom Toolbar */}

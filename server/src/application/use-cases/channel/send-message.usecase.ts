@@ -8,11 +8,14 @@ import type { IPlanEntitlementService } from "../../interfaces/services/plan-ent
 import { Message } from "../../../domain/entities/message.entity";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
+import { NotificationTitle } from "../../../domain/enums/NotificationMessage";
 import { ReplyVisibility } from "../../../domain/enums/ReplyVisibility";
 import { AppError } from "../../../domain/errors/AppError";
 import { SendMessageRequestDto } from "../../dtos/channel/request/send-message-request.dto";
+import { MessageResponseDto } from "../../dtos/channel/response/message.response.dto";
 import { ISendMessageUseCase } from "../../interfaces/use-cases/channel/send-message.usecase.interface";
 import type { ICreateNotificationUseCase } from "../../interfaces/use-cases/notification/create-notification.usecase.interface";
+import { toMessageResponseDto } from "../../mappers/message.mapper";
 import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 import { SERVICE_TOKENS } from "../../../infrastructure/di/service.tokens";
 
@@ -27,7 +30,7 @@ export class SendMessageUseCase implements ISendMessageUseCase {
         @inject(SERVICE_TOKENS.IPlanEntitlementService) private _planEntitlementService: IPlanEntitlementService
     ) {}
 
-    async execute(payload: SendMessageRequestDto): Promise<Message> {
+    async execute(payload: SendMessageRequestDto): Promise<MessageResponseDto> {
         const {
             workspaceId,
             channelId,
@@ -45,15 +48,15 @@ export class SendMessageUseCase implements ISendMessageUseCase {
         const member = await this._channelMemberRepository.findByChannelAndUser(channelId, senderId);
         
         if (!member) {
-            throw new AppError("You are not a member of this channel.", HttpStatusCode.FORBIDDEN);
+            throw new AppError(ErrorMessage.NOT_CHANNEL_MEMBER, HttpStatusCode.FORBIDDEN);
         }
 
         if (member.status === 'blocked') {
-            throw new AppError("You have been blocked from sending messages in this channel.", HttpStatusCode.FORBIDDEN);
+            throw new AppError(ErrorMessage.CHANNEL_SEND_BLOCKED, HttpStatusCode.FORBIDDEN);
         }
 
         if (member.status !== 'approved') {
-            throw new AppError("You do not have permission to send messages in this channel.", HttpStatusCode.FORBIDDEN);
+            throw new AppError(ErrorMessage.CHANNEL_SEND_FORBIDDEN, HttpStatusCode.FORBIDDEN);
         }
 
         let resolvedParentMessageId: string | undefined;
@@ -80,9 +83,6 @@ export class SendMessageUseCase implements ISendMessageUseCase {
             }
 
             const visibility = replyVisibility || ReplyVisibility.EVERYONE;
-            if (visibility !== ReplyVisibility.EVERYONE && visibility !== ReplyVisibility.AUTHOR) {
-                throw new AppError(ErrorMessage.INVALID_REPLY_VISIBILITY, HttpStatusCode.BAD_REQUEST);
-            }
 
             resolvedVisibility = visibility;
             if (visibility === ReplyVisibility.AUTHOR) {
@@ -118,7 +118,7 @@ export class SendMessageUseCase implements ISendMessageUseCase {
                     await this._createNotificationUseCase.execute({
                         userId,
                         type: 'GENERAL',
-                        title: 'You were mentioned',
+                        title: NotificationTitle.YOU_WERE_MENTIONED,
                         message: `Someone mentioned you in ${channelName} in ${workspaceName}`,
                         relatedId: channelId
                     }).catch(err => console.error("Failed to send mention notification:", err));
@@ -126,6 +126,6 @@ export class SendMessageUseCase implements ISendMessageUseCase {
             }
         }
 
-        return savedMessage;
+        return toMessageResponseDto(savedMessage);
     }
 }

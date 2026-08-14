@@ -11,6 +11,7 @@ export const REPOSITORY_TOKENS = {
     IDirectMessageRepository: 'IDirectMessageRepository',
     IAITaskRepository: 'IAITaskRepository',
     IAIReminderRepository: 'IAIReminderRepository',
+    IAIScheduleRepository: 'IAIScheduleRepository',
     IAIChatRepository: 'IAIChatRepository',
     INotificationRepository: 'INotificationRepository',
     IPollRepository: 'IPollRepository',

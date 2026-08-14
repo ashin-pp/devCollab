@@ -4,6 +4,14 @@ import { ChevronDown, MessageSquare } from 'lucide-react';
 import type { ChannelMessageListProps } from '../../../types/component.types';
 import { renderMessageContent } from '../../../utils/renderMessageContent';
 import { getMessageId } from '../../../utils/message.utils';
+import { isAgentMessage } from '../../../utils/agentMessage.utils';
+import {
+  extractCallCreator,
+  extractCallScheduleId,
+  stripCallLinks,
+} from '../../../utils/callLink.utils';
+import { AgentReplyCard } from '../shared/AgentReplyCard';
+import { CallInviteCta } from '../shared/CallInviteCta';
 
 const NEAR_BOTTOM_PX = 100;
 
@@ -240,6 +248,28 @@ export const ChannelMessageList = ({
             );
           }
 
+          if (isAgentMessage(msg)) {
+            return (
+              <div key={messageId} id={`channel-msg-${messageId}`}>
+                {isFirstUnread && (
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="h-px bg-red-200 flex-1" />
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-red-500">
+                      New messages
+                    </span>
+                    <div className="h-px bg-red-200 flex-1" />
+                  </div>
+                )}
+                <div className="flex justify-start">
+                  <AgentReplyCard
+                    content={msg.content}
+                    timestamp={msg.createdAt ? format(new Date(msg.createdAt), 'h:mm a') : 'Now'}
+                  />
+                </div>
+              </div>
+            );
+          }
+
           return (
             <div key={messageId} id={`channel-msg-${messageId}`}>
               {isFirstUnread && (
@@ -286,7 +316,25 @@ export const ChannelMessageList = ({
                         onClick={() => setSelectedImage(msg.imageUrl!)}
                       />
                     ) : null}
-                    {msg.content && renderMessageContent(msg.content)}
+                    {(() => {
+                      const scheduleId = extractCallScheduleId(msg.content || '');
+                      const display = scheduleId ? stripCallLinks(msg.content || '') : msg.content;
+                      const creatorName =
+                        extractCallCreator(msg.content || '') ||
+                        (isMe ? 'You' : msg.senderName || 'Member');
+                      return (
+                        <>
+                          {display ? renderMessageContent(display) : null}
+                          {scheduleId ? (
+                            <CallInviteCta
+                              scheduleId={scheduleId}
+                              creatorName={creatorName}
+                              tone={isMe ? 'onDark' : 'light'}
+                            />
+                          ) : null}
+                        </>
+                      );
+                    })()}
 
                     {onOpenThread && (
                       <button

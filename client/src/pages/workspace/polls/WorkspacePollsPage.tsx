@@ -48,8 +48,6 @@ export const WorkspacePollsPage = () => {
   useEffect(() => {
     if (workspaceId) {
       dispatch(fetchWorkspacePolls(workspaceId));
-      
-      // Fetch members locally since there is no workspaceSlice
       WorkspaceService.getWorkspaceMembers(workspaceId, false)
         .then(res => setMembers(Array.isArray(res.data) ? res.data : res.data?.data || []))
         .catch(err => console.error('Failed to fetch members', err));
@@ -61,7 +59,6 @@ export const WorkspacePollsPage = () => {
     return () => clearInterval(interval);
   }, [dispatch, workspaceId]);
 
-  // Handle Socket Events
   useEffect(() => {
     if (!socket || !workspaceId) return;
 
@@ -85,7 +82,7 @@ export const WorkspacePollsPage = () => {
 
     socket.on('new_poll', handleNewPoll);
     socket.on('poll_updated', handlePollUpdated);
-    socket.on('poll_voted', handlePollUpdated); // poll_voted is similar to updated
+    socket.on('poll_voted', handlePollUpdated);
     socket.on('poll_deleted', handlePollDeleted);
 
     return () => {
@@ -96,13 +93,11 @@ export const WorkspacePollsPage = () => {
     };
   }, [socket, workspaceId, dispatch]);
 
-  // Process polls
   const workspacePolls = polls.filter(p => p.workspaceId === workspaceId && !p.channelId);
   
   const activePolls = workspacePolls.filter(p => p.isActive && (!p.startsAt || new Date(p.startsAt).getTime() <= now) && (!p.expiresAt || new Date(p.expiresAt).getTime() > now));
   const closedPolls = workspacePolls.filter(p => !p.isActive || (p.expiresAt && new Date(p.expiresAt).getTime() <= now));
 
-  // Sort active polls
   const sortedActivePolls = [...activePolls].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   const carouselPoll = sortedActivePolls.length > 0 ? sortedActivePolls[currentCarouselIndex % sortedActivePolls.length] : null;
 
@@ -122,7 +117,6 @@ export const WorkspacePollsPage = () => {
     setCurrentCarouselIndex(prev => (prev + 1) % sortedActivePolls.length);
   };
 
-  // Helper to get user details
   const getUserDetails = (userId: string) => {
     return members.find(m => m.userId === userId)?.user || null;
   };
@@ -161,7 +155,6 @@ export const WorkspacePollsPage = () => {
     }
   };
 
-  // Filter history based on tabs
   let historyPolls = workspacePolls.filter(p => !p.startsAt || new Date(p.startsAt).getTime() <= now);
   if (activeTab === 'participated') historyPolls = historyPolls.filter(p => p.options.some(o => o.votes.includes(user?.id || '')));
   if (activeTab === 'closed') historyPolls = closedPolls;
@@ -175,16 +168,13 @@ export const WorkspacePollsPage = () => {
     <WorkspaceLayout>
       <div className="flex flex-col h-full bg-slate-50 overflow-hidden font-sans">
         
-        {/* Page Header */}
         <div className="flex items-center justify-between px-8 py-5 bg-white border-b border-slate-200">
           <h1 className="text-xl font-bold text-slate-800">Polls</h1>
         </div>
 
-        {/* Main Content Scrollable */}
         <div className="flex-1 overflow-y-auto p-8 hide-scrollbar">
           <div className="max-w-6xl mx-auto space-y-8">
             
-            {/* Header Section */}
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-2xl font-bold text-slate-900">Active Discussions</h1>
@@ -198,22 +188,16 @@ export const WorkspacePollsPage = () => {
               </button>
             </div>
 
-            {/* Top Cards Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               
-              {/* Main Active Poll Card */}
-              {/* Main Active Poll Card */}
               <div className="lg:col-span-2 bg-gradient-to-br from-white to-slate-50/50 rounded-2xl shadow-lg border border-slate-200/60 p-6 sm:p-8 flex flex-col relative overflow-hidden transition-all duration-300 hover:shadow-xl group/card">
-                {/* Modern subtle background glow */}
                 <div className="absolute top-0 right-0 w-64 h-64 bg-blue-400/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
                 <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-400/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>
                 
-                {/* Gradient left accent */}
                 <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-blue-600 to-indigo-600"></div>
                 
                 {carouselPoll ? (
                   <div className="relative z-10 w-full">
-                    {/* Carousel Navigation Arrows */}
                     {sortedActivePolls.length > 1 && (
                       <>
                         <button 
@@ -287,13 +271,11 @@ export const WorkspacePollsPage = () => {
                             className={`relative group overflow-hidden rounded-xl border transition-all duration-300 ${(!carouselPoll.startsAt || new Date(carouselPoll.startsAt).getTime() <= now) ? 'cursor-pointer ' + (isSelected ? 'border-blue-300 shadow-md shadow-blue-500/10' : 'border-slate-200/80 shadow-sm hover:border-slate-300 hover:shadow-md') : 'cursor-not-allowed opacity-75 border-slate-200/50'}`}
                             title={carouselPoll.startsAt && new Date(carouselPoll.startsAt).getTime() > now ? 'Voting opens when poll starts' : (voterNames ? `Voted by: ${voterNames}` : 'No votes yet')}
                           >
-                            {/* Background Progress Fill */}
                             <div 
                               className={`absolute top-0 bottom-0 left-0 transition-all duration-1000 ease-out ${isSelected ? 'bg-blue-100/80' : 'bg-slate-100'}`}
                               style={{ width: `${percentage}%` }}
                             ></div>
                             
-                            {/* Content */}
                             <div className="relative z-10 flex items-center justify-between px-5 py-3.5">
                               <div className="flex items-center gap-3">
                                 <div className={`flex items-center justify-center w-5 h-5 rounded-full border-[1.5px] transition-colors ${isSelected ? 'border-blue-600 bg-blue-600 text-white shadow-sm shadow-blue-500/40' : 'border-slate-300 bg-white group-hover:border-slate-400'}`}>
@@ -317,7 +299,6 @@ export const WorkspacePollsPage = () => {
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-auto pt-6 border-t border-slate-200/60 sm:px-4 gap-4 sm:gap-0">
                       <div className="flex items-center gap-3">
                         <div className="flex -space-x-2.5 hover:space-x-1 transition-all duration-300 cursor-default">
-                          {/* Get unique voters */}
                           {Array.from(new Set(carouselPoll.options.flatMap(o => o.votes))).slice(0, 4).map((voterId, i) => (
                              getUserDetails(voterId)?.profileImage ? (
                                 <img key={voterId} src={getUserDetails(voterId)?.profileImage} className="w-9 h-9 rounded-full border-[2.5px] border-white shadow-sm relative z-30 transition-transform hover:scale-110 hover:z-50" style={{ zIndex: 40 - i }} />
@@ -356,7 +337,6 @@ export const WorkspacePollsPage = () => {
                       </div>
                     </div>
 
-                    {/* Carousel Dots */}
                     {sortedActivePolls.length > 1 && (
                       <div className="flex justify-center gap-2 mt-6">
                         {sortedActivePolls.map((_, idx) => (
@@ -380,9 +360,7 @@ export const WorkspacePollsPage = () => {
                 )}
               </div>
 
-              {/* Insights Column */}
               <div className="flex flex-col gap-6">
-                {/* Poll Insights Card */}
                 <div className="bg-blue-700 text-white rounded-xl shadow-sm p-6 relative overflow-hidden h-full min-h-[250px]">
                   <div className="absolute right-0 top-0 opacity-10 pointer-events-none transform translate-x-4 -translate-y-4">
                     <svg width="150" height="150" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" y1="22" x2="12" y2="12"></line></svg>
@@ -409,16 +387,13 @@ export const WorkspacePollsPage = () => {
                   </div>
                 </div>
 
-                {/* Active members removed as per user request */}
               </div>
             </div>
 
-            {/* Recent History Section */}
             <div>
               <h2 className="text-lg font-bold text-slate-900 mb-4">Recent History</h2>
               
               <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col">
-                {/* Tabs */}
                 <div className="flex items-center justify-end p-4 border-b border-slate-100">
                   <div className="flex bg-slate-100 rounded-md p-1">
                     <button 
@@ -442,7 +417,6 @@ export const WorkspacePollsPage = () => {
                   </div>
                 </div>
 
-                {/* Table Header */}
                 <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-slate-50/50 border-b border-slate-100 text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">
                   <div className="col-span-5">Poll Details</div>
                   <div className="col-span-3">Creator</div>
@@ -450,7 +424,6 @@ export const WorkspacePollsPage = () => {
                   <div className="col-span-2 text-right">Activity</div>
                 </div>
 
-                {/* Table Rows */}
                 <div className="flex flex-col">
                   {paginatedPolls.map((poll) => {
                     const totalVotes = poll.options.reduce((sum, opt) => sum + opt.votes.length, 0);
@@ -519,7 +492,6 @@ export const WorkspacePollsPage = () => {
                   )}
                 </div>
 
-                {/* Pagination footer */}
                 <div className="px-6 py-3 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
                   <span className="text-xs font-medium text-slate-500">
                     Showing {totalItems === 0 ? 0 : startIndex + 1}-{Math.min(startIndex + ITEMS_PER_PAGE, totalItems)} of {totalItems} polls
@@ -555,7 +527,6 @@ export const WorkspacePollsPage = () => {
         workspaceId={workspaceId as string} 
       />
 
-      {/* Voters Modal */}
       {selectedPollForVoters && (() => {
         const poll = workspacePolls.find(p => p.id === selectedPollForVoters);
         if (!poll) return null;
@@ -569,5 +540,3 @@ export const WorkspacePollsPage = () => {
     </WorkspaceLayout>
   );
 };
-
-// Removed unused icons

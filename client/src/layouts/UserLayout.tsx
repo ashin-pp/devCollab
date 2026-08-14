@@ -47,8 +47,6 @@ export const UserLayout = ({ children }: UserLayoutProps) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-
-
   const handleLogout = async () => {
     const result = await Swal.fire({
       title: 'Are you sure?',
@@ -74,7 +72,6 @@ export const UserLayout = ({ children }: UserLayoutProps) => {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] font-sans pb-20">
-      {/* Top Navbar */}
       <nav className="w-full bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between sticky top-0 z-50 shadow-sm">
         <div className="flex items-center gap-6">
           <Link to="/" className="font-bold text-xl tracking-tight text-blue-600 hover:opacity-80 transition-opacity">
@@ -148,7 +145,6 @@ export const UserLayout = ({ children }: UserLayoutProps) => {
         </div>
       </nav>
 
-      {/* Main Content */}
       <main>
         {children}
       </main>

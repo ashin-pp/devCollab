@@ -25,6 +25,7 @@ import { ChannelPollsList } from '../../../components/polls/ChannelPollsList';
 import { CreatePollModal } from '../../../components/polls/CreatePollModal';
 import { AiDashboardModal } from '../../../components/workspace/channel/AiDashboardModal';
 import type { AiTab } from '../../../components/workspace/channel/AiDashboardModal';
+import { AiService } from '../../../api/ai/ai.service';
 import { getMessageId } from '../../../utils/message.utils';
 import { WorkspaceService } from '../../../api/workspace/workspace.service';
 import type { Workspace } from '../../../types/workspace.types';
@@ -65,6 +66,10 @@ export const WorkspaceChannelPage = () => {
   const [isCreatePollModalOpen, setIsCreatePollModalOpen] = useState(false);
   const [isAiDashboardOpen, setIsAiDashboardOpen] = useState(false);
   const [aiDashboardTab, setAiDashboardTab] = useState<AiTab>('tasks');
+  const [aiTaskCount, setAiTaskCount] = useState(0);
+  const [aiReminderCount, setAiReminderCount] = useState(0);
+  const [aiScheduleCount, setAiScheduleCount] = useState(0);
+  const [aiNotifyCount, setAiNotifyCount] = useState(0);
 
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -181,7 +186,6 @@ export const WorkspaceChannelPage = () => {
           .catch(err => console.error('Failed to fetch workspace members', err));
       });
 
-      // Fetch pending requests count if user is the channel creator
       ChannelService.getWorkspaceChannels(workspaceId)
         .then(res => {
           const channel = res.data?.data?.find((c: ChannelData) => c.id === channelId);
@@ -405,7 +409,7 @@ export const WorkspaceChannelPage = () => {
       const cleanMessage = isTextEmpty ? '' : message;
       
       const plainText = cleanMessage.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim();
-      const aiCommands = ['/task', '/notify', '/remind', '/summary', '/fix', '/schedule'];
+      const aiCommands = ['/task', '/notify', '/remind', '/summary', '/schedule'];
       const isAiCommand = aiCommands.some(cmd => plainText.startsWith(cmd));
 
       if (isAiCommand) {
@@ -415,7 +419,6 @@ export const WorkspaceChannelPage = () => {
           return;
         }
 
-        // Clear input immediately so user knows it was intercepted
         if (textareaRef.current) textareaRef.current.innerHTML = '';
         setMessage('');
         checkFormatting();
@@ -427,12 +430,12 @@ export const WorkspaceChannelPage = () => {
                toast.success('Summary successfully sent to your Direct Messages!');
              }
              const systemMsg: MessageData = {
-               id: Date.now().toString(), // fake local ID
+               id: Date.now().toString(),
                channelId,
                senderId: 'ai-system',
                senderName: 'Agentic AI',
                content: aiResponse,
-               messageType: 'text',
+               messageType: 'ai',
                createdAt: new Date().toISOString()
              };
              setMessages(prev => [...prev, systemMsg]);
@@ -448,7 +451,6 @@ export const WorkspaceChannelPage = () => {
         return;
       }
 
-      // Extract mentioned user IDs from the HTML data attributes
       const mentionRegex = /data-mention-id="([^"]+)"/g;
       const mentionedUserIdsSet = new Set<string>();
       let match;
@@ -482,7 +484,6 @@ export const WorkspaceChannelPage = () => {
       setAttachedImageUrl(null);
       setTypingUsers(prev => prev.filter(id => id !== user?.id));
 
-      // Emit socket event
       if (socket) {
         socket.emit('new_message', newMsgObj);
         socket.emit('stop_typing', { channelId, userId: user.id, userName: user.name });
@@ -494,7 +495,6 @@ export const WorkspaceChannelPage = () => {
       if (document.queryCommandState('italic')) document.execCommand('italic', false, undefined);
       checkFormatting();
 
-      // Clear typing timeout
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
         typingTimeoutRef.current = null;
@@ -517,7 +517,6 @@ export const WorkspaceChannelPage = () => {
       setMessage(newHtml);
       textareaRef.current.focus();
       
-      // Move cursor to the end
       const selection = window.getSelection();
       const range = document.createRange();
       range.selectNodeContents(textareaRef.current);
@@ -536,6 +535,24 @@ export const WorkspaceChannelPage = () => {
     setAiDashboardTab(tab);
     setIsAiDashboardOpen(true);
   };
+
+  const refreshAiCounts = async () => {
+    if (!workspaceId || !aiAssistantEnabled) return;
+    try {
+      const res = await AiService.getDashboard(workspaceId);
+      const counts = res.data.data.counts;
+      setAiTaskCount(counts.tasks);
+      setAiReminderCount(counts.reminders);
+      setAiScheduleCount(counts.schedules);
+      setAiNotifyCount(counts.notifications ?? 0);
+    } catch {
+      // Plan-locked or network errors should not break the channel UI.
+    }
+  };
+
+  useEffect(() => {
+    void refreshAiCounts();
+  }, [workspaceId, aiAssistantEnabled]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -596,6 +613,10 @@ export const WorkspaceChannelPage = () => {
             navigate={navigate}
             openAiDashboard={openAiDashboard}
             aiAssistantEnabled={aiAssistantEnabled}
+            aiTaskCount={aiTaskCount}
+            aiReminderCount={aiReminderCount}
+            aiScheduleCount={aiScheduleCount}
+            aiNotifyCount={aiNotifyCount}
           />
 
           {currentChannel?.isActive === false ? (
@@ -760,8 +781,12 @@ export const WorkspaceChannelPage = () => {
 
           <AiDashboardModal
             isOpen={isAiDashboardOpen}
-            onClose={() => setIsAiDashboardOpen(false)}
+            onClose={() => {
+              setIsAiDashboardOpen(false);
+              void refreshAiCounts();
+            }}
             defaultTab={aiDashboardTab}
+            workspaceId={workspaceId as string}
           />
         </>
       )}

@@ -10,7 +10,7 @@ import Swal from 'sweetalert2';
 
 interface PollCardProps {
   poll: Poll;
-  compact?: boolean; // For simple channel chat view
+  compact?: boolean;
 }
 
 export const PollCard: React.FC<PollCardProps> = ({ poll, compact = false }) => {
@@ -189,7 +189,6 @@ export const PollCard: React.FC<PollCardProps> = ({ poll, compact = false }) => 
     );
   }
 
-  // Full detailed view (Workspace level)
   return (
     <div className="w-full bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-all hover:shadow-md">
       <div className="flex items-start justify-between mb-6">

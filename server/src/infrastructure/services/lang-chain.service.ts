@@ -1,4 +1,6 @@
 import type { ICreateAIReminderUseCase } from "../../application/interfaces/use-cases/ai/create-ai-reminder.usecase.interface";
+import type { ICreateAITaskUseCase } from "../../application/interfaces/use-cases/ai/create-ai-task.usecase.interface";
+import type { ICreateAIScheduleUseCase } from "../../application/interfaces/use-cases/ai/create-ai-schedule.usecase.interface";
 import { USECASE_TOKENS } from "../di/usecase.tokens";
 import { injectable, inject } from 'tsyringe';
 import { IAIService } from "../../application/interfaces/services/ai.service.interface";
@@ -9,10 +11,17 @@ import { StateGraph, START, END } from "@langchain/langgraph";
 import { AgentState, IAgentState } from "../ai/graph/AgentState";
 import { createSupervisorNode } from "../ai/graph/SupervisorNode";
 import { createWorkerNode } from "../ai/graph/WorkerNode";
-import { NOTIFY_AGENT_PROMPT, REMIND_AGENT_PROMPT } from "../ai/constants/AgentPrompts";
+import {
+    NOTIFY_AGENT_PROMPT,
+    REMIND_AGENT_PROMPT,
+    TASK_AGENT_PROMPT,
+    SCHEDULE_AGENT_PROMPT,
+} from "../ai/constants/AgentPrompts";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { createNotifyTool } from "../ai/tools/NotifyTool";
 import { createRemindTool } from "../ai/tools/RemindTool";
+import { createTaskTool } from "../ai/tools/TaskTool";
+import { createScheduleTool } from "../ai/tools/ScheduleTool";
 import type { IUserRepository } from "../../application/interfaces/repositories/user.repository.interface";
 import type { IChannelRepository } from "../../application/interfaces/repositories/channel.repository.interface";
 import type { ICreateNotificationUseCase } from "../../application/interfaces/use-cases/notification/create-notification.usecase.interface";
@@ -37,6 +46,8 @@ export class LangChainService implements IAIService {
         @inject(USECASE_TOKENS.IStartConversationUseCase) private _startConversationUseCase: IStartConversationUseCase,
         @inject(USECASE_TOKENS.IGetUserByNameUseCase) private _getUserByNameUseCase: IGetUserByNameUseCase,
         @inject(USECASE_TOKENS.ICreateAIReminderUseCase) private _createAIReminderUseCase: ICreateAIReminderUseCase | null = null,
+        @inject(USECASE_TOKENS.ICreateAITaskUseCase) private _createAITaskUseCase: ICreateAITaskUseCase | null = null,
+        @inject(USECASE_TOKENS.ICreateAIScheduleUseCase) private _createAIScheduleUseCase: ICreateAIScheduleUseCase | null = null,
         @inject(REPOSITORY_TOKENS.IUserRepository) private _userRepository?: IUserRepository,
         @inject(REPOSITORY_TOKENS.IChannelRepository) private _channelRepository?: IChannelRepository
     ) {
@@ -58,12 +69,33 @@ export class LangChainService implements IAIService {
             NOTIFY_AGENT_PROMPT
         );
 
-        const dynamicRemindPrompt = `${REMIND_AGENT_PROMPT}\nThe current date and time is: ${new Date().toString()}. Use this timezone context to calculate future reminder dates, but ALWAYS output the final remindAt in a valid ISO-8601 format (e.g., 2026-07-01T20:46:00+05:30).`;
+        const nowContext = `The current date and time is: ${new Date().toString()}. Use this timezone context to calculate future dates, but ALWAYS output final datetimes in a valid ISO-8601 format (e.g., 2026-07-01T20:46:00+05:30).`;
+
         const remindWorker = createWorkerNode(
             this._model,
             [createRemindTool(this._createAIReminderUseCase, this._getUserByNameUseCase)],
             "RemindAgent",
-            dynamicRemindPrompt
+            `${REMIND_AGENT_PROMPT}\n${nowContext}`
+        );
+
+        const taskWorker = createWorkerNode(
+            this._model,
+            [createTaskTool(this._createAITaskUseCase, this._getUserByNameUseCase)],
+            "TaskAgent",
+            `${TASK_AGENT_PROMPT}\n${nowContext}`
+        );
+
+        const scheduleWorker = createWorkerNode(
+            this._model,
+            [createScheduleTool(
+                this._createAIScheduleUseCase,
+                this._getUserByNameUseCase,
+                this._userRepository,
+                this._startConversationUseCase,
+                this._sendDirectMessageUseCase
+            )],
+            "ScheduleAgent",
+            `${SCHEDULE_AGENT_PROMPT}\n${nowContext}`
         );
 
         // Summary is handled deterministically in processMessage to avoid Groq tool-schema failures.
@@ -80,16 +112,22 @@ export class LangChainService implements IAIService {
             .addNode("Supervisor", supervisorNode)
             .addNode("NotifyAgent", notifyWorker)
             .addNode("SummaryAgent", summaryWorker)
-            .addNode("RemindAgent", remindWorker);
+            .addNode("RemindAgent", remindWorker)
+            .addNode("TaskAgent", taskWorker)
+            .addNode("ScheduleAgent", scheduleWorker);
 
         workflow.addEdge("NotifyAgent", END);
         workflow.addEdge("SummaryAgent", END);
         workflow.addEdge("RemindAgent", END);
+        workflow.addEdge("TaskAgent", END);
+        workflow.addEdge("ScheduleAgent", END);
 
         workflow.addConditionalEdges("Supervisor", (state: IAgentState) => state.next, {
             NotifyAgent: "NotifyAgent",
             SummaryAgent: "SummaryAgent",
             RemindAgent: "RemindAgent",
+            TaskAgent: "TaskAgent",
+            ScheduleAgent: "ScheduleAgent",
             FINISH: END
         });
 
@@ -104,7 +142,7 @@ export class LangChainService implements IAIService {
             conversation.id as string,
             userId,
             content,
-            MessageType.TEXT
+            MessageType.AI
         );
     }
 
@@ -157,7 +195,12 @@ export class LangChainService implements IAIService {
             userId: context.userId,
         });
 
-        let messages = (unreadMessages || []).filter((m) => this.isSummarizableMessage(m)).slice(-15);
+        let messages: Array<{
+            messageType?: string;
+            content?: string;
+            senderName?: string;
+            senderId?: string;
+        }> = (unreadMessages || []).filter((m) => this.isSummarizableMessage(m)).slice(-15);
         let usedUnread = messages.length > 0;
 
         // Opening a channel marks it read, so unread is often empty by the time /summary runs.
@@ -240,14 +283,17 @@ export class LangChainService implements IAIService {
 
     async processMessage(input: string, context: { workspaceId: string; channelId: string; userId: string; }): Promise<string> {
         try {
-            if (input.toLowerCase().includes("/summary")) {
+            const cleanedInput = this.stripMessageHtml(input);
+
+            // Only treat true /summary slash commands as summary — never substring matches.
+            if (/^(?:@\S+\s+)*\/summary\b/i.test(cleanedInput)) {
                 return await this.processSummaryCommand(context);
             }
 
             const finalState = await this._graph.invoke({
-                messages: [new HumanMessage(input)],
+                messages: [new HumanMessage(cleanedInput)],
                 context: context
-            }, { configurable: { context } }) as IAgentState;
+            }, { configurable: { context: { ...context, originalInput: cleanedInput } } }) as IAgentState;
 
             const aiMessage = finalState.messages[finalState.messages.length - 1];
             if (!aiMessage) {

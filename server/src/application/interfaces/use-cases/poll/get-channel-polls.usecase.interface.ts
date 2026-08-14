@@ -1,5 +1,5 @@
-import { Poll } from "../../../../domain/entities/poll.entity";
+import { PollResponseDto } from "../../../dtos/poll/response/poll.response.dto";
 
 export interface IGetChannelPollsUseCase {
-    execute(channelId: string): Promise<Poll[]>;
+    execute(channelId: string): Promise<PollResponseDto[]>;
 }

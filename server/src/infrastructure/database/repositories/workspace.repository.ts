@@ -124,9 +124,7 @@ export class WorkspaceRepository implements IWorkspaceRepository {
         return workspaces.map((w) => this._mapper.toDomain(w));
     }
 
-    async setSession(_session: unknown): Promise<void> {
-        // Implementation for setSession if needed
-    }
+    async setSession(_session: unknown): Promise<void> {}
 
     async findPaginated(query: Record<string, unknown>, page: number, limit: number, sort?: Record<string, 1 | -1>): Promise<{ data: Workspace[]; total: number }> {
         const skip = (page - 1) * limit;

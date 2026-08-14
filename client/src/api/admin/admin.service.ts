@@ -27,7 +27,15 @@ export const AdminService = {
         const response = await api.post(API_ENDPOINTS.ADMIN.RESET_PASSWORD, data);
         return response.data;
     },
-    getUsers: async (params?: { page: number; limit: number; search?: string; filter?: string; sortBy?: string; sortOrder?: string }) => {
+    getUsers: async (params?: {
+        page: number;
+        limit: number;
+        search?: string;
+        filter?: string;
+        planId?: string;
+        sortBy?: string;
+        sortOrder?: string;
+    }) => {
         const response = await api.get(API_ENDPOINTS.ADMIN.USERS, { params });
         return response.data;
     },
@@ -35,7 +43,15 @@ export const AdminService = {
         const response = await api.patch(API_ENDPOINTS.ADMIN.USER_STATUS(id), { isBlocked });
         return response.data;
     },
-    getWorkspaces: async (params?: { page: number; limit: number; search?: string; filter?: string; sortBy?: string; sortOrder?: string }) => {
+    getWorkspaces: async (params?: {
+        page: number;
+        limit: number;
+        search?: string;
+        filter?: string;
+        planId?: string;
+        sortBy?: string;
+        sortOrder?: string;
+    }) => {
         const response = await api.get(API_ENDPOINTS.ADMIN.WORKSPACES, { params });
         return response.data;
     },

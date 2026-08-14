@@ -9,7 +9,9 @@ import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { SubscriptionStatus } from "../../../domain/enums/SubscriptionStatus";
 import { AppError } from "../../../domain/errors/AppError";
+import { ThreadRepliesResponseDto } from "../../dtos/channel/response/message.response.dto";
 import { IGetThreadRepliesUseCase } from "../../interfaces/use-cases/channel/get-thread-replies.usecase.interface";
+import { toMessageResponseDto } from "../../mappers/message.mapper";
 import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 import { SERVICE_TOKENS } from "../../../infrastructure/di/service.tokens";
 
@@ -27,7 +29,7 @@ export class GetThreadRepliesUseCase implements IGetThreadRepliesUseCase {
         threadRootId: string;
         channelId: string;
         viewerId: string;
-    }) {
+    }): Promise<ThreadRepliesResponseDto> {
         const { threadRootId, channelId, viewerId } = payload;
 
         await this._planEntitlementService.resolveForUserId(viewerId);
@@ -76,6 +78,9 @@ export class GetThreadRepliesUseCase implements IGetThreadRepliesUseCase {
         const replies = await this._messageRepository.findThreadReplies(threadRootId, viewerId, since);
         rootMessage.replyCount = replies.length;
 
-        return { rootMessage, replies };
+        return {
+            rootMessage: toMessageResponseDto(rootMessage),
+            replies: replies.map(toMessageResponseDto),
+        };
     }
 }

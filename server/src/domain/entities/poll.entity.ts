@@ -21,7 +21,6 @@ export class Poll {
 
     public addVote(userId: string, optionId: string, allowMultiple: boolean = false): void {
         if (!allowMultiple) {
-            // Remove previous votes from this user
             this.options.forEach(opt => {
                 opt.votes = opt.votes.filter(id => id !== userId);
             });

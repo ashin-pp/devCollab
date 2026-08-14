@@ -21,9 +21,6 @@ export class RemoveChannelMemberUseCase implements IRemoveChannelMemberUseCase {
 
     async execute(payload: {workspaceId: string, channelId: string, targetUserId: string, requestUserId: string}): Promise<{ userId: string, userName: string, removedBy: string }> {
         const { workspaceId, channelId, targetUserId, requestUserId } = payload;
-        if (!workspaceId || !channelId || !targetUserId) {
-            throw new AppError(ErrorMessage.INVALID_PARAMS, HttpStatusCode.BAD_REQUEST);
-        }
 
         const channel = await this._channelRepository.findById(channelId);
         if (!channel || channel.workspaceId !== workspaceId) {

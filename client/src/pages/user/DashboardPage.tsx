@@ -503,7 +503,7 @@ export const DashboardPage = () => {
                               <Building2 className="w-6 h-6" />
                             </div>
                           )}
-                          <div className="flex items-center gap-2 mb-2 relative z-10">
+                          <div className="flex items-center gap-2 mb-2 relative z-10 flex-wrap">
                             <h3 className="text-xl font-bold text-slate-900 truncate">{workspace.name}</h3>
                             {workspace.privacy === 'public' ? (
                               <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-600 uppercase shrink-0">
@@ -514,6 +514,9 @@ export const DashboardPage = () => {
                                 <Lock className="w-3 h-3" /> Private
                               </div>
                             )}
+                            <div className="px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-100 text-[10px] font-bold text-indigo-700 uppercase shrink-0">
+                              {workspace.ownerPlanName || 'No plan'}
+                            </div>
                           </div>
                           <p className="text-sm text-slate-500 mb-6 relative z-10 flex-1 line-clamp-2">
                             {workspace.description || 'No description provided.'}
@@ -611,7 +614,7 @@ export const DashboardPage = () => {
                               <Building2 className="w-6 h-6" />
                             </div>
                           )}
-                          <div className="flex items-center gap-2 mb-2 relative z-10">
+                          <div className="flex items-center gap-2 mb-2 relative z-10 flex-wrap">
                             <h3 className="text-xl font-bold text-slate-900 truncate">{workspace.name}</h3>
                             {workspace.privacy === 'public' ? (
                               <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-600 uppercase shrink-0">
@@ -622,6 +625,9 @@ export const DashboardPage = () => {
                                 <Lock className="w-3 h-3" /> Private
                               </div>
                             )}
+                            <div className="px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-100 text-[10px] font-bold text-indigo-700 uppercase shrink-0">
+                              {workspace.ownerPlanName || 'No plan'}
+                            </div>
                           </div>
                           <p className="text-sm text-slate-500 mb-6 relative z-10 flex-1 line-clamp-2">
                             {workspace.description || 'No description provided.'}
@@ -707,10 +713,13 @@ export const DashboardPage = () => {
                             <Users className="w-6 h-6" />
                           </div>
                         )}
-                        <div className="flex items-center gap-2 mb-2 relative z-10">
+                        <div className="flex items-center gap-2 mb-2 relative z-10 flex-wrap">
                           <h3 className="text-xl font-bold text-slate-900 truncate">{workspace.name}</h3>
                           <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-600 uppercase shrink-0">
                             <Globe className="w-3 h-3" /> Public
+                          </div>
+                          <div className="px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-100 text-[10px] font-bold text-indigo-700 uppercase shrink-0">
+                            {workspace.ownerPlanName || 'No plan'}
                           </div>
                         </div>
                         <p className="text-sm text-slate-500 mb-6 relative z-10 flex-1 line-clamp-2">

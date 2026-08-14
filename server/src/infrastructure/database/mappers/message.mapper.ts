@@ -3,13 +3,25 @@ import { IMessageDocument } from "../models/message.model";
 
 export class MessageMapper {
     toDomain(raw: IMessageDocument): Message {
+        const sender = raw.sender_id as unknown as { _id?: { toString(): string }; name?: string } | string | null;
+        if (sender == null) {
+            throw new Error("Message has missing sender");
+        }
+
+        const senderId =
+            typeof sender === "object" && sender._id
+                ? sender._id.toString()
+                : String(sender);
+        const senderName =
+            typeof sender === "object" ? sender.name : undefined;
+
         return new Message(
             raw.workspace_id.toString(),
             raw.channel_id.toString(),
-            raw.sender_id._id ? raw.sender_id._id.toString() : raw.sender_id.toString(),
+            senderId,
             raw.content,
             raw.message_type,
-            (raw.sender_id as unknown as { name?: string }).name,
+            senderName,
             raw.image_url,
             raw.parent_message_id?.toString(),
             raw.thread_root_id?.toString(),

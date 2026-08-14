@@ -11,7 +11,6 @@ import { WorkspaceResponseDto } from "../../dtos/workspace/response/workspace.re
 import { IUpdateWorkspaceUseCase } from "../../interfaces/use-cases/workspace/update-workspace.usecase.interface";
 import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 import { SERVICE_TOKENS } from "../../../infrastructure/di/service.tokens";
-import { isValidWorkspaceName } from "../../../shared/utils/name-validation.util";
 
 @injectable()
 export class UpdateWorkspaceUseCase implements IUpdateWorkspaceUseCase {
@@ -37,9 +36,6 @@ export class UpdateWorkspaceUseCase implements IUpdateWorkspaceUseCase {
 
         if (data.name !== undefined) {
             const name = data.name.trim();
-            if (!isValidWorkspaceName(name)) {
-                throw new AppError(ErrorMessage.WORKSPACE_NAME_INVALID, HttpStatusCode.BAD_REQUEST);
-            }
 
             const existing = await this._workspaceRepository.findByNameIgnoreCase(name);
             if (existing && existing.id !== workspaceId) {
@@ -50,10 +46,6 @@ export class UpdateWorkspaceUseCase implements IUpdateWorkspaceUseCase {
         }
 
         if (data.maxMembers !== undefined) {
-            if (!Number.isFinite(data.maxMembers) || data.maxMembers < 1) {
-                throw new AppError(ErrorMessage.WORKSPACE_MEMBER_PLAN_LIMIT, HttpStatusCode.BAD_REQUEST);
-            }
-
             const entitlement = await this._planEntitlementService.assertSubscriptionActive(ownerId);
             const planMax = entitlement.plan.maxMembersPerWorkspace;
 

@@ -38,9 +38,11 @@ export const createNotifyTool = (
 
             await createNotificationUseCase.execute({
                 userId,
-                type: 'GENERAL',
+                type: 'AI_NOTIFY',
                 title,
                 message: finalMessage,
+                relatedId: context?.workspaceId,
+                actorId: context?.userId,
             });
             return `Notification sent to user ${targetName} successfully.`;
         },

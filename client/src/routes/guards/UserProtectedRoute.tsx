@@ -6,6 +6,7 @@ import { api } from '../../api/axios';
 import { isAxiosError } from 'axios';
 import { logout } from '../../store/slices/authSlice';
 import { stashPendingInviteFromSearch } from '../../utils/pendingInvite';
+import { IncomingCallListener } from '../../components/workspace/shared/IncomingCallListener';
 
 export const UserProtectedRoute = () => {
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
@@ -20,7 +21,6 @@ export const UserProtectedRoute = () => {
   useEffect(() => {
     if (!isAuthenticated || user?.role !== 'user') return;
 
-    // Check if the user is still active or has been blocked by admin
     const checkStatus = async () => {
       try {
         await api.get('/auth/refresh');
@@ -37,10 +37,7 @@ export const UserProtectedRoute = () => {
       }
     };
     
-    // Check immediately on mount
     checkStatus();
-
-    // Poll every 15 seconds to simulate real-time block checks
     const interval = setInterval(checkStatus, 15000);
 
     return () => clearInterval(interval);
@@ -50,5 +47,10 @@ export const UserProtectedRoute = () => {
     return <Navigate to={`/login${location.search}`} replace state={{ from: location }} />;
   }
 
-  return <Outlet />;
+  return (
+    <>
+      <IncomingCallListener />
+      <Outlet />
+    </>
+  );
 };

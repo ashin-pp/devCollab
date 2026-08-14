@@ -4,6 +4,7 @@ import type { IChannelRepository } from "../../../application/interfaces/reposit
 import { ChannelMemberStatus } from "../../../domain/enums/ChannelMemberStatus";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
+import { SuccessMessage } from "../../../domain/enums/SuccessMessage";
 import { AppError } from "../../../domain/errors/AppError";
 import { UpdateChannelRequestDto } from "../../dtos/channel/request/update-channel-request.dto";
 
@@ -39,10 +40,10 @@ export class UpdateChannelRequestUseCase implements IUpdateChannelRequestUseCase
 
         if (action === 'approve') {
             await this._channelMemberRepository.updateStatus(channelId, userId, ChannelMemberStatus.APPROVED);
-            return { success: true, message: "Request approved" };
+            return { success: true, message: SuccessMessage.CHANNEL_REQUEST_APPROVED };
         } else {
             await this._channelMemberRepository.remove(channelId, userId);
-            return { success: true, message: "Request rejected" };
+            return { success: true, message: SuccessMessage.CHANNEL_REQUEST_REJECTED };
         }
     }
 }

@@ -80,7 +80,6 @@ const pollSlice = createSlice({
   initialState,
   reducers: {
     addPoll: (state, action: PayloadAction<Poll>) => {
-      // Check if poll already exists to avoid duplicates
       const index = state.polls.findIndex(p => p.id === action.payload.id);
       if (index === -1) {
         state.polls.unshift(action.payload);

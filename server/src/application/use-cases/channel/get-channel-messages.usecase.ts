@@ -4,13 +4,14 @@ import type { IChannelRepository } from "../../../application/interfaces/reposit
 import type { IMessageRepository } from "../../../application/interfaces/repositories/message.repository.interface";
 import type { IWorkspaceRepository } from "../../../application/interfaces/repositories/workspace.repository.interface";
 import type { IPlanEntitlementService } from "../../interfaces/services/plan-entitlement.service.interface";
-import { Message } from "../../../domain/entities/message.entity";
 import { ChannelMemberStatus } from "../../../domain/enums/ChannelMemberStatus";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { SubscriptionStatus } from "../../../domain/enums/SubscriptionStatus";
 import { AppError } from "../../../domain/errors/AppError";
+import { MessageResponseDto } from "../../dtos/channel/response/message.response.dto";
 import { IGetChannelMessagesUseCase } from "../../interfaces/use-cases/channel/get-channel-messages.usecase.interface";
+import { toMessageResponseDto } from "../../mappers/message.mapper";
 import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 import { SERVICE_TOKENS } from "../../../infrastructure/di/service.tokens";
 
@@ -29,7 +30,7 @@ export class GetChannelMessagesUseCase implements IGetChannelMessagesUseCase {
         page?: number;
         limit?: number;
         viewerId: string;
-    }): Promise<Message[]> {
+    }): Promise<MessageResponseDto[]> {
         const { channelId, page = 1, limit = 50, viewerId } = payload;
 
         await this._planEntitlementService.resolveForUserId(viewerId);
@@ -88,6 +89,6 @@ export class GetChannelMessagesUseCase implements IGetChannelMessagesUseCase {
             }
         }
 
-        return messages;
+        return messages.map(toMessageResponseDto);
     }
 }
