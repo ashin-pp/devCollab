@@ -56,7 +56,7 @@ export const WorkspaceMembersPage = () => {
       if (result.isConfirmed) {
         await WorkspaceService.handleJoinRequest(workspaceId, targetUserId, action);
         toast.success(`Request ${action}d successfully`);
-        fetchMembers(); // Refresh list
+        fetchMembers();
       }
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
@@ -120,7 +120,6 @@ export const WorkspaceMembersPage = () => {
   const approvedMembers = members.filter(m => m.status === 'approved' || m.status === 'blocked');
   const pendingMembers = members.filter(m => m.status === 'pending');
 
-  // Filter members based on search query
   const filteredApprovedMembers = approvedMembers.filter(member => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();

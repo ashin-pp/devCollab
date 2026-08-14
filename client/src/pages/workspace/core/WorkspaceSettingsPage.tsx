@@ -76,7 +76,6 @@ export const WorkspaceSettingsPage = () => {
         setMaxMembersError(null);
       }
 
-      // Fetch channels count for this workspace
       const channelsData = await ChannelService.getWorkspaceChannels(workspaceId);
       setChannels(channelsData.data?.data || []);
       setChannelCount(channelsData.data?.data?.length || 0);

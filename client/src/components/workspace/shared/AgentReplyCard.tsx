@@ -1,13 +1,29 @@
 import { Bot } from 'lucide-react';
 import { renderMessageContent } from '../../../utils/renderMessageContent';
+import {
+  extractCallCreator,
+  extractCallScheduleId,
+  stripCallLinks,
+} from '../../../utils/callLink.utils';
+import { CallInviteCta } from './CallInviteCta';
 
 interface AgentReplyCardProps {
   content: string;
   timestamp?: string;
   className?: string;
+  creatorName?: string | null;
 }
 
-export const AgentReplyCard = ({ content, timestamp, className = '' }: AgentReplyCardProps) => {
+export const AgentReplyCard = ({
+  content,
+  timestamp,
+  className = '',
+  creatorName,
+}: AgentReplyCardProps) => {
+  const scheduleId = extractCallScheduleId(content);
+  const displayContent = scheduleId ? stripCallLinks(content) : content;
+  const createdBy = extractCallCreator(content) || creatorName || null;
+
   return (
     <div
       className={`relative w-full max-w-[min(100%,28rem)] overflow-hidden rounded-2xl border border-slate-200/90 bg-gradient-to-br from-white via-slate-50/80 to-indigo-50/40 shadow-sm ${className}`}
@@ -32,11 +48,16 @@ export const AgentReplyCard = ({ content, timestamp, className = '' }: AgentRepl
           </div>
         </div>
 
-        <div className="text-[15px] leading-relaxed text-slate-700 whitespace-pre-wrap">
-          {renderMessageContent(content)}
-        </div>
+        {displayContent ? (
+          <div className="text-[15px] leading-relaxed text-slate-700 whitespace-pre-wrap">
+            {renderMessageContent(displayContent)}
+          </div>
+        ) : null}
+
+        {scheduleId ? (
+          <CallInviteCta scheduleId={scheduleId} creatorName={createdBy} />
+        ) : null}
       </div>
     </div>
   );
 };
-

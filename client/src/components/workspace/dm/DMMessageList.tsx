@@ -2,9 +2,15 @@ import { format, isToday } from 'date-fns';
 import { Loader2, Check, CheckCheck } from 'lucide-react';
 import { DMAvatar } from './DMAvatar';
 import { AgentReplyCard } from '../shared/AgentReplyCard';
+import { CallInviteCta } from '../shared/CallInviteCta';
 import type { DirectMessage } from '../../../types/dm.types';
 import { isAgentMessage } from '../../../utils/agentMessage.utils';
 import { renderMessageContent } from '../../../utils/renderMessageContent';
+import {
+  extractCallCreator,
+  extractCallScheduleId,
+  stripCallLinks,
+} from '../../../utils/callLink.utils';
 
 interface DMMessageListProps {
   messages: DirectMessage[];
@@ -47,10 +53,16 @@ export const DMMessageList = ({
             const showTimestamp =
               !prevMsg ||
               msgDate.getTime() - prevDate.getTime() > 5 * 60 * 1000;
+            const scheduleId = extractCallScheduleId(msg.content || '');
+            const displayContent = scheduleId
+              ? stripCallLinks(msg.content || '')
+              : msg.content;
+            const creatorName =
+              extractCallCreator(msg.content || '') ||
+              (isMine ? 'You' : otherUser?.name || 'Member');
 
             return (
               <div key={msg.id || index}>
-                {/* Date divider */}
                 {showTimestamp && (
                   <div className="flex items-center gap-3 my-4">
                     <div className="flex-1 h-px bg-slate-200" />
@@ -68,6 +80,7 @@ export const DMMessageList = ({
                     <AgentReplyCard
                       content={msg.content}
                       timestamp={msg.createdAt ? format(msgDate, 'h:mm a') : undefined}
+                      creatorName={extractCallCreator(msg.content || '') || otherUser?.name}
                     />
                   </div>
                 ) : (
@@ -90,7 +103,7 @@ export const DMMessageList = ({
                     )}
                     <div
                       className={`text-sm leading-relaxed ${
-                        msg.messageType === 'image' && !msg.content?.trim()
+                        msg.messageType === 'image' && !msg.content?.trim() && !scheduleId
                           ? 'bg-transparent shadow-none'
                           : isMine
                             ? 'bg-blue-600 text-white rounded-2xl rounded-br-sm shadow-sm px-3.5 py-2'
@@ -101,11 +114,18 @@ export const DMMessageList = ({
                         <img
                           src={msg.imageUrl}
                           alt="Message attachment"
-                          className={`rounded-lg max-w-full max-h-[300px] object-contain cursor-pointer hover:opacity-90 transition-opacity border border-slate-200/50 ${msg.content?.trim() ? 'mb-2' : ''}`}
+                          className={`rounded-lg max-w-full max-h-[300px] object-contain cursor-pointer hover:opacity-90 transition-opacity border border-slate-200/50 ${displayContent?.trim() || scheduleId ? 'mb-2' : ''}`}
                           onClick={() => setSelectedImage(msg.imageUrl!)}
                         />
                       ) : null}
-                      {msg.content && renderMessageContent(msg.content)}
+                      {displayContent ? renderMessageContent(displayContent) : null}
+                      {scheduleId ? (
+                        <CallInviteCta
+                          scheduleId={scheduleId}
+                          creatorName={creatorName}
+                          tone={isMine ? 'onDark' : 'light'}
+                        />
+                      ) : null}
                     </div>
                     <div
                       className={`flex items-center gap-1 px-1 text-[10px] text-slate-400 transition-opacity ${

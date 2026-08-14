@@ -43,7 +43,6 @@ export interface MemberData {
     githubUrl?: string;
     linkedinUrl?: string;
     twitterUrl?: string;
-    // Also include the backend field names for compatibility
     github?: string;
     linkedin?: string;
     twitter?: string;

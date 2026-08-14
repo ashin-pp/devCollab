@@ -32,7 +32,6 @@ const DirectMessageSchema: Schema = new Schema(
     }
 );
 
-// Index to easily fetch messages for a conversation ordered by time
 DirectMessageSchema.index({ conversationId: 1, createdAt: -1 });
 
 export const DirectMessageModel = mongoose.model<IDirectMessageDocument>('DirectMessage', DirectMessageSchema);

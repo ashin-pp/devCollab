@@ -1,5 +1,7 @@
 export type AIScheduleStatus = "scheduled" | "cancelled" | "completed";
 
+export type AIScheduleVideoProvider = "webrtc" | "none";
+
 export class AISchedule {
     constructor(
         public organizerId: string,
@@ -11,8 +13,10 @@ export class AISchedule {
         public endsAt: Date,
         public status: AIScheduleStatus = "scheduled",
         public meetLink?: string,
-        public googleEventId?: string,
         public reminderSent: boolean = false,
+        public participantIds: string[] = [],
+        public videoProvider: AIScheduleVideoProvider = "none",
+        public roomName?: string,
         public id?: string,
         public createdAt?: Date,
         public updatedAt?: Date

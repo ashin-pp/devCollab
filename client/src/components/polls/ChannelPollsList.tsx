@@ -21,7 +21,7 @@ export const ChannelPollsList: React.FC<ChannelPollsListProps> = ({ workspaceId,
   useEffect(() => {
     const interval = setInterval(() => {
       setNow(Date.now());
-    }, 10000); // Check for expired polls every 10 seconds
+    }, 10000);
     return () => clearInterval(interval);
   }, []);
 

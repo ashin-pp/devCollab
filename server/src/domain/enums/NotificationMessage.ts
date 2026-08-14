@@ -6,4 +6,5 @@ export const NotificationTitle = {
     YOU_WERE_MENTIONED: "You were mentioned",
     AI_REMINDER: "AI Reminder",
     MEETING_SCHEDULED: "Meeting scheduled",
+    INCOMING_VIDEO_CALL: "Incoming video call",
 } as const;

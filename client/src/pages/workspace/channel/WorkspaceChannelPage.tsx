@@ -186,7 +186,6 @@ export const WorkspaceChannelPage = () => {
           .catch(err => console.error('Failed to fetch workspace members', err));
       });
 
-      // Fetch pending requests count if user is the channel creator
       ChannelService.getWorkspaceChannels(workspaceId)
         .then(res => {
           const channel = res.data?.data?.find((c: ChannelData) => c.id === channelId);
@@ -420,7 +419,6 @@ export const WorkspaceChannelPage = () => {
           return;
         }
 
-        // Clear input immediately so user knows it was intercepted
         if (textareaRef.current) textareaRef.current.innerHTML = '';
         setMessage('');
         checkFormatting();
@@ -432,7 +430,7 @@ export const WorkspaceChannelPage = () => {
                toast.success('Summary successfully sent to your Direct Messages!');
              }
              const systemMsg: MessageData = {
-               id: Date.now().toString(), // fake local ID
+               id: Date.now().toString(),
                channelId,
                senderId: 'ai-system',
                senderName: 'Agentic AI',
@@ -453,7 +451,6 @@ export const WorkspaceChannelPage = () => {
         return;
       }
 
-      // Extract mentioned user IDs from the HTML data attributes
       const mentionRegex = /data-mention-id="([^"]+)"/g;
       const mentionedUserIdsSet = new Set<string>();
       let match;
@@ -487,7 +484,6 @@ export const WorkspaceChannelPage = () => {
       setAttachedImageUrl(null);
       setTypingUsers(prev => prev.filter(id => id !== user?.id));
 
-      // Emit socket event
       if (socket) {
         socket.emit('new_message', newMsgObj);
         socket.emit('stop_typing', { channelId, userId: user.id, userName: user.name });
@@ -499,7 +495,6 @@ export const WorkspaceChannelPage = () => {
       if (document.queryCommandState('italic')) document.execCommand('italic', false, undefined);
       checkFormatting();
 
-      // Clear typing timeout
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
         typingTimeoutRef.current = null;
@@ -522,7 +517,6 @@ export const WorkspaceChannelPage = () => {
       setMessage(newHtml);
       textareaRef.current.focus();
       
-      // Move cursor to the end
       const selection = window.getSelection();
       const range = document.createRange();
       range.selectNodeContents(textareaRef.current);

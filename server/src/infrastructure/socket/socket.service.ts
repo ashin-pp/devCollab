@@ -74,7 +74,6 @@ export class SocketService {
                 socket.join(`workspace:${workspaceId}`);
             });
 
-            // Join personal room for user-specific notifications
             socket.join(`user:${user.id}`);
 
             socket.on('join_channel', (channelId: string) => {
@@ -125,7 +124,6 @@ export class SocketService {
                 this._io.to(`channel:${message.channelId}`).emit('message_received', message);
             });
 
-            // --- DM Socket Events ---
             socket.on('join_conversation', (conversationId: string) => {
                 logger.info(`User ${user.id} joining conversation: ${conversationId}`);
                 socket.join(`conversation:${conversationId}`);
@@ -163,8 +161,92 @@ export class SocketService {
                 });
             });
 
-            socket.on('disconnect', (_err) => {
+            socket.on('webrtc_join', async (data: { scheduleId: string }) => {
+                const scheduleId = String(data?.scheduleId || '');
+                if (!scheduleId) return;
+
+                const room = `call:${scheduleId}`;
+                await socket.join(room);
+
+                const socketsInRoom = await this._io.in(room).fetchSockets();
+                const peers = socketsInRoom
+                    .filter((s) => s.id !== socket.id)
+                    .map((s) => {
+                        const peerUser = (s as unknown as AuthenticatedSocket).user;
+                        return {
+                            socketId: s.id,
+                            userId: peerUser?.id ?? '',
+                        };
+                    });
+
+                socket.emit('webrtc_existing_peers', { scheduleId, peers });
+                socket.to(room).emit('webrtc_peer_joined', {
+                    scheduleId,
+                    socketId: socket.id,
+                    userId: user.id,
+                });
+            });
+
+            socket.on('webrtc_leave', (data: { scheduleId: string }) => {
+                const scheduleId = String(data?.scheduleId || '');
+                if (!scheduleId) return;
+                const room = `call:${scheduleId}`;
+                socket.to(room).emit('webrtc_peer_left', {
+                    scheduleId,
+                    socketId: socket.id,
+                    userId: user.id,
+                });
+                void socket.leave(room);
+            });
+
+            socket.on(
+                'webrtc_offer',
+                (data: { toSocketId: string; sdp: unknown }) => {
+                    if (!data?.toSocketId || !data.sdp) return;
+                    this._io.to(data.toSocketId).emit('webrtc_offer', {
+                        fromSocketId: socket.id,
+                        fromUserId: user.id,
+                        sdp: data.sdp,
+                    });
+                }
+            );
+
+            socket.on(
+                'webrtc_answer',
+                (data: { toSocketId: string; sdp: unknown }) => {
+                    if (!data?.toSocketId || !data.sdp) return;
+                    this._io.to(data.toSocketId).emit('webrtc_answer', {
+                        fromSocketId: socket.id,
+                        fromUserId: user.id,
+                        sdp: data.sdp,
+                    });
+                }
+            );
+
+            socket.on(
+                'webrtc_ice',
+                (data: { toSocketId: string; candidate: unknown }) => {
+                    if (!data?.toSocketId || !data.candidate) return;
+                    this._io.to(data.toSocketId).emit('webrtc_ice', {
+                        fromSocketId: socket.id,
+                        fromUserId: user.id,
+                        candidate: data.candidate,
+                    });
+                }
+            );
+
+            socket.on('disconnect', () => {
                 logger.info(`User disconnected: ${user.id}`);
+                for (const room of socket.rooms) {
+                    if (room.startsWith('call:')) {
+                        const scheduleId = room.slice('call:'.length);
+                        socket.to(room).emit('webrtc_peer_left', {
+                            scheduleId,
+                            socketId: socket.id,
+                            userId: user.id,
+                        });
+                    }
+                }
             });
         });
     }

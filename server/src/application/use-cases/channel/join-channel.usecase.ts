@@ -67,7 +67,6 @@ export class JoinChannelUseCase implements IJoinChannelUseCase {
 
         let newStatus = channel.privacy === 'public' ? ChannelMemberStatus.APPROVED : ChannelMemberStatus.PENDING;
 
-        // Workspace Owner bypass
         if (isWorkspaceOwner) {
             newStatus = ChannelMemberStatus.APPROVED;
         }

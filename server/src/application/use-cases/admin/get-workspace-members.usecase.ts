@@ -59,10 +59,6 @@ export class AdminGetWorkspaceMembersUseCase implements IAdminGetWorkspaceMember
             };
         }));
 
-        // Search is handled in memory here for simplicity if needed, or we would need to join collections.
-        // For now, returning paginated members without name search, since name is in User collection.
-        // If search is required, a Mongo aggregate is better. We'll skip search for members here for now.
-
         return {
             data: populatedMembers,
             total,

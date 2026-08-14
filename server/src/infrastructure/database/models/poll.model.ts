@@ -26,7 +26,7 @@ const pollOptionSchema = new Schema({
 
 const pollSchema = new Schema({
     workspace_id: { type: Schema.Types.ObjectId, ref: 'Workspace', required: true },
-    channel_id: { type: Schema.Types.ObjectId, ref: 'Channel' }, // Optional for channel-specific polls
+    channel_id: { type: Schema.Types.ObjectId, ref: 'Channel' },
     question: { type: String, required: true },
     options: [pollOptionSchema],
     created_by: { type: Schema.Types.ObjectId, ref: 'User', required: true },

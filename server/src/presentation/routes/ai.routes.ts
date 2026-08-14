@@ -5,7 +5,9 @@ import { validate } from "../middlewares/validate.middleware";
 import {
     aiDashboardQuerySchema,
     clearAiDashboardBodySchema,
+    joinAiScheduleVideoParamsSchema,
     processAiBodySchema,
+    startDmVideoCallBodySchema,
     updateAiTaskStatusBodySchema,
     updateAiTaskStatusParamsSchema,
 } from "../validators/ai.schema";
@@ -38,6 +40,18 @@ router.patch(
         body: updateAiTaskStatusBodySchema,
     }),
     aiController.updateTaskStatus
+);
+router.get(
+    "/schedules/:scheduleId/video-token",
+    authMiddleware,
+    validate({ params: joinAiScheduleVideoParamsSchema }),
+    aiController.joinScheduleVideo
+);
+router.post(
+    "/schedules/dm-call",
+    authMiddleware,
+    validate({ body: startDmVideoCallBodySchema }),
+    aiController.startDmVideoCall
 );
 
 export default router;

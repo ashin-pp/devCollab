@@ -36,7 +36,6 @@ export class DirectMessageRepository implements IDirectMessageRepository {
             .limit(limit)
             .lean();
 
-        // Reverse to return in chronological order
         return docs.map(doc => this._mapper.toDomain(doc as unknown as IDirectMessageDocument)).reverse();
     }
 

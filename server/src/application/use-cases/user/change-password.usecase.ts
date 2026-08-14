@@ -24,11 +24,14 @@ export class ChangePasswordUseCase implements IChangePasswordUseCase {
         if (!user || !user.password) {
             throw new AppError(ErrorMessage.USER_NOT_FOUND, HttpStatusCode.NOT_FOUND);
         }
-
-        const isValid = await this._hashService.compare(dto.currentPassword, user.password);
-        if (!isValid) {
-            throw new AppError(ErrorMessage.INCORRECT_CURRENT_PASSWORD, HttpStatusCode.BAD_REQUEST);
-        }
+        const current=await this._hashService.hash(dto.currentPassword);
+        if(current!==user.password){
+            throw new AppError(ErrorMessage.INCORRECT_CURRENT_PASSWORD, HttpStatusCode.BAD_REQUEST)
+        }  
+        // const isValid = await this._hashService.compare(dto.currentPassword, user.password);
+        // if (!isValid) {
+        //     throw new AppError(ErrorMessage.INCORRECT_CURRENT_PASSWORD, HttpStatusCode.BAD_REQUEST);
+        // }
 
         const hashedPassword = await this._hashService.hash(dto.newPassword);
         await this._userRepository.update(userId, { password: hashedPassword });

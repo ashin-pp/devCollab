@@ -94,6 +94,9 @@ export class GetAIDashboardUseCase implements IGetAIDashboardUseCase {
         for (const s of schedules) {
             if (s.organizerId) ids.add(s.organizerId);
             if (s.participantId) ids.add(s.participantId);
+            for (const pid of s.participantIds ?? []) {
+                if (pid) ids.add(pid);
+            }
         }
         for (const n of notifications) {
             if (n.actorId) ids.add(n.actorId);
@@ -146,12 +149,27 @@ export class GetAIDashboardUseCase implements IGetAIDashboardUseCase {
         });
 
         const mappedSchedules = schedules.map((s) => {
-            const otherId =
-                s.organizerId === dto.userId ? s.participantId : s.organizerId;
+            const withIds = Array.from(
+                new Set([s.participantId, ...(s.participantIds ?? [])].filter(
+                    (id) => id && id !== s.organizerId
+                ))
+            );
+            const withNames = withIds
+                .map((id) => this.displayName(id, dto.userId, nameById))
+                .filter(Boolean);
             const person: AIDashboardPerson = {
-                id: otherId,
-                name: this.displayName(otherId, dto.userId, nameById),
+                id: withIds[0],
+                name: withNames.join(", ") || this.displayName(
+                    s.organizerId === dto.userId ? s.participantId : s.organizerId,
+                    dto.userId,
+                    nameById
+                ),
                 label: "With",
+            };
+            const organizer: AIDashboardPerson = {
+                id: s.organizerId,
+                name: this.displayName(s.organizerId, dto.userId, nameById),
+                label: "Created by",
             };
             return {
                 id: s.id,
@@ -159,11 +177,15 @@ export class GetAIDashboardUseCase implements IGetAIDashboardUseCase {
                 startsAt: s.startsAt,
                 endsAt: s.endsAt,
                 meetLink: s.meetLink,
+                videoProvider: s.videoProvider,
+                roomName: s.roomName,
                 status: s.status,
                 organizerId: s.organizerId,
                 participantId: s.participantId,
+                participantIds: s.participantIds ?? [],
                 channelId: s.channelId,
                 person,
+                organizer,
             };
         });
 

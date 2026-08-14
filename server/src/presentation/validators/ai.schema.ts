@@ -24,3 +24,12 @@ export const updateAiTaskStatusBodySchema = z.object({
     workspaceId: objectIdSchema,
     status: z.enum(["open", "in_progress", "done", "cancelled"]),
 });
+
+export const joinAiScheduleVideoParamsSchema = z.object({
+    scheduleId: objectIdSchema,
+});
+
+export const startDmVideoCallBodySchema = z.object({
+    workspaceId: objectIdSchema,
+    conversationId: objectIdSchema,
+});

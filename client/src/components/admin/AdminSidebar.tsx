@@ -16,7 +16,7 @@ export const AdminSidebar = () => {
       text: "You are about to securely exit the administrative console.",
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#f59e0b', // amber-500
+      confirmButtonColor: '#f59e0b',
       cancelButtonColor: '#30363d',
       confirmButtonText: 'CONFIRM LOGOUT',
       background: '#161b22',

@@ -52,13 +52,11 @@ export class CreatePollUseCase implements ICreatePollUseCase {
 
         const savedPoll = await this._pollRepository.create(newPoll);
 
-        // Send Notifications
         if (this._createNotificationUseCase) {
             let membersToNotify: string[] = [];
             let notificationMessage = '';
 
             if (data.channelId && this._channelMemberRepository) {
-                // Channel Poll - notify channel members
                 const channelMembers = await this._channelMemberRepository.findByChannelId(data.channelId);
                 membersToNotify = channelMembers.map((m: any) => m.userId).filter((id: any) => id !== data.createdBy);
                 
@@ -80,7 +78,6 @@ export class CreatePollUseCase implements ICreatePollUseCase {
                 
                 notificationMessage = `A new poll has been created in ${channelName} channel inside ${workspaceName} workspace`;
             } else if (this._workspaceMemberRepository) {
-                // Workspace Poll - notify workspace members
                 const workspaceMembers = await this._workspaceMemberRepository.findAllByWorkspaceId(data.workspaceId);
                 membersToNotify = workspaceMembers.map((m: any) => m.userId).filter((id: any) => id !== data.createdBy);
                 
@@ -95,7 +92,6 @@ export class CreatePollUseCase implements ICreatePollUseCase {
                 notificationMessage = `A new poll has been created in the ${workspaceName} workspace polls`;
             }
 
-            // Send notification to each member
             for (const userId of membersToNotify) {
                 await this._createNotificationUseCase.execute({
                     userId,

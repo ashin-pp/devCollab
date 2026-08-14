@@ -33,6 +33,16 @@ export class CreateWorkspaceUseCase implements ICreateWorkspaceUseCase {
 
         const entitlement = await this._planEntitlementService.assertSubscriptionActive(payload.createdBy);
         const ownedWorkspaces = await this._workspaceRepository.findAllByUserId(payload.createdBy);
+
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+        const createdToday = ownedWorkspaces.filter(
+            (ws) => ws.createdAt && new Date(ws.createdAt) >= startOfToday
+        );
+        if (createdToday.length >= 2) {
+            throw new AppError(ErrorMessage.WORKSPACE_DAILY_LIMIT, HttpStatusCode.FORBIDDEN);
+        }
+
         if (ownedWorkspaces.length >= entitlement.plan.maxWorkspaces) {
             throw new AppError(ErrorMessage.WORKSPACE_PLAN_LIMIT_REACHED, HttpStatusCode.FORBIDDEN);
         }

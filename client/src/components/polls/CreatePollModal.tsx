@@ -16,7 +16,7 @@ interface CreatePollModalProps {
   isOpen: boolean;
   onClose: () => void;
   workspaceId: string;
-  channelId?: string; // If provided, creates a channel poll
+  channelId?: string;
 }
 
 export const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, workspaceId, channelId }) => {

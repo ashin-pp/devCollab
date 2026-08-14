@@ -1,7 +1,6 @@
 import 'reflect-metadata';
 import { container } from 'tsyringe';
 
-// 1. Register all dependencies
 import { registerRepositories } from './repositories.dependency';
 import { registerServices } from './services.dependency';
 import { registerAllUseCases } from './usecases';
@@ -10,7 +9,6 @@ registerRepositories();
 registerServices();
 registerAllUseCases();
 
-// 2. Resolve controllers
 import { AuthController } from '../../presentation/controllers/auth.controller';
 import { AdminController } from '../../presentation/controllers/admin.controller';
 import { UserController } from '../../presentation/controllers/user.controller';
@@ -39,7 +37,6 @@ export const aiController = container.resolve(AIController);
 export const planController = container.resolve(PlanController);
 export const paymentController = container.resolve(PaymentController);
 
-// 3. Resolve base services
 import { WinstonLogger } from '../services/winston-logger.service';
 import { JwtService } from '../services/jwt.service';
 import { SERVICE_TOKENS } from "./service.tokens";

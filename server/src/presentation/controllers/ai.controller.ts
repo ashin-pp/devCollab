@@ -4,6 +4,8 @@ import type { IHandleAiCommandUseCase } from "../../application/interfaces/use-c
 import type { IGetAIDashboardUseCase } from "../../application/interfaces/use-cases/ai/get-ai-dashboard.usecase.interface";
 import type { IClearAIDashboardTabUseCase } from "../../application/interfaces/use-cases/ai/clear-ai-dashboard-tab.usecase.interface";
 import type { IUpdateAITaskStatusUseCase } from "../../application/interfaces/use-cases/ai/update-ai-task-status.usecase.interface";
+import type { IJoinAIScheduleVideoUseCase } from "../../application/interfaces/use-cases/ai/join-ai-schedule-video.usecase.interface";
+import type { IStartDmVideoCallUseCase } from "../../application/interfaces/use-cases/ai/start-dm-video-call.usecase.interface";
 import { USECASE_TOKENS } from "../../infrastructure/di/usecase.tokens";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 import { catchAsync } from "../utils/catch-async";
@@ -23,7 +25,11 @@ export class AIController {
         @inject(USECASE_TOKENS.IClearAIDashboardTabUseCase)
         private readonly _clearAIDashboardTabUseCase: IClearAIDashboardTabUseCase,
         @inject(USECASE_TOKENS.IUpdateAITaskStatusUseCase)
-        private readonly _updateAITaskStatusUseCase: IUpdateAITaskStatusUseCase
+        private readonly _updateAITaskStatusUseCase: IUpdateAITaskStatusUseCase,
+        @inject(USECASE_TOKENS.IJoinAIScheduleVideoUseCase)
+        private readonly _joinAIScheduleVideoUseCase: IJoinAIScheduleVideoUseCase,
+        @inject(USECASE_TOKENS.IStartDmVideoCallUseCase)
+        private readonly _startDmVideoCallUseCase: IStartDmVideoCallUseCase
     ) {}
 
     processMessage = catchAsync(async (req: AuthenticatedRequest, res: Response) => {
@@ -75,6 +81,30 @@ export class AIController {
         });
         res.status(HttpStatusCode.OK).json(
             ApiResponse.success(SuccessMessage.AI_TASK_UPDATED, task)
+        );
+    });
+
+    joinScheduleVideo = catchAsync(async (req: AuthenticatedRequest, res: Response) => {
+        const userId = requireUserId(req);
+        const scheduleId = String(req.params.scheduleId);
+        const credentials = await this._joinAIScheduleVideoUseCase.execute({
+            scheduleId,
+            userId,
+        });
+        res.status(HttpStatusCode.OK).json(
+            ApiResponse.success(SuccessMessage.AI_VIDEO_JOIN_READY, credentials)
+        );
+    });
+
+    startDmVideoCall = catchAsync(async (req: AuthenticatedRequest, res: Response) => {
+        const userId = requireUserId(req);
+        const result = await this._startDmVideoCallUseCase.execute({
+            userId,
+            workspaceId: String(req.body.workspaceId),
+            conversationId: String(req.body.conversationId),
+        });
+        res.status(HttpStatusCode.CREATED).json(
+            ApiResponse.success(SuccessMessage.AI_VIDEO_CALL_STARTED, result)
         );
     });
 }

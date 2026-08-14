@@ -19,7 +19,6 @@ export class CreateNotificationUseCase implements ICreateNotificationUseCase {
             isRead: false
         } as unknown as Notification);
         
-        // Emit socket event to the specific user's room
         const socketService = SocketService.getInstance();
         if (socketService) {
             socketService.getIO().to(`user:${payload.userId}`).emit('new_notification', notification);

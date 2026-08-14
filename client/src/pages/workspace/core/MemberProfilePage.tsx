@@ -37,11 +37,8 @@ export const MemberProfilePage = () => {
     try {
       setIsLoading(true);
       
-      // Fetch workspace members with full profile data
       const membersData = await WorkspaceService.getWorkspaceMembers(workspaceId, true);
       const allMembers = Array.isArray(membersData.data) ? membersData.data : membersData.data?.data || [];
-      
-      // Find the specific member
       const targetMember = allMembers.find((m: MemberData) => m.userId === userId);
       if (!targetMember) {
         toast.error('Member not found');
@@ -49,11 +46,8 @@ export const MemberProfilePage = () => {
         return;
       }
 
-      // Map the social media fields from backend format to expected format
       if (targetMember.user) {
         const user = targetMember.user as any;
-        
-        // Map social media fields
         if (user.github && !targetMember.user.githubUrl) {
           targetMember.user.githubUrl = user.github.startsWith('http') ? user.github : `https://github.com/${user.github}`;
         }
@@ -66,8 +60,6 @@ export const MemberProfilePage = () => {
       }
       
       setMember(targetMember);
-      
-      // Check if current user is owner
       const currentMember = allMembers.find((m: MemberData) => m.userId === currentUser?.id);
       setIsCurrentUserOwner(currentMember?.role === 'owner');
       
@@ -125,7 +117,7 @@ export const MemberProfilePage = () => {
           await WorkspaceService.unblockMember(workspaceId, userId);
         }
         toast.success(`Member ${action}ed successfully`);
-        fetchMemberProfile(); // Refresh profile
+        fetchMemberProfile();
       }
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };

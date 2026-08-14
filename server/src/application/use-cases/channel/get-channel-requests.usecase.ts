@@ -17,7 +17,6 @@ export class GetChannelRequestsUseCase implements IGetChannelRequestsUseCase {
         const { channelId } = payload;
         const pendingMembers = await this._channelMemberRepository.findByChannelId(channelId, 'pending');
         
-        // Fetch user details for each request
         const requestsWithUsers = await Promise.all(pendingMembers.map(async (member) => {
             const user = await this._userRepository.findById(member.userId);
             return {

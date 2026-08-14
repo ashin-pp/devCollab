@@ -1,7 +1,7 @@
 export interface PollOption {
   id: string;
   text: string;
-  votes: string[]; // User IDs who voted
+  votes: string[];
 }
 
 export interface Poll {

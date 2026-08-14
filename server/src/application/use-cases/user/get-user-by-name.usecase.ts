@@ -12,7 +12,6 @@ export class GetUserByNameUseCase implements IGetUserByNameUseCase {
 
     async execute(payload: { name: string }): Promise<UserByNameResponseDto | null> {
         const { name } = payload;
-        // Automatically strip leading '@' if the AI or user passes it
         const cleanName = name.startsWith('@') ? name.substring(1) : name;
         const user = await this._userRepository.findByName(cleanName);
         if (!user?.id) {

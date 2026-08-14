@@ -22,10 +22,7 @@ export class GetWorkspaceChannelsUseCase implements IGetWorkspaceChannelsUseCase
         const approvedChannelIds = userMemberships.filter(m => m.status === ChannelMemberStatus.APPROVED).map(m => m.channelId);
         const pendingChannelIds = userMemberships.filter(m => m.status === ChannelMemberStatus.PENDING).map(m => m.channelId);
 
-        // Visible channels: All channels are visible in this new design.
-        const visibleChannels = allChannels;
-
-        return visibleChannels.map(channel => ({
+        return allChannels.map(channel => ({
             id: channel.id as string,
             workspaceId: channel.workspaceId,
             name: channel.name,

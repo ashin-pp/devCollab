@@ -102,7 +102,7 @@ export class GoogleAuthService {
       scope: SCOPES,
     });
 
-    console.log('\nAuthorize this app for Google Calendar / Meet:');
+    console.log('\nAuthorize this app for Google Calendar:');
     console.log(authUrl);
     console.log('');
 
@@ -164,7 +164,7 @@ export class GoogleAuthService {
 
     // Server runtime must not block on readline — require prior CLI auth.
     throw new Error(
-      `Google Calendar is not connected. Run "npm run google:auth" in the server folder, then retry /schedule.`
+      `Google Calendar is not connected. Run "npm run google:auth" in the server folder (used for AI reminders).`
     );
   }
 

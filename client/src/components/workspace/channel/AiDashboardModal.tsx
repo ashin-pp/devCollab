@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
@@ -31,6 +32,11 @@ import type {
   AIDashboardTask,
 } from '../../../types/ai.types';
 import type { RootState } from '../../../store';
+import {
+  extractCallCreator,
+  extractCallScheduleId,
+} from '../../../utils/callLink.utils';
+import { CallInviteCta } from '../shared/CallInviteCta';
 
 export type AiTab = 'tasks' | 'reminders' | 'notifications' | 'schedule';
 
@@ -333,7 +339,7 @@ export const AiDashboardModal: React.FC<AiDashboardModalProps> = ({
       {
         id: 'schedule' as const,
         label: 'Schedule',
-        hint: 'Google Meet 1:1s',
+        hint: 'DevCollab video 1:1s',
         icon: Calendar,
         count: data?.counts.schedules ?? 0,
         accent: 'bg-emerald-500',
@@ -355,7 +361,6 @@ export const AiDashboardModal: React.FC<AiDashboardModalProps> = ({
       />
 
       <div className="relative flex h-[min(860px,92vh)] w-full max-w-6xl overflow-hidden rounded-[28px] border border-slate-200/80 bg-[#F4F7FB] shadow-2xl shadow-slate-950/20">
-        {/* Sidebar */}
         <aside className="hidden w-[260px] shrink-0 flex-col border-r border-slate-200/80 bg-white md:flex">
           <div className="border-b border-slate-100 px-5 py-5">
             <div className="flex items-center gap-3">
@@ -413,9 +418,7 @@ export const AiDashboardModal: React.FC<AiDashboardModalProps> = ({
           </nav>
         </aside>
 
-        {/* Main */}
         <div className="flex min-w-0 flex-1 flex-col">
-          {/* Top bar */}
           <header className="flex items-center justify-between gap-3 border-b border-slate-200/80 bg-white/90 px-4 py-3.5 backdrop-blur sm:px-6">
             <div className="min-w-0">
               <div className="flex items-center gap-2">
@@ -461,7 +464,6 @@ export const AiDashboardModal: React.FC<AiDashboardModalProps> = ({
             </div>
           </header>
 
-          {/* Mobile nav */}
           <div className="flex gap-1.5 overflow-x-auto border-b border-slate-200/80 bg-white px-3 py-2 md:hidden">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -483,7 +485,6 @@ export const AiDashboardModal: React.FC<AiDashboardModalProps> = ({
             })}
           </div>
 
-          {/* Content */}
           <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-6">
             {loading && !data && (
               <div className="flex h-72 flex-col items-center justify-center text-slate-400">
@@ -594,6 +595,19 @@ export const AiDashboardModal: React.FC<AiDashboardModalProps> = ({
                                   {formatWhen(reminder.remindAt)}
                                 </p>
                               </div>
+                              {(() => {
+                                const scheduleId = extractCallScheduleId(reminder.content || '');
+                                if (!scheduleId) return null;
+                                return (
+                                  <CallInviteCta
+                                    scheduleId={scheduleId}
+                                    creatorName={
+                                      extractCallCreator(reminder.content || '') ||
+                                      reminder.person?.name
+                                    }
+                                  />
+                                );
+                              })()}
                             </div>
                           </div>
                           <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${meta.tone}`}>
@@ -645,6 +659,18 @@ export const AiDashboardModal: React.FC<AiDashboardModalProps> = ({
                               )}
                             </div>
                             <p className="mt-1 text-sm leading-relaxed text-slate-600">{n.message}</p>
+                            {(() => {
+                              const scheduleId = extractCallScheduleId(n.message || '');
+                              if (!scheduleId) return null;
+                              return (
+                                <CallInviteCta
+                                  scheduleId={scheduleId}
+                                  creatorName={
+                                    extractCallCreator(n.message || '') || n.person?.name
+                                  }
+                                />
+                              );
+                            })()}
                             <p className="mt-2 inline-flex items-center gap-1 text-xs text-slate-500">
                               <Clock className="h-3.5 w-3.5" />
                               {formatWhen(n.createdAt)}
@@ -669,7 +695,7 @@ export const AiDashboardModal: React.FC<AiDashboardModalProps> = ({
                   <EmptyPanel
                     icon={<Calendar className="h-6 w-6" />}
                     title="No meetings yet"
-                    hint="Schedule a Google Meet 1:1 from the channel."
+                    hint="Schedule a DevCollab video call from the channel."
                     command="/schedule @name tomorrow 3pm"
                   />
                 ) : (
@@ -687,7 +713,8 @@ export const AiDashboardModal: React.FC<AiDashboardModalProps> = ({
                             <div className="flex flex-wrap items-start justify-between gap-2">
                               <div className="min-w-0">
                                 <p className="text-sm font-semibold text-slate-900">{item.title}</p>
-                                <div className="mt-1.5">
+                                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                                  <PersonChip person={item.organizer} />
                                   <PersonChip person={item.person} />
                                 </div>
                               </div>
@@ -698,7 +725,16 @@ export const AiDashboardModal: React.FC<AiDashboardModalProps> = ({
                             <p className="mt-1.5 text-xs text-slate-500">
                               {formatWhen(item.startsAt)} → {formatWhen(item.endsAt)}
                             </p>
-                            {item.meetLink ? (
+                            {item.videoProvider === 'webrtc' ||
+                            item.meetLink?.includes('/call/') ? (
+                              <Link
+                                to={`/call/${item.id}`}
+                                className="mt-3 inline-flex items-center gap-2 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
+                              >
+                                <Video className="h-3.5 w-3.5" />
+                                Join video call
+                              </Link>
+                            ) : item.meetLink ? (
                               <a
                                 href={item.meetLink}
                                 target="_blank"
@@ -706,11 +742,11 @@ export const AiDashboardModal: React.FC<AiDashboardModalProps> = ({
                                 className="mt-3 inline-flex items-center gap-2 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
                               >
                                 <Video className="h-3.5 w-3.5" />
-                                Join Google Meet
+                                Join video call
                                 <ExternalLink className="h-3 w-3 opacity-70" />
                               </a>
                             ) : (
-                              <p className="mt-3 text-xs text-slate-400">Meet link unavailable</p>
+                              <p className="mt-3 text-xs text-slate-400">Video room unavailable</p>
                             )}
                           </div>
                         </div>
@@ -728,7 +764,6 @@ export const AiDashboardModal: React.FC<AiDashboardModalProps> = ({
             )}
           </div>
 
-          {/* Footer stats */}
           <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200/80 bg-white px-4 py-3 sm:px-6">
             <div className="flex flex-wrap gap-2">
               {navItems.map((item) => (

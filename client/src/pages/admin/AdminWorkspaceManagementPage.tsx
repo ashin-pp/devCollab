@@ -23,7 +23,7 @@ export const AdminWorkspaceManagementPage = () => {
 
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchParams.get('search') || '');
-  const [filterStatus, setFilterStatus] = useState(searchParams.get('filter') || 'ALL'); // ALL, ACTIVE, DEACTIVATED
+  const [filterStatus, setFilterStatus] = useState(searchParams.get('filter') || 'ALL');
   const [filterPlanId, setFilterPlanId] = useState(searchParams.get('planId') || 'ALL');
   
   const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1'));
@@ -100,7 +100,6 @@ export const AdminWorkspaceManagementPage = () => {
     fetchWorkspaces();
   }, [currentPage, debouncedSearchTerm, filterStatus, filterPlanId, sortBy, sortOrder]);
 
-  // Sync state to URL
   useEffect(() => {
     const params = new URLSearchParams();
     if (currentPage > 1) params.set('page', currentPage.toString());

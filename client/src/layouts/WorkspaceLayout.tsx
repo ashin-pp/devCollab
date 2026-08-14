@@ -71,14 +71,12 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
         .then(res => {
           const fetchedChannels = res.data?.data || [];
           setChannels(fetchedChannels);
-          // Join all channels to receive real-time unread messages
           if (socket) {
             fetchedChannels.forEach((c: any) => socket.emit('join_channel', c.id));
           }
         })
         .catch(err => console.error('Failed to fetch channels', err));
 
-      // Fetch unread counts
       ChannelService.getUnreadCounts(workspaceId)
         .then(res => {
           if (res.data?.success) {
@@ -87,7 +85,6 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
         })
         .catch(err => console.error('Failed to fetch unread counts', err));
 
-      // Fetch DM conversations for unread counts
       DMService.getConversations(workspaceId)
         .then(res => {
           const convs: Conversation[] = res.data?.data || [];
@@ -99,7 +96,6 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
   };
 
   const updateUnreadCount = (channelId: string) => {
-    // Increment unread count for the channel
     setUnreadCounts(prev => ({
       ...prev,
       [channelId]: (prev[channelId] || 0) + 1
@@ -114,7 +110,6 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
 
   useEffect(() => {
     if (workspaceId && user) {
-      // Fetch workspace data
       WorkspaceService.getUserWorkspaces()
         .then((response: { data?: Array<{ id: string; name: string; logo?: string; inviteCode?: string; privacy?: 'public' | 'private' }> }) => {
           const workspace = response.data?.find((w) => w.id === workspaceId);
@@ -144,13 +139,11 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
           /* profile is best-effort for the banner */
         });
 
-      // Fetch workspace members
       WorkspaceService.getWorkspaceMembers(workspaceId, false).then((response: any) => {
         const members: MemberData[] = Array.isArray(response.data) ? response.data : response.data?.data || [];
         const currentMember = members.find((m) => m.userId === user.id);
         
         if (!currentMember || (currentMember.status !== 'approved' && currentMember.status !== 'invited' && currentMember.role !== 'owner')) {
-          // If they aren't in the list, or they are pending, kick them out
           toast.error('You are no longer a member of this workspace');
           navigate('/dashboard');
           return;
@@ -158,7 +151,6 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
 
         setIsOwner(currentMember?.role === 'owner');
 
-        // Count pending requests if user is owner
         if (currentMember?.role === 'owner') {
           const pendingCount = members.filter((m) => m.status === 'pending').length;
           setPendingRequestsCount(pendingCount);
@@ -175,13 +167,8 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
     }
   }, [workspaceId, user, navigate]);
 
-  // Listen for new messages via socket and update unread counts
   useEffect(() => {
     if (!socket) return;
-
-    socket?.on('user_presence_updated', (data: { userId: string, isOnline: boolean, lastSeen?: string }) => {
-      // Could dispatch to Redux to update global user presence state
-    });
 
     socket?.on('workspace_member_removed', (data: { userId: string, workspaceId: string, removedBy?: string }) => {
       if (data.userId === user?.id && data.workspaceId === workspaceId) {
@@ -193,14 +180,10 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
     });
 
     const handleNewMessage = (message: { channelId: string; senderId: string; content?: string }) => {
-      // Don't increment count for messages sent by current user
       if (message.senderId !== user?.id) {
-        // Only increment if user is not currently viewing this channel
         const currentChannelId = location.pathname.split('/channels/')[1];
         if (currentChannelId !== message.channelId) {
           updateUnreadCount(message.channelId);
-          
-          // Check for mention
           if (message.content && user?.id && message.content.includes(`data-mention-id="${user.id}"`)) {
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = message.content;
@@ -223,7 +206,6 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
     socket.on('message_received', handleNewMessage);
 
     const handleDMReceived = (message: DirectMessage) => {
-      // Re-fetch to accurately get the count of conversations with unread messages
       if (workspaceId) {
         DMService.getConversations(workspaceId)
           .then(res => {
@@ -238,7 +220,6 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
     socket.on('dm_received', handleDMReceived);
     socket.on('new_notification', handleNewNotification);
 
-    // Join all conversations to receive their messages
     if (workspaceId) {
       DMService.getConversations(workspaceId)
         .then(res => {
@@ -254,12 +235,10 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
       socket.off('message_received', handleNewMessage);
       socket.off('dm_received', handleDMReceived);
       socket.off('workspace_member_removed');
-      socket.off('user_presence_updated');
       socket.off('new_notification', handleNewNotification);
     };
   }, [socket, user, location.pathname, workspaceId, navigate, dispatch]);
 
-  // Listen for channel-read events to clear unread count
   useEffect(() => {
     const handleChannelRead = (event: Event) => {
       const customEvent = event as CustomEvent<{ channelId: string }>;
@@ -278,8 +257,6 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
     window.addEventListener('channel-read', handleChannelRead);
 
     const handleDMRead = (event: Event) => {
-      // Re-fetch DMs to recalculate unread total properly 
-      // or we can just subtract, but fetching is safer for total count
       if (workspaceId) {
         DMService.getConversations(workspaceId)
           .then(res => {

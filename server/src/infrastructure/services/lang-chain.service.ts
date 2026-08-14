@@ -293,7 +293,7 @@ export class LangChainService implements IAIService {
             const finalState = await this._graph.invoke({
                 messages: [new HumanMessage(cleanedInput)],
                 context: context
-            }, { configurable: { context } }) as IAgentState;
+            }, { configurable: { context: { ...context, originalInput: cleanedInput } } }) as IAgentState;
 
             const aiMessage = finalState.messages[finalState.messages.length - 1];
             if (!aiMessage) {

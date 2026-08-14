@@ -237,7 +237,7 @@ export const ChannelMessageInput = ({
       if (!range || !textareaRef.current.contains(range.commonAncestorContainer)) {
         range = document.createRange();
         range.selectNodeContents(textareaRef.current);
-        range.collapse(false); // Move to the end
+        range.collapse(false);
       }
 
       const textNode = document.createTextNode('@');
@@ -251,7 +251,7 @@ export const ChannelMessageInput = ({
       
       const newHtml = textareaRef.current.innerHTML;
       setMessage(newHtml);
-      setMentionSearch(''); // Trigger popup
+      setMentionSearch('');
     }
   };
 

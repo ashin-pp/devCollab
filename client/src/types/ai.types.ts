@@ -14,7 +14,7 @@ export interface IAIResponse {
 export interface AIDashboardPerson {
   id?: string;
   name: string;
-  label: 'From' | 'For' | 'With';
+  label: 'From' | 'For' | 'With' | 'Created by';
 }
 
 export interface AIDashboardTask {
@@ -44,11 +44,37 @@ export interface AIDashboardSchedule {
   startsAt: string;
   endsAt: string;
   meetLink?: string;
+  videoProvider?: string;
+  roomName?: string;
   status: string;
   organizerId: string;
   participantId: string;
+  participantIds?: string[];
   channelId: string;
   person?: AIDashboardPerson;
+  organizer?: AIDashboardPerson;
+}
+
+export interface VideoCallMember {
+  userId: string;
+  name: string;
+  profileImage?: string;
+  role: 'organizer' | 'invitee';
+}
+
+export interface VideoJoinCredentials {
+  provider: 'webrtc';
+  title: string;
+  scheduleId: string;
+  roomName: string;
+  organizerId: string;
+  organizerName: string;
+  members: VideoCallMember[];
+}
+
+export interface VideoJoinResponse {
+  success: boolean;
+  data: VideoJoinCredentials;
 }
 
 export interface AIDashboardNotification {
@@ -79,4 +105,3 @@ export interface AIDashboardResponse {
   success: boolean;
   data: AIDashboardData;
 }
-

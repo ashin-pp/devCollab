@@ -1,9 +1,11 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import toast from 'react-hot-toast';
 import { WorkspaceLayout } from '../../../layouts/WorkspaceLayout';
 import { WorkspaceService } from '../../../api/workspace/workspace.service';
 import { DMService } from '../../../api/dm/dm.service';
+import { AiService } from '../../../api/ai/ai.service';
 
 import type { RootState } from '../../../store';
 import {
@@ -19,8 +21,7 @@ import { DMAvatar } from '../../../components/workspace/dm/DMAvatar';
 import { DMHeader } from '../../../components/workspace/dm/DMHeader';
 import { DMMessageList } from '../../../components/workspace/dm/DMMessageList';
 import { DMMessageInput } from '../../../components/workspace/dm/DMMessageInput';
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+import { MemberProfileModal } from '../../../components/workspace/MemberProfileModal';
 
 const formatConvTime = (dateStr: string) => {
   const d = new Date(dateStr);
@@ -48,10 +49,6 @@ const bumpConversationToTop = (
   return sortConversationsByLatest(updated);
 };
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-// ─── New Message Modal ────────────────────────────────────────────────────────
-
 const NewMessageModal = ({
   members, onSelect, onClose, isStarting,
 }: {
@@ -69,7 +66,6 @@ const NewMessageModal = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden flex flex-col max-h-[80vh]">
-        {/* Modal header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <h3 className="font-bold text-slate-900 text-base">New Message</h3>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors">
@@ -77,7 +73,6 @@ const NewMessageModal = ({
           </button>
         </div>
 
-        {/* Search */}
         <div className="px-4 py-3 border-b border-slate-100">
           <div className="relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -92,7 +87,6 @@ const NewMessageModal = ({
           </div>
         </div>
 
-        {/* Member list */}
         <div className="flex-1 overflow-y-auto py-2">
           {filtered.length === 0 ? (
             <div className="text-center py-8 text-slate-500 text-sm">No members found</div>
@@ -133,8 +127,6 @@ const NewMessageModal = ({
   );
 };
 
-// ─── Conversation Sidebar ─────────────────────────────────────────────────────
-
 const ConversationList = ({
   conversations, activeConvId, isLoading, searchTerm, setSearchTerm, onSelect, onNewDM,
 }: {
@@ -148,7 +140,6 @@ const ConversationList = ({
 
   return (
     <div className="w-72 border-r border-slate-200 flex flex-col bg-white shrink-0">
-      {/* Header */}
       <div className="px-4 pt-5 pb-3 flex items-center justify-between shrink-0">
         <h2 className="text-lg font-bold text-slate-900">Messages</h2>
         <button
@@ -160,7 +151,6 @@ const ConversationList = ({
         </button>
       </div>
 
-      {/* Search */}
       <div className="px-3 pb-3 shrink-0">
         <div className="relative">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -174,7 +164,6 @@ const ConversationList = ({
         </div>
       </div>
 
-      {/* List */}
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
           <div className="flex justify-center pt-10">
@@ -242,12 +231,6 @@ const ConversationList = ({
   );
 };
 
-// ─── Chat Panel ───────────────────────────────────────────────────────────────
-
-// ─── ChatPanel Removed ────────────────────────────────────────────────────────
-
-// ─── Empty state ──────────────────────────────────────────────────────────────
-
 const NoChatSelected = ({ onNewDM }: { onNewDM: () => void }) => (
   <div className="flex-1 flex flex-col items-center justify-center bg-slate-50/30 text-center p-8">
     <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
@@ -267,20 +250,16 @@ const NoChatSelected = ({ onNewDM }: { onNewDM: () => void }) => (
   </div>
 );
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
-
 export const DMChatPage = () => {
   const { workspaceId, conversationId } = useParams<{ workspaceId: string; conversationId?: string }>();
   const navigate = useNavigate();
   const currentUser = useSelector((state: RootState) => state.auth.user);
   const socket = useSocket(workspaceId);
 
-  // Conversations
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loadingConvs, setLoadingConvs] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Active chat
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const [newMessage, setNewMessage] = useState('');
   const [loadingMsgs, setLoadingMsgs] = useState(false);
@@ -289,14 +268,15 @@ export const DMChatPage = () => {
 
   const [otherUserTyping, setOtherUserTyping] = useState(false);
 
-  // New message modal
   const [showNewMsg, setShowNewMsg] = useState(false);
   const [workspaceMembers, setWorkspaceMembers] = useState<MemberData[]>([]);
 
-  // Image Upload & Viewer
   const [isUploading, setIsUploading] = useState(false);
   const [attachedImageUrl, setAttachedImageUrl] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isFindingCall, setIsFindingCall] = useState(false);
+  const [infoMember, setInfoMember] = useState<MemberData | null>(null);
+  const [isInfoOpen, setIsInfoOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -323,7 +303,6 @@ export const DMChatPage = () => {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Fetch Conversations
   useEffect(() => {
     if (!workspaceId) return;
     setLoadingConvs(true);
@@ -340,14 +319,12 @@ export const DMChatPage = () => {
       .finally(() => setLoadingConvs(false));
   }, [workspaceId, socket]);
 
-  // Set active conversation from URL param
   useEffect(() => {
     if (!conversationId || conversations.length === 0) return;
     const conv = conversations.find(c => c.id === conversationId);
     if (conv) setActiveConversation(conv);
   }, [conversationId, conversations]);
 
-  // Load messages
   useEffect(() => {
     if (!activeConversation || !currentUser) return;
     setLoadingMsgs(true);
@@ -359,24 +336,19 @@ export const DMChatPage = () => {
       
     DMService.markAsSeen(activeConversation.id).catch(console.error);
     
-    // Optimistically clear unread count for the active conversation
     setConversations(prev => prev.map(c => c.id === activeConversation.id ? { ...c, unreadCount: 0 } : c));
     
-    // Alert the other user we've seen the messages
     if (socket) {
       socket.emit('dm_seen', { conversationId: activeConversation.id, userId: currentUser.id });
     }
     
-    // Dispatch local event to update sidebar
     window.dispatchEvent(new CustomEvent('dm-read', { detail: { conversationId: activeConversation.id } }));
   }, [activeConversation?.id, currentUser, socket]);
 
-  // Auto-scroll on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, otherUserTyping]);
 
-  // Load workspace members when modal opens
   useEffect(() => {
     if (!showNewMsg || !workspaceId) return;
     WorkspaceService.getWorkspaceMembers(workspaceId, false)
@@ -389,7 +361,6 @@ export const DMChatPage = () => {
       .catch(console.error);
   }, [showNewMsg, workspaceId, currentUser]);
 
-  // Socket events
   useEffect(() => {
     if (!socket || !currentUser) return;
 
@@ -405,7 +376,6 @@ export const DMChatPage = () => {
         );
         return;
       }
-      // If it IS the active conversation
       setMessages(prev => (prev.find(m => m.id === message.id) ? prev : [...prev, message]));
       setConversations(prev =>
         bumpConversationToTop(prev, message.conversationId, {
@@ -443,7 +413,64 @@ export const DMChatPage = () => {
     };
   }, [socket, activeConversation?.id, currentUser]);
 
-  // Start a new conversation from the member picker
+  const handleOpenInfo = async () => {
+    if (!workspaceId || !activeConversation?.otherUser?.id) return;
+    const otherId = activeConversation.otherUser.id;
+    const cached = workspaceMembers.find((m) => m.userId === otherId);
+    if (cached?.user?.email || cached?.user?.bio) {
+      setInfoMember(cached);
+      setIsInfoOpen(true);
+      return;
+    }
+    try {
+      const res = await WorkspaceService.getWorkspaceMembers(workspaceId, true);
+      const all = Array.isArray(res.data) ? res.data : res.data?.data || [];
+      const member = (all as MemberData[]).find((m) => m.userId === otherId);
+      if (!member) {
+        toast.error('Could not load this person\'s details.');
+        return;
+      }
+      setInfoMember(member);
+      setIsInfoOpen(true);
+    } catch {
+      toast.error('Could not load this person\'s details.');
+    }
+  };
+
+  const handleVideoCall = async () => {
+    if (!workspaceId || !activeConversation?.id) return;
+
+    setIsFindingCall(true);
+    try {
+      const res = await AiService.startDmVideoCall(workspaceId, activeConversation.id);
+      const data = (res.data?.data ?? res.data) as {
+        scheduleId?: string;
+        message?: DirectMessage;
+      };
+      if (data.message) {
+        setMessages((prev) =>
+          prev.some((m) => m.id === data.message?.id) ? prev : [...prev, data.message as DirectMessage]
+        );
+        setConversations((prev) =>
+          bumpConversationToTop(prev, activeConversation.id, {
+            lastMessage: data.message?.content || 'Incoming video call',
+            lastMessageAt: new Date().toISOString(),
+          })
+        );
+        socket?.emit('new_dm', data.message);
+      }
+      if (!data.scheduleId) {
+        toast.error('Could not start the video call.');
+        return;
+      }
+      navigate(`/call/${data.scheduleId}`);
+    } catch {
+      toast.error('Could not start the video call.');
+    } finally {
+      setIsFindingCall(false);
+    }
+  };
+
   const handleStartConversation = async (member: MemberData) => {
     if (!workspaceId) return;
     setIsStartingConv(true);
@@ -538,7 +565,6 @@ export const DMChatPage = () => {
 
   return (
     <WorkspaceLayout>
-      {/* Header */}
       <div className="h-16 border-b border-slate-200 flex items-center px-4 shrink-0 bg-white z-10 shadow-sm">
         <button
           onClick={() => navigate(`/workspace/${workspaceId}/dm`)}
@@ -557,7 +583,6 @@ export const DMChatPage = () => {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
         <ConversationList
           conversations={conversations}
@@ -575,6 +600,9 @@ export const DMChatPage = () => {
               <DMHeader
                 otherUser={activeConversation.otherUser}
                 otherUserTyping={otherUserTyping}
+                onVideoCall={() => void handleVideoCall()}
+                isFindingCall={isFindingCall}
+                onInfo={() => void handleOpenInfo()}
               />
               <DMMessageList
                 messages={messages}
@@ -597,7 +625,6 @@ export const DMChatPage = () => {
               />
             </div>
             
-            {/* Image Viewer Modal */}
             {selectedImage && (
               <div
                 className="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-4 cursor-zoom-out"
@@ -625,7 +652,6 @@ export const DMChatPage = () => {
         )}
       </div>
 
-      {/* New Message Modal */}
       {showNewMsg && (
         <NewMessageModal
           members={workspaceMembers}
@@ -634,6 +660,19 @@ export const DMChatPage = () => {
           isStarting={isStartingConv}
         />
       )}
+
+      <MemberProfileModal
+        isOpen={isInfoOpen}
+        member={infoMember}
+        onClose={() => setIsInfoOpen(false)}
+        onViewProfile={() => {
+          const userId = infoMember?.userId || activeConversation?.otherUser?.id;
+          setIsInfoOpen(false);
+          if (workspaceId && userId) {
+            navigate(`/workspace/${workspaceId}/members/${userId}/profile`);
+          }
+        }}
+      />
     </WorkspaceLayout>
   );
 };

@@ -1,10 +1,6 @@
 /**
- * One-time Google Calendar + Meet OAuth (loopback).
- *
- * Usage (from server/):
- *   npm run google:auth
- *
- * Opens the browser, captures the auth code on localhost, writes src/config/token.json.
+ * One-time Google Calendar OAuth.
+ * Usage (from server/): npm run google:auth
  */
 import fs from "fs";
 import http from "http";
@@ -80,7 +76,7 @@ async function waitForCode(port: number): Promise<string> {
 }
 
 async function main(): Promise<void> {
-  console.log("Connecting Google Calendar for DevCollab Meet links…");
+  console.log("Connecting Google Calendar for DevCollab reminders…");
   console.log(`credentials: ${GoogleAuthService.credentialsPath}`);
   console.log(`token file:  ${GoogleAuthService.tokenPath}`);
 
@@ -119,40 +115,24 @@ async function main(): Promise<void> {
 
   const calendar = google.calendar({ version: "v3", auth: oauth2Client });
 
-  // Smoke-test Meet creation (same path as /schedule)
+  // Smoke-test plain calendar write (reminders) — no Meet conferences
   const starts = new Date(Date.now() + 60 * 60_000);
   const ends = new Date(starts.getTime() + 15 * 60_000);
   const insert = await calendar.events.insert({
     calendarId: "primary",
-    conferenceDataVersion: 1,
     requestBody: {
-      summary: "DevCollab Meet auth check (safe to delete)",
+      summary: "DevCollab calendar auth check (safe to delete)",
       start: { dateTime: starts.toISOString() },
       end: { dateTime: ends.toISOString() },
-      conferenceData: {
-        createRequest: {
-          requestId: `devcollab-auth-check-${Date.now()}`,
-          conferenceSolutionKey: { type: "hangoutsMeet" },
-        },
-      },
     },
   });
-
-  const meetLink =
-    insert.data.hangoutLink ||
-    insert.data.conferenceData?.entryPoints?.find((e) => e.entryPointType === "video")?.uri;
 
   if (insert.data.id) {
     await calendar.events.delete({ calendarId: "primary", eventId: insert.data.id }).catch(() => undefined);
   }
 
-  if (!meetLink) {
-    throw new Error("Calendar auth worked but Google did not return a Meet link. Ensure Meet is enabled on this Google account.");
-  }
-
-  console.log("\nSuccess! Google Meet link works:");
-  console.log(meetLink);
-  console.log("Restart `npm run dev`, then use /schedule — Meet links will be created.\n");
+  console.log("\nSuccess! Google Calendar is connected for reminders.");
+  console.log("Video calls use native WebRTC — not Google Meet.\n");
   process.exit(0);
 }
 

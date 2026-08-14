@@ -1,6 +1,11 @@
 import { api } from '../axios';
 import { API_ENDPOINTS } from '../../config/api.constants';
-import type { AIDashboardResponse, IAIRequest, IAIResponse } from '../../types/ai.types';
+import type {
+    AIDashboardResponse,
+    IAIRequest,
+    IAIResponse,
+    VideoJoinResponse,
+} from '../../types/ai.types';
 
 export const AiService = {
     processCommand: (data: IAIRequest) => {
@@ -16,5 +21,11 @@ export const AiService = {
     },
     clearDashboardTab: (workspaceId: string, tab: 'tasks' | 'reminders' | 'notifications' | 'schedule') => {
         return api.post(API_ENDPOINTS.AI.DASHBOARD_CLEAR, { workspaceId, tab });
+    },
+    getVideoJoinToken: (scheduleId: string) => {
+        return api.get<VideoJoinResponse>(API_ENDPOINTS.AI.VIDEO_TOKEN(scheduleId));
+    },
+    startDmVideoCall: (workspaceId: string, conversationId: string) => {
+        return api.post(API_ENDPOINTS.AI.DM_CALL, { workspaceId, conversationId });
     },
 };

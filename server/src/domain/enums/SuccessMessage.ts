@@ -101,4 +101,6 @@ export const SuccessMessage = {
     AI_DASHBOARD_FETCHED: "AI dashboard fetched successfully",
     AI_DASHBOARD_CLEARED: "AI dashboard tab cleared successfully",
     AI_TASK_UPDATED: "AI task updated successfully",
+    AI_VIDEO_JOIN_READY: "Video join credentials issued successfully",
+    AI_VIDEO_CALL_STARTED: "Video call started",
 } as const;

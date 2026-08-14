@@ -1,5 +1,4 @@
 export const ErrorMessage = {
-    // Auth
     INVALID_OTP: "Invalid OTP",
     EXPIRED_OTP: "OTP has expired",
     USER_NOT_FOUND: "User not found",
@@ -22,12 +21,10 @@ export const ErrorMessage = {
     EMAIL_SEND_FAILED: "Failed to send email. Please try again later.",
     ADMIN_NOT_FOUND: "Admin not found",
 
-    // User
     FAILED_TO_UPDATE_PROFILE: "Failed to update profile",
     INCORRECT_CURRENT_PASSWORD: "Incorrect current password",
     EMAIL_REQUIRED_FOR_SEARCH: "Email is required for search",
 
-    // Workspace
     WORKSPACE_NAME_REQUIRED: "Workspace name and creator ID are required",
     WORKSPACE_NAME_INVALID: "Workspace name must be 2–50 characters",
     WORKSPACE_NAME_EXISTS: "A workspace with this name already exists",
@@ -64,14 +61,12 @@ export const ErrorMessage = {
     MEMBER_NOT_PENDING: "User is not in pending status",
     INVALID_ACTION: "Invalid action",
 
-    // DM
     CONVERSATION_NOT_FOUND: "Conversation not found",
     NOT_CONVERSATION_PARTICIPANT: "You are not a participant in this conversation",
     CANNOT_MESSAGE_YOURSELF: "Cannot start a conversation with yourself",
     NOT_APPROVED_MEMBER: "You are not an approved member of this workspace",
     TARGET_NOT_APPROVED_MEMBER: "The target user is not an active member of this workspace",
 
-    // Channel
     CHANNEL_NOT_FOUND: "Channel not found",
     INVALID_CHANNEL_PARAMS: "Invalid workspace or channel ID",
     INVALID_PARAMS: "Invalid parameters",
@@ -100,7 +95,6 @@ export const ErrorMessage = {
     INVALID_THREAD_REPLY: "Cannot reply to a message that is already a thread reply",
     INVALID_REPLY_VISIBILITY: "Reply visibility must be everyone or author",
 
-    // Channel (extra)
     CHANNEL_BLOCKED_BY_ADMIN: "This channel has been blocked by the workspace admin or owner.",
     CHANNEL_SEND_BLOCKED: "You have been blocked from sending messages in this channel.",
     CHANNEL_SEND_FORBIDDEN: "You do not have permission to send messages in this channel.",
@@ -110,7 +104,6 @@ export const ErrorMessage = {
     CHANNEL_UNBLOCK_PERMISSION: "Only the channel creator or workspace owner can unblock members.",
     CANNOT_BLOCK_SELF_FROM_CHANNEL: "You cannot block yourself from the channel.",
 
-    // Poll
     POLL_NOT_FOUND: "Poll not found",
     POLL_CREATOR_CLOSE_ONLY: "Only the creator can close this poll",
     POLL_CREATOR_DELETE_ONLY: "Only the creator can delete this poll",
@@ -123,12 +116,10 @@ export const ErrorMessage = {
     FAILED_TO_UPDATE_POLL: "Failed to update poll",
     FAILED_TO_DELETE_POLL: "Failed to delete poll",
 
-    // Upload / misc
     ONLY_IMAGE_UPLOADS: "Not an image! Please upload only images.",
     INVALID_FILE_DATA: "Invalid file data",
     SOCKET_AUTH_ERROR: "Authentication error",
 
-    // Plan
     PLAN_NOT_FOUND: "Plan not found",
     PLAN_INACTIVE: "This plan is not currently available",
     CANNOT_DELETE_STARTER_PLAN: "The Starter plan cannot be deleted because it is the fallback for expired or unassigned users.",
@@ -136,12 +127,15 @@ export const ErrorMessage = {
     FREE_TRIAL_ENDED: "Your free Starter month has ended. Upgrade to a paid plan to continue.",
     SUBSCRIPTION_EXPIRED: "Your subscription has expired. Renew or upgrade your plan to continue.",
     VIDEO_CALLS_DISABLED: "Video calls are not available on your current plan. Upgrade to enable them.",
+    VIDEO_JOIN_FORBIDDEN: "You are not invited to this video call.",
+    VIDEO_ROOM_UNAVAILABLE: "No video room is available for this meeting.",
+    SCHEDULE_NOT_FOUND: "Meeting schedule not found",
     WORKSPACE_PLAN_LIMIT_REACHED: "Your plan's workspace limit has been reached. Upgrade to create more workspaces.",
+    WORKSPACE_DAILY_LIMIT: "You can only create 2 workspaces per day. Try again tomorrow.",
     WORKSPACE_MEMBER_PLAN_LIMIT: "Max members cannot exceed your plan limit. Upgrade to increase the member cap.",
     WORKSPACE_MAX_MEMBERS_BELOW_CURRENT: "Max members cannot be lower than the current number of members.",
     AI_ASSISTANT_DISABLED: "AI Assistant is not available on your current plan. Upgrade to enable it.",
 
-    // Payments
     PAYMENT_NOT_CONFIGURED: "Payment gateway is not configured. Please contact support.",
     FREE_PLAN_NO_PAYMENT: "Free plans do not require payment. Select the plan instead.",
     PAYMENT_REQUIRED: "Payment is required to activate this plan.",

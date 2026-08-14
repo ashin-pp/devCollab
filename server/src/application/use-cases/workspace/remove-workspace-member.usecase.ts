@@ -46,7 +46,6 @@ export class RemoveWorkspaceMemberUseCase implements IRemoveWorkspaceMemberUseCa
 
         await this._workspaceMemberRepository.remove(workspaceId, targetUserId);
 
-        // Cascade delete: remove user from all channels in this workspace
         const channels = await this._channelRepository.findByWorkspaceId(workspaceId);
         for (const channel of channels) {
             if (channel.id) {

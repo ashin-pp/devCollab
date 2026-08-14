@@ -6,8 +6,7 @@ export interface GetAIDashboardDTO {
 export interface AIDashboardPerson {
     id?: string;
     name: string;
-    /** Short relationship word shown in UI: From / For / With */
-    label: "From" | "For" | "With";
+    label: "From" | "For" | "With" | "Created by";
 }
 
 export interface AIDashboardTaskItem {
@@ -39,11 +38,15 @@ export interface AIDashboardScheduleItem {
     startsAt: Date;
     endsAt: Date;
     meetLink?: string;
+    videoProvider?: string;
+    roomName?: string;
     status: string;
     organizerId: string;
     participantId: string;
+    participantIds?: string[];
     channelId: string;
     person: AIDashboardPerson;
+    organizer?: AIDashboardPerson;
 }
 
 export interface AIDashboardNotificationItem {
@@ -74,4 +77,4 @@ export interface AIDashboardResult {
 export interface IGetAIDashboardUseCase {
     execute(dto: GetAIDashboardDTO): Promise<AIDashboardResult>;
 }
-
+

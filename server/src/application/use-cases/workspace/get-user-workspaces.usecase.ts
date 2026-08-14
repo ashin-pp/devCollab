@@ -58,6 +58,7 @@ export class GetUserWorkspacesUseCase implements IGetUserWorkspacesUseCase {
                     meta = { aiAssistantEnabled: false, ownerPlanName: 'No plan' };
                 }
                 ownerMeta.set(ws.createdBy, meta);
+                
             }
 
             result.push({

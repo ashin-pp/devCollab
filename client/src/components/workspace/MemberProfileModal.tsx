@@ -7,16 +7,16 @@ interface MemberProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
   member: MemberData | null;
+  onViewProfile?: () => void;
 }
 
-export const MemberProfileModal = ({ isOpen, onClose, member }: MemberProfileModalProps) => {
+export const MemberProfileModal = ({ isOpen, onClose, member, onViewProfile }: MemberProfileModalProps) => {
   if (!isOpen || !member) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
         
-        {/* Header with cover and close button */}
         <div className="relative h-32 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700">
           <button 
             onClick={onClose}
@@ -25,7 +25,6 @@ export const MemberProfileModal = ({ isOpen, onClose, member }: MemberProfileMod
             <X className="w-5 h-5" />
           </button>
           
-          {/* Profile Image */}
           <div className="absolute -bottom-12 left-6">
             <div className="w-24 h-24 rounded-full bg-white p-1 shadow-lg overflow-hidden">
               {member.user?.profileImage ? (
@@ -45,10 +44,8 @@ export const MemberProfileModal = ({ isOpen, onClose, member }: MemberProfileMod
           </div>
         </div>
 
-        {/* Profile Content */}
         <div className="pt-16 pb-6 px-6">
           
-          {/* Basic Info */}
           <div className="mb-6">
             <div className="flex items-center gap-3 mb-2">
               <h2 className="text-2xl font-bold text-slate-900">
@@ -62,7 +59,6 @@ export const MemberProfileModal = ({ isOpen, onClose, member }: MemberProfileMod
               )}
             </div>
 
-            {/* Title/Position */}
             {member.user?.title && (
               <div className="flex items-center gap-2 text-slate-600 mb-2">
                 <Briefcase className="w-4 h-4" />
@@ -85,7 +81,6 @@ export const MemberProfileModal = ({ isOpen, onClose, member }: MemberProfileMod
             )}
           </div>
 
-          {/* Status Badge */}
           <div className="mb-6">
             <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-semibold ${
               member.status === 'blocked' 
@@ -105,7 +100,6 @@ export const MemberProfileModal = ({ isOpen, onClose, member }: MemberProfileMod
             </span>
           </div>
 
-          {/* Additional Profile Details (if available) */}
           {(member.user?.bio || member.user?.location || member.user?.phone || member.user?.website || member.user?.skills?.length) && (
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
@@ -158,7 +152,6 @@ export const MemberProfileModal = ({ isOpen, onClose, member }: MemberProfileMod
                   </div>
                 )}
 
-                {/* Social Links */}
                 {(member.user?.githubUrl || member.user?.linkedinUrl || member.user?.twitterUrl) && (
                   <div>
                     <p className="text-sm font-medium text-slate-600 mb-2">Social Links</p>
@@ -200,7 +193,6 @@ export const MemberProfileModal = ({ isOpen, onClose, member }: MemberProfileMod
                   </div>
                 )}
 
-                {/* Skills */}
                 {member.user?.skills && member.user.skills.length > 0 && (
                   <div>
                     <p className="text-sm font-medium text-slate-600 mb-2">Skills</p>
@@ -225,7 +217,6 @@ export const MemberProfileModal = ({ isOpen, onClose, member }: MemberProfileMod
             </div>
           )}
 
-          {/* Workspace Role Info */}
           <div className="mt-6 pt-4 border-t border-slate-100">
             <h4 className="text-sm font-semibold text-slate-700 mb-2">Workspace Role</h4>
             <div className="flex items-center gap-2">
@@ -242,6 +233,16 @@ export const MemberProfileModal = ({ isOpen, onClose, member }: MemberProfileMod
               )}
             </div>
           </div>
+
+          {onViewProfile ? (
+            <button
+              type="button"
+              onClick={onViewProfile}
+              className="mt-6 w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+            >
+              View Profile
+            </button>
+          ) : null}
 
         </div>
       </div>

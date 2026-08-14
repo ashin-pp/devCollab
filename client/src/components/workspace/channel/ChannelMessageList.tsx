@@ -5,7 +5,13 @@ import type { ChannelMessageListProps } from '../../../types/component.types';
 import { renderMessageContent } from '../../../utils/renderMessageContent';
 import { getMessageId } from '../../../utils/message.utils';
 import { isAgentMessage } from '../../../utils/agentMessage.utils';
+import {
+  extractCallCreator,
+  extractCallScheduleId,
+  stripCallLinks,
+} from '../../../utils/callLink.utils';
 import { AgentReplyCard } from '../shared/AgentReplyCard';
+import { CallInviteCta } from '../shared/CallInviteCta';
 
 const NEAR_BOTTOM_PX = 100;
 
@@ -310,7 +316,25 @@ export const ChannelMessageList = ({
                         onClick={() => setSelectedImage(msg.imageUrl!)}
                       />
                     ) : null}
-                    {msg.content && renderMessageContent(msg.content)}
+                    {(() => {
+                      const scheduleId = extractCallScheduleId(msg.content || '');
+                      const display = scheduleId ? stripCallLinks(msg.content || '') : msg.content;
+                      const creatorName =
+                        extractCallCreator(msg.content || '') ||
+                        (isMe ? 'You' : msg.senderName || 'Member');
+                      return (
+                        <>
+                          {display ? renderMessageContent(display) : null}
+                          {scheduleId ? (
+                            <CallInviteCta
+                              scheduleId={scheduleId}
+                              creatorName={creatorName}
+                              tone={isMe ? 'onDark' : 'light'}
+                            />
+                          ) : null}
+                        </>
+                      );
+                    })()}
 
                     {onOpenThread && (
                       <button
