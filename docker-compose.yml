@@ -1,4 +1,3 @@
-
 services:
   mongo:
     profiles: ["local-mongo"]
@@ -22,16 +21,13 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
-      # Do not override MONGO_URI here — comes from server/.env (Atlas)
-      CLIENT_URL: ${CLIENT_URL:-http://localhost}
-      COOKIE_SECURE: ${COOKIE_SECURE:-false}
 
   client:
     build:
       context: ./client
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: ${VITE_API_URL:-/api}
+        VITE_API_URL: /api
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
     restart: unless-stopped
     ports:
