@@ -1,0 +1,4 @@
+# Docker Compose env (secrets / local overrides)
+.env
+.env.*
+!.env.example

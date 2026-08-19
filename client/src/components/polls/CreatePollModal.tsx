@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
 import { useDispatch } from 'react-redux';
-import type { AppDispatch, RootState } from '../../store';
+import type { AppDispatch } from '../../store';
 import { pollApi } from '../../api/poll/poll.service';
 import { addPoll } from '../../store/slices/pollSlice';
 import toast from 'react-hot-toast';

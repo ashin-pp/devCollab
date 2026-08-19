@@ -65,8 +65,8 @@ export class AuthController {
         const { user, accessToken, refreshToken } = await this._loginUserUseCase.execute(req.body);
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
+            secure: envConfig.cookieSecure,
+            sameSite: "lax",
             maxAge: envConfig.refreshCookieMaxAge,
         });
         res.status(HttpStatusCode.OK).json(
@@ -77,8 +77,8 @@ export class AuthController {
     logout = catchAsync(async (_req: Request, res: Response) => {
         res.clearCookie("refreshToken", {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
+            secure: envConfig.cookieSecure,
+            sameSite: "lax",
         });
         res.status(HttpStatusCode.OK).json(
             ApiResponse.success(SuccessMessage.LOGOUT_SUCCESS)
@@ -90,8 +90,8 @@ export class AuthController {
             await this._googleAuthUseCase.execute(req.body);
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
+            secure: envConfig.cookieSecure,
+            sameSite: "lax",
             maxAge: envConfig.refreshCookieMaxAge,
         });
         res.status(HttpStatusCode.OK).json(

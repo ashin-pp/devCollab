@@ -64,8 +64,8 @@ export class AdminController {
         const { admin, accessToken, refreshToken } = await this._adminLoginUseCase.execute(req.body);
         res.cookie('adminRefreshToken', refreshToken, {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'strict',
+                secure: envConfig.cookieSecure,
+                sameSite: 'lax',
                 maxAge: envConfig.refreshCookieMaxAge
               });
         const response = ApiResponse.success(SuccessMessage.LOGIN_SUCCESS, { 
@@ -100,8 +100,8 @@ export class AdminController {
   public logout = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         res.clearCookie('adminRefreshToken', {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === "production",
-                sameSite: "strict",
+                secure: envConfig.cookieSecure,
+                sameSite: "lax",
               })
         const response = ApiResponse.success(SuccessMessage.LOGOUT_SUCCESS);
         res.status(HttpStatusCode.OK).json(response);

@@ -352,8 +352,13 @@ export const DMChatPage = () => {
   useEffect(() => {
     if (!showNewMsg || !workspaceId) return;
     WorkspaceService.getWorkspaceMembers(workspaceId, false)
-      .then((res: { data?: MemberData[] }) => {
-        const all = Array.isArray(res.data) ? res.data : res.data?.data || [];
+      .then((res: { data?: MemberData[] | { data?: MemberData[] } }) => {
+        const payload = res.data;
+        const all = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.data)
+            ? payload.data
+            : [];
         const currentId = currentUser?.id || (currentUser as { _id?: string })?._id;
         const others = all.filter((m: MemberData) => m.userId !== currentId && m.status === 'approved');
         setWorkspaceMembers(others);

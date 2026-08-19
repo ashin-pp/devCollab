@@ -9,6 +9,11 @@ export const envConfig = {
     refreshCookieMaxAge: parseInt(process.env.REFRESH_COOKIE_MAX_AGE || "604800000", 10), // 7 days in ms
     clientUrl: process.env.CLIENT_URL || "http://localhost:5173",
     nodeEnv: process.env.NODE_ENV || "development",
+    // HTTP localhost (Docker) cannot set Secure cookies; override with COOKIE_SECURE=true behind HTTPS.
+    cookieSecure:
+        process.env.COOKIE_SECURE === "true" ||
+        (process.env.COOKIE_SECURE !== "false" &&
+            (process.env.CLIENT_URL || "").startsWith("https")),
     
     awsAccessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
     awsSecretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",

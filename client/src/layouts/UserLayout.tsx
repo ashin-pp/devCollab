@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Bell, Settings, User as UserIcon, CreditCard } from 'lucide-react';
+import { Settings, User as UserIcon, CreditCard } from 'lucide-react';
 import { NotificationBell } from '../components/notifications/NotificationBell';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';

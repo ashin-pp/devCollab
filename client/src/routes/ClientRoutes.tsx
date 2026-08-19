@@ -11,7 +11,6 @@ import { DashboardPage } from '../pages/user/DashboardPage';
 import { UserProtectedRoute } from './guards/UserProtectedRoute';
 import { WorkspaceDashboardPage } from '../pages/workspace/core/WorkspaceDashboardPage';
 import { DMChatPage } from '../pages/workspace/dm/DMChatPage';
-import { DummyChannelPage } from '../pages/workspace/channel/DummyChannelPage';
 import { WorkspaceMembersPage } from '../pages/workspace/core/WorkspaceMembersPage';
 import { WorkspaceSettingsPage } from '../pages/workspace/core/WorkspaceSettingsPage';
 import { WorkspaceChannelPage } from '../pages/workspace/channel/WorkspaceChannelPage';

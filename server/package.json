@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
     "google:auth": "tsx scripts/google-calendar-auth.ts",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix"
@@ -24,15 +25,15 @@
     "@types/multer": "^2.1.0",
     "@types/node": "^25.9.1",
     "@types/nodemailer": "^8.0.0",
-    "dotenv": "^17.4.2",
     "eslint": "^10.4.0",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
-    "tsx": "^4.22.3",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.60.0"
   },
   "dependencies": {
+    "tsx": "^4.22.3",
+    "dotenv": "^17.4.2",
     "@aws-sdk/client-s3": "^3.1079.0",
     "@aws-sdk/s3-request-presigner": "^3.1079.0",
     "@langchain/community": "^1.1.29",

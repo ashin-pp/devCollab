@@ -733,7 +733,7 @@ export const DashboardPage = () => {
                             </span>
                           </div>
                           <button
-                            onClick={() => handleJoinPublicWorkspace(workspace.inviteCode)}
+                            onClick={() => handleJoinPublicWorkspace(workspace.inviteCode || '')}
                             disabled={isJoining}
                             className="flex items-center justify-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-sm w-full disabled:opacity-50"
                           >
@@ -812,7 +812,7 @@ export const DashboardPage = () => {
                       <Building2 className="w-5 h-5 text-blue-600" />
                       <h4 className="font-bold text-slate-900">{String(verificationResult.name)}</h4>
                     </div>
-                    <p className="text-xs text-slate-500 mb-4">{verificationResult.description || 'No description'}</p>
+                    <p className="text-xs text-slate-500 mb-4">{String(verificationResult.description || 'No description')}</p>
                     {joinMessage && (
                       <div className={`mb-4 p-2 rounded-lg text-xs font-bold text-center animate-in fade-in ${
                         joinMessage.type === 'success' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-red-50 text-red-600 border border-red-200'
@@ -963,7 +963,7 @@ export const DashboardPage = () => {
               <div className="text-center mb-8">
                 <h2 className="text-2xl font-bold text-slate-900 mb-2">You've been invited!</h2>
                 <p className="text-slate-500 font-medium">Join the <span className="font-bold text-slate-800">{String(verificationResult.name)}</span> workspace to start collaborating with your team.</p>
-                {verificationResult.description && (
+                {verificationResult.description != null && String(verificationResult.description) !== '' && (
                   <p className="text-sm text-slate-500 mt-4 px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 italic">"{String(verificationResult.description)}"</p>
                 )}
               </div>
