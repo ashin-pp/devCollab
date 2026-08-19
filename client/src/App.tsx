@@ -17,7 +17,7 @@ import {
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 if (!googleClientId) {
-  console.error('VITE_GOOGLE_CLIENT_ID is not set — Google sign-in will fail with invalid_client.');
+  console.warn('VITE_GOOGLE_CLIENT_ID is not set — Google sign-in is disabled.');
 }
 
 function App() {
@@ -64,12 +64,19 @@ function App() {
     );
   }
 
-  return (
-    <GoogleOAuthProvider clientId={googleClientId ?? ''}>
+  const app = (
+    <>
       <Toaster position="top-right" />
       <AppRoutes />
-    </GoogleOAuthProvider>
+    </>
   );
+
+  // Empty clientId crashes Google's SDK (Uncaught _.Cd) and breaks /login.
+  if (!googleClientId) {
+    return app;
+  }
+
+  return <GoogleOAuthProvider clientId={googleClientId}>{app}</GoogleOAuthProvider>;
 }
 
 export default App;

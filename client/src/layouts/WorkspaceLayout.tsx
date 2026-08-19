@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
-  Bell, HelpCircle, Settings, User as UserIcon,
-  Hash, MessageSquare, BarChart2, Users, UserCircle,
+  HelpCircle, Settings, User as UserIcon,
+  Hash, MessageSquare, BarChart2, Users,
   LogOut, Plus, ChevronDown, ChevronRight, ArrowLeft, Lock, Copy
 } from 'lucide-react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
@@ -11,7 +11,6 @@ import { WorkspaceService } from '../api/workspace/workspace.service';
 import { ChannelService } from '../api/workspace/channel.service';
 import { DMService } from '../api/dm/dm.service';
 import { useSocket } from '../hooks/useSocket';
-import type { ChannelData } from '../types/channel.types';
 import type { MemberData } from '../types/workspace.types';
 import type { Conversation, DirectMessage } from '../types/dm.types';
 import toast from 'react-hot-toast';
@@ -205,7 +204,7 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
 
     socket.on('message_received', handleNewMessage);
 
-    const handleDMReceived = (message: DirectMessage) => {
+    const handleDMReceived = (_message: DirectMessage) => {
       if (workspaceId) {
         DMService.getConversations(workspaceId)
           .then(res => {
@@ -256,7 +255,7 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
 
     window.addEventListener('channel-read', handleChannelRead);
 
-    const handleDMRead = (event: Event) => {
+    const handleDMRead = (_event: Event) => {
       if (workspaceId) {
         DMService.getConversations(workspaceId)
           .then(res => {

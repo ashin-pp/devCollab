@@ -290,7 +290,7 @@ export const MemberProfilePage = () => {
                 <div className="flex flex-wrap items-center gap-3 mt-6">
                   {member.user?.githubUrl || (member.user as any)?.github ? (
                     <a
-                      href={member.user.githubUrl || ((member.user as any).github?.startsWith('http') ? (member.user as any).github : `https://github.com/${(member.user as any).github}`)}
+                      href={member.user?.githubUrl || ((member.user as any)?.github?.startsWith('http') ? (member.user as any).github : `https://github.com/${(member.user as any)?.github}`)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900 transition-colors font-medium"
@@ -307,7 +307,7 @@ export const MemberProfilePage = () => {
                   
                   {member.user?.linkedinUrl || (member.user as any)?.linkedin ? (
                     <a
-                      href={member.user.linkedinUrl || ((member.user as any).linkedin?.startsWith('http') ? (member.user as any).linkedin : `https://linkedin.com/in/${(member.user as any).linkedin}`)}
+                      href={member.user?.linkedinUrl || ((member.user as any)?.linkedin?.startsWith('http') ? (member.user as any).linkedin : `https://linkedin.com/in/${(member.user as any)?.linkedin}`)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
@@ -324,7 +324,7 @@ export const MemberProfilePage = () => {
                   
                   {member.user?.twitterUrl || (member.user as any)?.twitter ? (
                     <a
-                      href={member.user.twitterUrl || ((member.user as any).twitter?.startsWith('http') ? (member.user as any).twitter : `https://twitter.com/${(member.user as any).twitter}`)}
+                      href={member.user?.twitterUrl || ((member.user as any)?.twitter?.startsWith('http') ? (member.user as any).twitter : `https://twitter.com/${(member.user as any)?.twitter}`)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 px-4 py-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition-colors font-medium"

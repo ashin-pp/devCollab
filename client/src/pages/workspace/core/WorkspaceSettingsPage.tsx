@@ -1,5 +1,5 @@
 import { WorkspaceLayout } from '../../../layouts/WorkspaceLayout';
-import { Settings, Users, Hash, BarChart3, AlertCircle, Download, Copy, RefreshCw, Trash2, ArrowRight, Upload } from 'lucide-react';
+import { Settings, Users, Hash, AlertCircle, Download, Copy, RefreshCw, Trash2, ArrowRight, Upload } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -522,7 +522,7 @@ export const WorkspaceSettingsPage = () => {
                         </div>
                         <button 
                           onClick={() => {
-                            navigator.clipboard.writeText(workspace.inviteCode);
+                            navigator.clipboard.writeText(workspace.inviteCode ?? '');
                             toast.success('Copied to clipboard');
                           }}
                           className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors border border-slate-200"

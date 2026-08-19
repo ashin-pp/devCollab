@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { WorkspaceLayout } from '../../../layouts/WorkspaceLayout';
 import { fetchWorkspacePolls, votePoll, closePollThunk, addPoll, updatePoll, removePoll } from '../../../store/slices/pollSlice';
@@ -14,17 +14,13 @@ import {
   Info, 
   ChevronRight, 
   ChevronLeft,
-  Search,
-  Bell,
   Lock,
-  Hash
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 
 export const WorkspacePollsPage = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>();
-  const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const socket = useSocket(workspaceId);
   
@@ -41,7 +37,6 @@ export const WorkspacePollsPage = () => {
   useEffect(() => {
     setCurrentPage(1);
   }, [activeTab]);
-  const [searchQuery, setSearchQuery] = useState('');
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
   const [selectedPollForVoters, setSelectedPollForVoters] = useState<string | null>(null);
 
