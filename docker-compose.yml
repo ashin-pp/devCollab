@@ -1,3 +1,8 @@
+# Interpolation: client/.env supplies VITE_* for the image build.
+# Runtime secrets: server/.env via the server service env_file (not this block).
+env_file:
+  - path: ./client/.env
+    required: false
 
 services:
   mongo:
@@ -22,9 +27,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
-      # Do not override MONGO_URI here — comes from server/.env (Atlas)
-      CLIENT_URL: ${CLIENT_URL:-http://localhost}
-      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      # CLIENT_URL, MONGO_URI, JWT, etc. come only from server/.env
 
   client:
     build:
