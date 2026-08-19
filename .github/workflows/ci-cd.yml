@@ -48,6 +48,7 @@ jobs:
     needs: [client, server]
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
+    environment: EC2_HOST
     steps:
       - name: Check deploy secrets
         env:
