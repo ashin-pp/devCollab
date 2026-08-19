@@ -13,3 +13,7 @@ build/
 # Environment
 .env
 .env.local
+
+# Secrets
+src/config/*.json
+src/infra/config/*.json
