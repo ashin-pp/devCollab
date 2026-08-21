@@ -95,5 +95,6 @@ jobs:
               echo "VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}" >> ./client/.env
             fi
             export COMPOSE_BAKE=false
-            docker compose up --build -d
+            # client/.env must supply VITE_GOOGLE_CLIENT_ID for the Vite build arg
+            docker compose --env-file ./client/.env up --build -d
             docker compose ps
