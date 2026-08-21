@@ -28,8 +28,8 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_URL: /api
-        # Passed from host: export it, or use `docker compose --env-file ./client/.env`
-        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:?Set VITE_GOOGLE_CLIENT_ID in client/.env or the environment}
+        # Prefer: docker compose --env-file ./client/.env ...
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
     restart: unless-stopped
     ports:
       - "80:80"
