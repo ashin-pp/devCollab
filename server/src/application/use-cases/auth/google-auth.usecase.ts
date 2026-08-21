@@ -1,4 +1,5 @@
 import { inject, injectable } from 'tsyringe';
+import { OAuth2Client } from 'google-auth-library';
 import type { IPlanRepository } from "../../../application/interfaces/repositories/plan.repository.interface";
 import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
 import type { IJwtService } from "../../../application/interfaces/services/jwt.service.interface";
@@ -13,6 +14,7 @@ import { AuthResponseDto } from "../../dtos/auth/response/auth.response.dto";
 import { IGoogleAuthUseCase } from "../../interfaces/use-cases/auth/google-auth.usecase.interface";
 import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
 import { SERVICE_TOKENS } from "../../../infrastructure/di/service.tokens";
+import { envConfig } from "../../../config/envConfig";
 
 @injectable()
 export class GoogleAuthUseCase implements IGoogleAuthUseCase {
@@ -22,11 +24,41 @@ export class GoogleAuthUseCase implements IGoogleAuthUseCase {
         @inject(SERVICE_TOKENS.IJwtService) private _jwtService: IJwtService
     ) {}
 
-    async execute(payload: GoogleAuthRequestDto): Promise<AuthResponseDto> {
-        const response = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-            headers: {
-                Authorization: `Bearer ${payload.token}`
+    private async resolveGoogleProfile(token: string): Promise<{
+        email: string;
+        name?: string;
+        googleId: string;
+        picture?: string;
+    }> {
+        // Sign In With Google returns a JWT ID token (3 segments). Prefer verifying it —
+        // avoids the OAuth popup / COOP issues on HTTP sites.
+        if (token.split('.').length === 3) {
+            if (!envConfig.googleClientId) {
+                throw new AppError(ErrorMessage.INVALID_GOOGLE_TOKEN, HttpStatusCode.UNAUTHORIZED);
             }
+
+            const client = new OAuth2Client(envConfig.googleClientId);
+            const ticket = await client.verifyIdToken({
+                idToken: token,
+                audience: envConfig.googleClientId,
+            });
+            const payload = ticket.getPayload();
+
+            if (!payload?.email || !payload.sub) {
+                throw new AppError(ErrorMessage.INVALID_GOOGLE_TOKEN_PAYLOAD, HttpStatusCode.UNAUTHORIZED);
+            }
+
+            return {
+                email: payload.email,
+                name: payload.name,
+                googleId: payload.sub,
+                picture: payload.picture,
+            };
+        }
+
+        // Legacy: access_token from useGoogleLogin popup flow
+        const response = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+            headers: { Authorization: `Bearer ${token}` },
         });
 
         if (!response.ok) {
@@ -35,11 +67,20 @@ export class GoogleAuthUseCase implements IGoogleAuthUseCase {
 
         const googlePayload = await response.json();
 
-        if (!googlePayload || !googlePayload.email) {
+        if (!googlePayload?.email || !googlePayload.sub) {
             throw new AppError(ErrorMessage.INVALID_GOOGLE_TOKEN_PAYLOAD, HttpStatusCode.UNAUTHORIZED);
         }
 
-        const { email, name, sub: googleId, picture } = googlePayload;
+        return {
+            email: googlePayload.email,
+            name: googlePayload.name,
+            googleId: googlePayload.sub,
+            picture: googlePayload.picture,
+        };
+    }
+
+    async execute(payload: GoogleAuthRequestDto): Promise<AuthResponseDto> {
+        const { email, name, googleId, picture } = await this.resolveGoogleProfile(payload.token);
 
         let user = await this._userRepository.findByEmail(email);
         let isNewUser = false;
@@ -72,7 +113,7 @@ export class GoogleAuthUseCase implements IGoogleAuthUseCase {
         const accessToken = this._jwtService.generateAccessToken(user.id!, role);
         const refreshToken = this._jwtService.generateRefreshToken(user.id!, role);
 
-        return { 
+        return {
             user: {
                 id: user.id!,
                 name: user.name,
@@ -82,8 +123,8 @@ export class GoogleAuthUseCase implements IGoogleAuthUseCase {
                 status: user.status,
                 isVerified: user.isVerified,
                 createdAt: user.createdAt as Date
-            }, 
-            accessToken, 
+            },
+            accessToken,
             refreshToken,
             isNewUser,
         };

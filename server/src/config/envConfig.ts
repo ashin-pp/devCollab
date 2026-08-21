@@ -49,4 +49,7 @@ export const envConfig = {
 
     razorpayKeyId: process.env.RAZORPAY_KEY_ID || "",
     razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET || "",
+
+    /** Same Web client ID as VITE_GOOGLE_CLIENT_ID (verify Google ID tokens). */
+    googleClientId: process.env.GOOGLE_CLIENT_ID || "",
 };
