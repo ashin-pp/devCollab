@@ -55,31 +55,45 @@ jobs:
           EC2_HOST: ${{ secrets.EC2_HOST }}
           EC2_USER: ${{ secrets.EC2_USER }}
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
         run: |
           missing=0
-          [ -z "$EC2_HOST" ] && echo "Missing repo secret EC2_HOST" && missing=1
-          [ -z "$EC2_USER" ] && echo "Missing repo secret EC2_USER" && missing=1
-          [ -z "$EC2_SSH_KEY" ] && echo "Missing repo secret EC2_SSH_KEY" && missing=1
+          [ -z "$EC2_HOST" ] && echo "Missing secret EC2_HOST" && missing=1
+          [ -z "$EC2_USER" ] && echo "Missing secret EC2_USER" && missing=1
+          [ -z "$EC2_SSH_KEY" ] && echo "Missing secret EC2_SSH_KEY" && missing=1
+          [ -z "$VITE_GOOGLE_CLIENT_ID" ] && echo "Missing secret VITE_GOOGLE_CLIENT_ID (environment EC2_HOST)" && missing=1
           exit $missing
       - name: SSH and rebuild
         uses: appleboy/ssh-action@v1.2.2
+        env:
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           command_timeout: 20m
+          envs: VITE_GOOGLE_CLIENT_ID
           script: |
             set -euo pipefail
             cd ~/devCollab
             git fetch origin main
             git reset --hard origin/main
+            # Keep any other keys from the box, but GitHub secret wins for Google ID
             if [ -f ./client/.env ]; then
               set -a
               . ./client/.env
               set +a
             fi
-            # Never bake local Vite URL into the Docker client image
             export VITE_API_URL=/api
+            export VITE_GOOGLE_CLIENT_ID="${VITE_GOOGLE_CLIENT_ID:?VITE_GOOGLE_CLIENT_ID is empty}"
+            # Persist for future manual rebuilds on the box
+            touch ./client/.env
+            grep -q '^VITE_API_URL=' ./client/.env 2>/dev/null && sed -i 's|^VITE_API_URL=.*|VITE_API_URL=/api|' ./client/.env || echo 'VITE_API_URL=/api' >> ./client/.env
+            if grep -q '^VITE_GOOGLE_CLIENT_ID=' ./client/.env 2>/dev/null; then
+              sed -i "s|^VITE_GOOGLE_CLIENT_ID=.*|VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}|" ./client/.env
+            else
+              echo "VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}" >> ./client/.env
+            fi
             export COMPOSE_BAKE=false
             docker compose up --build -d
             docker compose ps
