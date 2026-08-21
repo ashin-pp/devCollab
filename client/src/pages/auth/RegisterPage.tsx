@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Box, Hash, Sparkles, RefreshCw, User, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import type { TokenResponse } from '@react-oauth/google';
 import { AuthService } from '../../api/auth/auth.service';
 import { setCredentials } from '../../store/slices/authSlice';
 import toast from 'react-hot-toast';
@@ -93,10 +92,10 @@ export const RegisterPage = () => {
     }
   };
 
-  const handleGoogleSuccess = async (tokenResponse: Omit<TokenResponse, "error" | "error_description" | "error_uri">) => {
+  const handleGoogleSuccess = async (idToken: string) => {
     setIsLoading(true);
     try {
-      const response = await AuthService.googleAuth(tokenResponse.access_token);
+      const response = await AuthService.googleAuth(idToken);
       dispatch(setCredentials({
         user: response.data.user,
         accessToken: response.data.accessToken
