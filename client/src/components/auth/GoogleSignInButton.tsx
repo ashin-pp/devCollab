@@ -13,6 +13,8 @@ export const GoogleSignInButton = ({ onSuccess, disabled }: GoogleSignInButtonPr
   const loginWithGoogle = useGoogleLogin({
     onSuccess,
     onError: () => toast.error('Google authentication failed'),
+    // Popup token flow; nginx must send Cross-Origin-Opener-Policy: same-origin-allow-popups
+    flow: 'implicit',
   });
 
   return (
