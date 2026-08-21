@@ -78,6 +78,8 @@ jobs:
               . ./client/.env
               set +a
             fi
+            # Never bake local Vite URL into the Docker client image
+            export VITE_API_URL=/api
             export COMPOSE_BAKE=false
             docker compose up --build -d
             docker compose ps
