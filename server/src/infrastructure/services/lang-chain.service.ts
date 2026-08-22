@@ -53,7 +53,7 @@ export class LangChainService implements IAIService {
     ) {
         this._model = new ChatGroq({
             apiKey: envConfig.groqApiKey,
-            model: "llama-3.1-8b-instant",
+            model: envConfig.groqModel,
             temperature: 0,
         });
         this._graph = this.buildGraph();
