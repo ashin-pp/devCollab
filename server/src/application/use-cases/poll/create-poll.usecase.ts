@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import crypto from "crypto";
 import { inject, injectable } from 'tsyringe';
 import type { IChannelMemberRepository } from "../../../application/interfaces/repositories/channel-member.repository.interface";
 import type { IChannelRepository } from "../../../application/interfaces/repositories/channel.repository.interface";
@@ -34,7 +34,7 @@ export class CreatePollUseCase implements ICreatePollUseCase {
         startsAt?: Date;
     }): Promise<PollResponseDto> {
         const pollOptions = data.options.map(opt => ({
-            id: new mongoose.Types.ObjectId().toString(),
+            id: crypto.randomBytes(12).toString("hex"),
             text: opt,
             votes: []
         }));

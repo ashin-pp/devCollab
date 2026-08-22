@@ -550,21 +550,31 @@ export const DMChatPage = () => {
     if (!workspaceId || !activeConversation) return;
 
     try {
-      const msgType = attachedImageUrl ? 'image' : 'text';
+      const imageUrl = attachedImageUrl;
+      if (!imageUrl && isTextEmpty) return;
+
+      const msgType = imageUrl ? 'image' : 'text';
       const cleanMessage = isTextEmpty ? '' : content;
-      const res = await DMService.sendMessage(activeConversation.id, cleanMessage, msgType, attachedImageUrl || undefined);
+      const res = await DMService.sendMessage(
+        activeConversation.id,
+        cleanMessage,
+        msgType,
+        imageUrl || undefined
+      );
       setAttachedImageUrl(null);
       const sentMessage = res.data?.data;
       setMessages(prev => [...prev, sentMessage]);
       setConversations(prev =>
         bumpConversationToTop(prev, activeConversation.id, {
-          lastMessage: cleanMessage || (attachedImageUrl ? 'Sent an image' : ''),
+          lastMessage: cleanMessage || (imageUrl ? 'Sent an image' : ''),
           lastMessageAt: new Date().toISOString()
         })
       );
       socket?.emit('new_dm', sentMessage);
     } catch (err) {
       console.error('Failed to send message', err);
+      setNewMessage(content);
+      import('react-hot-toast').then((m) => m.default.error('Failed to send message'));
     }
   };
 

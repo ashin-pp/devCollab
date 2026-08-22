@@ -23,6 +23,8 @@ export const SuccessMessage = {
     WORKSPACE_INVITE_SENT: "Invitation sent successfully",
     WORKSPACE_INVITE_EMAIL_SENT: "Invitation email sent. They can join after creating an account.",
     WORKSPACE_INVITE_IN_APP_ONLY: "Invitation sent. The member will see it in their notifications.",
+    WORKSPACE_INVITE_PENDING_SAVED:
+        "Invite saved for this email. Email could not be sent — share the invite code or try again later.",
     WORKSPACE_INVITE_DECLINED: "Invitation declined",
     WORKSPACE_INVITE_PENDING_ACCEPT: "Invitation ready. Accept it to join the workspace.",
     CONVERSATION_STARTED: "Conversation started successfully",
