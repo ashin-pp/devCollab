@@ -131,7 +131,6 @@ export const ErrorMessage = {
     VIDEO_ROOM_UNAVAILABLE: "No video room is available for this meeting.",
     SCHEDULE_NOT_FOUND: "Meeting schedule not found",
     WORKSPACE_PLAN_LIMIT_REACHED: "Your plan's workspace limit has been reached. Upgrade to create more workspaces.",
-    WORKSPACE_DAILY_LIMIT: "You can only create 2 workspaces per day. Try again tomorrow.",
     WORKSPACE_MEMBER_PLAN_LIMIT: "Max members cannot exceed your plan limit. Upgrade to increase the member cap.",
     WORKSPACE_MAX_MEMBERS_BELOW_CURRENT: "Max members cannot be lower than the current number of members.",
     AI_ASSISTANT_DISABLED: "AI Assistant is not available on your current plan. Upgrade to enable it.",
