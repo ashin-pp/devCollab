@@ -66,7 +66,7 @@ export class AuthController {
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
             secure: envConfig.cookieSecure,
-            sameSite: "lax",
+            sameSite: envConfig.cookieSameSite,
             maxAge: envConfig.refreshCookieMaxAge,
         });
         res.status(HttpStatusCode.OK).json(
@@ -78,7 +78,7 @@ export class AuthController {
         res.clearCookie("refreshToken", {
             httpOnly: true,
             secure: envConfig.cookieSecure,
-            sameSite: "lax",
+            sameSite: envConfig.cookieSameSite,
         });
         res.status(HttpStatusCode.OK).json(
             ApiResponse.success(SuccessMessage.LOGOUT_SUCCESS)
@@ -91,7 +91,7 @@ export class AuthController {
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
             secure: envConfig.cookieSecure,
-            sameSite: "lax",
+            sameSite: envConfig.cookieSameSite,
             maxAge: envConfig.refreshCookieMaxAge,
         });
         res.status(HttpStatusCode.OK).json(

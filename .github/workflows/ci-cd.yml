@@ -24,7 +24,8 @@ jobs:
       - run: npm ci --legacy-peer-deps
       - run: npm run build
         env:
-          VITE_API_URL: /api
+          # Absolute API URL (Amplify production pattern); FE deploys via Amplify, not EC2
+          VITE_API_URL: https://api.devcollab.space/api
           VITE_GOOGLE_CLIENT_ID: ci-placeholder.apps.googleusercontent.com
 
   server:
@@ -44,7 +45,7 @@ jobs:
       - run: npx tsc --noEmit
 
   deploy:
-    name: Deploy EC2
+    name: Deploy EC2 API
     needs: [client, server]
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
@@ -55,46 +56,28 @@ jobs:
           EC2_HOST: ${{ secrets.EC2_HOST }}
           EC2_USER: ${{ secrets.EC2_USER }}
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
-          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
         run: |
           missing=0
           [ -z "$EC2_HOST" ] && echo "Missing secret EC2_HOST" && missing=1
           [ -z "$EC2_USER" ] && echo "Missing secret EC2_USER" && missing=1
           [ -z "$EC2_SSH_KEY" ] && echo "Missing secret EC2_SSH_KEY" && missing=1
-          [ -z "$VITE_GOOGLE_CLIENT_ID" ] && echo "Missing secret VITE_GOOGLE_CLIENT_ID (environment EC2_HOST)" && missing=1
           exit $missing
-      - name: SSH and rebuild
+      - name: SSH and rebuild API stack
         uses: appleboy/ssh-action@v1.2.2
-        env:
-          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           command_timeout: 20m
-          envs: VITE_GOOGLE_CLIENT_ID
           script: |
             set -euo pipefail
             cd ~/devCollab
             git fetch origin main
             git reset --hard origin/main
-            # Keep any other keys from the box, but GitHub secret wins for Google ID
-            if [ -f ./client/.env ]; then
-              set -a
-              . ./client/.env
-              set +a
-            fi
-            export VITE_API_URL=/api
-            export VITE_GOOGLE_CLIENT_ID="${VITE_GOOGLE_CLIENT_ID:?VITE_GOOGLE_CLIENT_ID is empty}"
-            # Persist for future manual rebuilds on the box
-            touch ./client/.env
-            grep -q '^VITE_API_URL=' ./client/.env 2>/dev/null && sed -i 's|^VITE_API_URL=.*|VITE_API_URL=/api|' ./client/.env || echo 'VITE_API_URL=/api' >> ./client/.env
-            if grep -q '^VITE_GOOGLE_CLIENT_ID=' ./client/.env 2>/dev/null; then
-              sed -i "s|^VITE_GOOGLE_CLIENT_ID=.*|VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}|" ./client/.env
-            else
-              echo "VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}" >> ./client/.env
-            fi
+            # Production API: CLIENT_URL must be Amplify origin; COOKIE_SECURE=true
+            # Example in server/.env:
+            #   CLIENT_URL=https://devcollab.space
+            #   COOKIE_SECURE=true
             export COMPOSE_BAKE=false
-            # client/.env must supply VITE_GOOGLE_CLIENT_ID for the Vite build arg
-            docker compose --env-file ./client/.env up --build -d
+            docker compose up --build -d
             docker compose ps

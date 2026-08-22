@@ -65,7 +65,7 @@ export class AdminController {
         res.cookie('adminRefreshToken', refreshToken, {
                 httpOnly: true,
                 secure: envConfig.cookieSecure,
-                sameSite: 'lax',
+                sameSite: envConfig.cookieSameSite,
                 maxAge: envConfig.refreshCookieMaxAge
               });
         const response = ApiResponse.success(SuccessMessage.LOGIN_SUCCESS, { 
@@ -101,7 +101,7 @@ export class AdminController {
         res.clearCookie('adminRefreshToken', {
                 httpOnly: true,
                 secure: envConfig.cookieSecure,
-                sameSite: "lax",
+                sameSite: envConfig.cookieSameSite,
               })
         const response = ApiResponse.success(SuccessMessage.LOGOUT_SUCCESS);
         res.status(HttpStatusCode.OK).json(response);
