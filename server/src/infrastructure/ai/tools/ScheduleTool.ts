@@ -12,6 +12,7 @@ import {
     extractScheduleNote,
     normalizeScheduleName,
 } from "../utils/schedule-note.utils";
+import { normalizeAiDateTime } from "../utils/datetime.utils";
 
 export const createScheduleTool = (
     createAIScheduleUseCase: ICreateAIScheduleUseCase | null,
@@ -65,7 +66,7 @@ export const createScheduleTool = (
                 return "Failed to schedule meeting: Choose at least one other person.";
             }
 
-            const start = new Date(startsAt);
+            const start = normalizeAiDateTime(startsAt);
             if (Number.isNaN(start.getTime())) {
                 return "Failed to schedule meeting: Invalid start time.";
             }
@@ -182,7 +183,9 @@ export const createScheduleTool = (
                     ),
                 startsAt: z
                     .string()
-                    .describe("ISO-8601 start time for the meeting (must be in the future)."),
+                    .describe(
+                        "ISO-8601 start WITH local offset (e.g. 2026-08-22T16:00:00+05:30). Never use Z for user-local times like 4pm. Must be in the future."
+                    ),
                 targetUsername: z
                     .string()
                     .optional()

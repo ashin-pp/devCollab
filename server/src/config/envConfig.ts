@@ -47,6 +47,8 @@ export const envConfig = {
     groqApiKey: process.env.GROQ_API_KEY || "",
     // Groq retired llama-3.1-8b-instant (2026-08-16); default is their recommended replacement.
     groqModel: process.env.GROQ_MODEL || "openai/gpt-oss-20b",
+    /** IANA zone for AI task/remind/schedule wall-clock times (default India). */
+    appTimezone: process.env.APP_TIMEZONE || "Asia/Kolkata",
     geminiApiKey: process.env.GEMINI_API_KEY || "",
 
     razorpayKeyId: process.env.RAZORPAY_KEY_ID || "",

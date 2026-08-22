@@ -9,6 +9,9 @@ import type { IUserRepository } from "../../../application/interfaces/repositori
 import { ICreateAIReminderUseCase } from "../../interfaces/use-cases/ai/create-ai-reminder.usecase.interface";
 import type { ICreateNotificationUseCase } from "../../interfaces/use-cases/notification/create-notification.usecase.interface";
 import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
+import { normalizeAiDateTime } from "../../../infrastructure/ai/utils/datetime.utils";
+
+const SYSTEM_AGENT_ID = "000000000000000000000000";
 
 @injectable()
 export class CreateAIReminderUseCase implements ICreateAIReminderUseCase {
@@ -19,38 +22,62 @@ export class CreateAIReminderUseCase implements ICreateAIReminderUseCase {
         @inject(REPOSITORY_TOKENS.IChannelRepository) private _channelRepository: IChannelRepository
     ) {}
 
-    async execute(data: { userId: string; workspaceId: string; channelId: string; content: string; remindAt: string; senderId?: string }): Promise<void> {
+    private async buildReminderMessage(
+        content: string,
+        channelId: string,
+        senderId?: string
+    ): Promise<string> {
+        if (!senderId || senderId === SYSTEM_AGENT_ID) {
+            return content;
+        }
+        const sender = await this._userRepository.findById(senderId);
+        const channel = await this._channelRepository.findById(channelId);
+        if (sender && channel) {
+            return `@${sender.name} in #${channel.name} reminded you: "${content}"`;
+        }
+        if (sender) {
+            return `@${sender.name} reminded you: "${content}"`;
+        }
+        return content;
+    }
+
+    async execute(data: {
+        userId: string;
+        workspaceId: string;
+        channelId: string;
+        content: string;
+        remindAt: string;
+        senderId?: string;
+    }): Promise<void> {
+        const remindAt = normalizeAiDateTime(data.remindAt);
+
         const newReminder: Partial<AIReminder> = {
             userId: data.userId,
             workspaceId: data.workspaceId,
             channelId: data.channelId,
             content: data.content,
-            remindAt: new Date(data.remindAt),
+            remindAt,
             isSent: false,
             senderId: data.senderId,
         };
 
         const saved = await this._aiReminderRepository.create(newReminder);
-        const scheduledTime = new Date(data.remindAt);
 
         const fire = async () => {
             try {
-                let finalMessage = data.content;
-
-                // Skip fake system sender ids — show plain reminder content
-                if (data.senderId && data.senderId !== "000000000000000000000000") {
-                    const sender = await this._userRepository.findById(data.senderId);
-                    const channel = await this._channelRepository.findById(data.channelId);
-                    if (sender && channel) {
-                        finalMessage = `@${sender.name} in #${channel.name} reminded you: "${data.content}"`;
-                    }
-                }
+                const finalMessage = await this.buildReminderMessage(
+                    data.content,
+                    data.channelId,
+                    data.senderId
+                );
 
                 await this._createNotificationUseCase.execute({
                     userId: data.userId,
-                    type: 'GENERAL',
+                    type: "GENERAL",
                     title: NotificationTitle.AI_REMINDER,
-                    message: finalMessage
+                    message: finalMessage,
+                    relatedId: data.workspaceId,
+                    actorId: data.senderId,
                 });
 
                 if (saved.id) {
@@ -61,8 +88,8 @@ export class CreateAIReminderUseCase implements ICreateAIReminderUseCase {
             }
         };
 
-        if (scheduledTime > new Date()) {
-            schedule.scheduleJob(scheduledTime, fire);
+        if (remindAt > new Date()) {
+            schedule.scheduleJob(remindAt, fire);
         } else {
             await fire();
         }

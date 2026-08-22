@@ -5,6 +5,7 @@ export const NotificationTitle = {
     NEW_POLL_CREATED: "New Poll Created",
     YOU_WERE_MENTIONED: "You were mentioned",
     AI_REMINDER: "AI Reminder",
+    AI_TASK_ASSIGNED: "AI Task Assigned",
     MEETING_SCHEDULED: "Meeting scheduled",
     INCOMING_VIDEO_CALL: "Incoming video call",
 } as const;
