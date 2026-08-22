@@ -26,6 +26,14 @@ api.interceptors.request.use(
 const isRefreshRequest = (url?: string) =>
   !!url && (url.includes('/auth/refresh') || url.includes('/admin/refresh'));
 
+/** Login/register 401 must surface as invalid credentials — never try refresh. */
+const isAuthCredentialRequest = (url?: string) =>
+  !!url &&
+  (/\/auth\/(login|register|google|forgot-password|reset-password|send-otp|verify-otp|verify-reset-otp)(\?|$)/.test(
+    url
+  ) ||
+    /\/admin\/(login|forgot-password|reset-password|verify-otp)(\?|$)/.test(url));
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -36,7 +44,8 @@ api.interceptors.response.use(
       error.response?.status === 401 &&
       originalRequest &&
       !originalRequest._retry &&
-      !isRefreshRequest(originalRequest.url)
+      !isRefreshRequest(originalRequest.url) &&
+      !isAuthCredentialRequest(originalRequest.url)
     ) {
       originalRequest._retry = true;
 
@@ -58,9 +67,10 @@ api.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return api(originalRequest);
 
-      } catch (refreshError) {
+      } catch {
         store.dispatch(logout());
-        return Promise.reject(refreshError);
+        // Keep the original 401 (e.g. expired access), not refresh cookie noise
+        return Promise.reject(error);
       }
     }
 
