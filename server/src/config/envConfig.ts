@@ -45,6 +45,8 @@ export const envConfig = {
     awsS3BucketName: process.env.AWS_S3_BUCKET_NAME || "",
     
     groqApiKey: process.env.GROQ_API_KEY || "",
+    // Groq retired llama-3.1-8b-instant (2026-08-16); default is their recommended replacement.
+    groqModel: process.env.GROQ_MODEL || "openai/gpt-oss-20b",
     geminiApiKey: process.env.GEMINI_API_KEY || "",
 
     razorpayKeyId: process.env.RAZORPAY_KEY_ID || "",

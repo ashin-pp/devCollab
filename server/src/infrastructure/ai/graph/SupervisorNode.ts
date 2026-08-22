@@ -44,7 +44,7 @@ function routeFromSlashCommand(text: string): AgentName | null {
 export const createSupervisorNode = () => {
     const model = new ChatGroq({
         apiKey: envConfig.groqApiKey,
-        model: "llama-3.1-8b-instant",
+        model: envConfig.groqModel,
         temperature: 0,
     });
 
