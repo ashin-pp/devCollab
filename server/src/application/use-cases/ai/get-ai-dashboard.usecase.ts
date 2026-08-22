@@ -62,11 +62,23 @@ export class GetAIDashboardUseCase implements IGetAIDashboardUseCase {
         await Promise.allSettled(
             due.map(async (reminder) => {
                 if (!reminder.id) return;
+
+                let message = reminder.content;
+                const senderId = reminder.senderId;
+                if (senderId && senderId !== "000000000000000000000000") {
+                    const sender = await this._userRepository.findById(senderId);
+                    if (sender) {
+                        message = `@${sender.name} reminded you: "${reminder.content}"`;
+                    }
+                }
+
                 await this._createNotificationUseCase.execute({
                     userId: dto.userId,
                     type: "GENERAL",
                     title: NotificationTitle.AI_REMINDER,
-                    message: reminder.content,
+                    message,
+                    relatedId: dto.workspaceId,
+                    actorId: senderId,
                 });
                 await this._aiReminderRepository.markAsSent(reminder.id);
             })

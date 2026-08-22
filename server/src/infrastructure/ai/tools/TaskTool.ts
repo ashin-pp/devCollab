@@ -62,7 +62,12 @@ export const createTaskTool = (
                     .string()
                     .describe("Short task title. Do NOT include command prefixes like '/task'."),
                 description: z.string().optional().describe("Optional longer task description."),
-                dueDate: z.string().optional().describe("Optional ISO-8601 due date/time."),
+                dueDate: z
+                    .string()
+                    .optional()
+                    .describe(
+                        "Optional ISO-8601 due date/time WITH local offset (e.g. 2026-08-22T16:00:00+05:30). Never use Z for user-local times like 4pm."
+                    ),
                 targetUsername: z
                     .string()
                     .optional()

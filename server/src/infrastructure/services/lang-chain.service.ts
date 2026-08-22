@@ -22,6 +22,7 @@ import { createNotifyTool } from "../ai/tools/NotifyTool";
 import { createRemindTool } from "../ai/tools/RemindTool";
 import { createTaskTool } from "../ai/tools/TaskTool";
 import { createScheduleTool } from "../ai/tools/ScheduleTool";
+import { formatNowForAiPrompt } from "../ai/utils/datetime.utils";
 import type { IUserRepository } from "../../application/interfaces/repositories/user.repository.interface";
 import type { IChannelRepository } from "../../application/interfaces/repositories/channel.repository.interface";
 import type { ICreateNotificationUseCase } from "../../application/interfaces/use-cases/notification/create-notification.usecase.interface";
@@ -69,7 +70,7 @@ export class LangChainService implements IAIService {
             NOTIFY_AGENT_PROMPT
         );
 
-        const nowContext = `The current date and time is: ${new Date().toString()}. Use this timezone context to calculate future dates, but ALWAYS output final datetimes in a valid ISO-8601 format (e.g., 2026-07-01T20:46:00+05:30).`;
+        const nowContext = formatNowForAiPrompt();
 
         const remindWorker = createWorkerNode(
             this._model,

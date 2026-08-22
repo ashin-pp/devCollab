@@ -19,12 +19,15 @@ export const NotificationBell = () => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const getIcon = (type: string) => {
+    const getIcon = (type: string, title?: string) => {
+        if (title === 'AI Task Assigned' || title?.includes('Task')) return '✅';
+        if (title === 'AI Reminder' || title?.includes('Reminder')) return '⏰';
         switch (type) {
             case 'POLL_CREATED': return '📊';
             case 'JOIN_REQUEST': return '👋';
             case 'JOIN_REQUEST_APPROVED': return '✅';
             case 'WORKSPACE_INVITE': return '📩';
+            case 'AI_NOTIFY': return '🤖';
             default: return '🔔';
         }
     };
@@ -85,7 +88,7 @@ export const NotificationBell = () => {
                                     >
                                         <div className="flex gap-3">
                                             <div className="text-xl flex-shrink-0 mt-1">
-                                                {getIcon(notification.type)}
+                                                {getIcon(notification.type, notification.title)}
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-bold text-slate-800">{notification.title}</p>
