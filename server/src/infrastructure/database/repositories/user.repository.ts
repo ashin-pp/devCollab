@@ -14,7 +14,14 @@ export class UserRepository extends MongoBaseRepository<User, IUserModel> implem
     }
 
     async findByEmail(email: string): Promise<User | null> {
-        const found = await this._model.findOne({ email });
+        const normalized = email.toLowerCase().trim();
+        if (!normalized) return null;
+
+        // Case-insensitive — Google / mixed-case signups must still match invite search
+        const escaped = normalized.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const found = await this._model.findOne({
+            email: { $regex: `^${escaped}$`, $options: "i" },
+        });
         return found ? this._mapper.toDomain(found) : null;
     }
 

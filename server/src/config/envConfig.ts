@@ -1,6 +1,6 @@
 import "dotenv/config";
 
-const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+const clientUrl = (process.env.CLIENT_URL || "http://localhost:5173").replace(/^["']|["']$/g, "").trim();
 
 /** CLIENT_URL plus www/apex twin + local Vite ports (CORS / Socket.IO). */
 function buildAllowedOrigins(primary: string): string[] {

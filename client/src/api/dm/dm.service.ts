@@ -14,8 +14,20 @@ export const DMService = {
         return api.get(API_ENDPOINTS.DM.MESSAGES(conversationId), { params: { limit, skip } });
     },
 
-    sendMessage: async (conversationId: string, content: string, messageType: 'text' | 'image' = 'text', imageUrl?: string) => {
-        return api.post(API_ENDPOINTS.DM.MESSAGES(conversationId), { content, messageType, imageUrl });
+    sendMessage: async (
+        conversationId: string,
+        content: string,
+        messageType: 'text' | 'image' = 'text',
+        imageUrl?: string
+    ) => {
+        const body: { content: string; messageType: string; imageUrl?: string } = {
+            content: content ?? '',
+            messageType,
+        };
+        if (imageUrl) {
+            body.imageUrl = imageUrl;
+        }
+        return api.post(API_ENDPOINTS.DM.MESSAGES(conversationId), body);
     },
 
     markAsSeen: async (conversationId: string) => {

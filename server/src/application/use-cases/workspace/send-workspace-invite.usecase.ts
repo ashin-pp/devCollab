@@ -16,6 +16,7 @@ import { SuccessMessage } from "../../../domain/enums/SuccessMessage";
 import { WorkspacePrivacy } from "../../../domain/enums/WorkspacePrivacy";
 import { AppError } from "../../../domain/errors/AppError";
 import { logger } from "../../../infrastructure/di/container";
+import { envConfig } from "../../../config/envConfig";
 
 import { ISendWorkspaceInviteUseCase } from "../../interfaces/use-cases/workspace/send-workspace-invite.usecase.interface";
 import { REPOSITORY_TOKENS } from "../../../infrastructure/di/repository.tokens";
@@ -63,7 +64,7 @@ export class SendWorkspaceInviteUseCase implements ISendWorkspaceInviteUseCase {
             throw new AppError(ErrorMessage.WORKSPACE_FULL, HttpStatusCode.BAD_REQUEST);
         }
 
-        const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+        const clientUrl = envConfig.clientUrl.replace(/\/$/, "");
         const targetUser = await this._userRepository.findByEmail(normalizedEmail);
 
         // Unregistered user: store pending email invite and send join/register link
@@ -75,8 +76,9 @@ export class SendWorkspaceInviteUseCase implements ISendWorkspaceInviteUseCase {
                 });
             }
 
-            const inviteLink = `${clientUrl}/register?inviteCode=${workspace.inviteCode}&email=${encodeURIComponent(normalizedEmail)}`;
+            const inviteLink = `${clientUrl}/register?inviteCode=${encodeURIComponent(workspace.inviteCode)}&email=${encodeURIComponent(normalizedEmail)}`;
 
+            let emailSent = true;
             try {
                 await this._emailService.sendWorkspaceInviteEmail(
                     normalizedEmail,
@@ -84,14 +86,18 @@ export class SendWorkspaceInviteUseCase implements ISendWorkspaceInviteUseCase {
                     inviteLink
                 );
             } catch (error: unknown) {
+                emailSent = false;
                 const errorMessage = error instanceof Error ? error.message : String(error);
-                logger.error(`Invite email failed for unregistered address ${normalizedEmail}: ${errorMessage}`);
-                throw new AppError(ErrorMessage.EMAIL_SEND_FAILED, HttpStatusCode.INTERNAL_SERVER);
+                logger.error(
+                    `Invite email failed for unregistered address ${normalizedEmail} (pending invite kept): ${errorMessage}`
+                );
             }
 
             return {
                 success: true,
-                message: SuccessMessage.WORKSPACE_INVITE_EMAIL_SENT
+                message: emailSent
+                    ? SuccessMessage.WORKSPACE_INVITE_EMAIL_SENT
+                    : SuccessMessage.WORKSPACE_INVITE_PENDING_SAVED
             };
         }
 
@@ -125,7 +131,7 @@ export class SendWorkspaceInviteUseCase implements ISendWorkspaceInviteUseCase {
             });
         }
 
-        const inviteLink = `${clientUrl}/dashboard?inviteCode=${workspace.inviteCode}`;
+        const inviteLink = `${clientUrl}/dashboard?inviteCode=${encodeURIComponent(workspace.inviteCode)}`;
 
         await this._createNotificationUseCase.execute({
             userId: targetUser.id,
