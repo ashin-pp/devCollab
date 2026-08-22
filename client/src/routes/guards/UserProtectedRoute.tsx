@@ -21,19 +21,19 @@ export const UserProtectedRoute = () => {
   useEffect(() => {
     if (!isAuthenticated || user?.role !== 'user') return;
 
+    // Use Bearer /users/profile — not /auth/refresh.
+    // Amplify (amplifyapp.com) → api.devcollab.space is cross-site; the refresh
+    // cookie often is not sent, which used to log the user out on the login page.
     const checkStatus = async () => {
       try {
-        await api.get('/auth/refresh');
+        await api.get('/users/profile');
       } catch (err: unknown) {
-        if (isAxiosError(err)) {
-          if (err.response?.data?.message === 'Blocked by Admin' || err.response?.data?.error?.message === 'Blocked by Admin') {
-            dispatch(logout());
-            navigate('/login', { replace: true, state: { error: "Your account has been blocked by an Administrator." } });
-            return;
-          }
+        if (!isAxiosError(err)) return;
+        const msg = err.response?.data?.message || err.response?.data?.error?.message;
+        if (msg === 'Blocked by Admin') {
+          dispatch(logout());
+          navigate('/login', { replace: true, state: { error: "Your account has been blocked by an Administrator." } });
         }
-        dispatch(logout());
-        navigate('/login', { replace: true });
       }
     };
     

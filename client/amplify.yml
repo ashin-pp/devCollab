@@ -1,0 +1,20 @@
+version: 1
+# Amplify app: set "App root" to `client` (or place this file at repo root with appRoot).
+# Environment variables in Amplify Console:
+#   VITE_API_URL=https://api.devcollab.space/api
+#   VITE_GOOGLE_CLIENT_ID=<your Google Web client ID>
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - npm ci --legacy-peer-deps
+    build:
+      commands:
+        - npm run build
+  artifacts:
+    baseDirectory: dist
+    files:
+      - "**/*"
+  cache:
+    paths:
+      - node_modules/**/*
