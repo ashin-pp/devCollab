@@ -3,6 +3,7 @@ import { X, UserMinus, Plus, Shield, Check, XCircle, Search, Ban, Unlock } from 
 import { ChannelService } from '../../api/workspace/channel.service';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
+import { HttpStatusCode } from '../../enums/HttpStatusCode';
 import { useSelector } from 'react-redux';
 import { useSocket } from '../../hooks/useSocket';
 import type { RootState } from '../../store/index';
@@ -130,7 +131,7 @@ export const ChannelMembersSidebar = ({
     
     try {
       const res = await ChannelService.removeMember(workspaceId, channelId, memberId);
-      if (res.status === 200 || res.data?.success) {
+      if (res.status === HttpStatusCode.OK || res.data?.success) {
         toast.success(`${memberName} has been removed`);
         setMembers(prev => prev.filter(m => m.userId !== memberId));
         if (onMemberRemoved) {
@@ -159,7 +160,7 @@ export const ChannelMembersSidebar = ({
     
     try {
       const res = await ChannelService.blockMember(workspaceId, channelId, memberId);
-      if (res.status === 200 || res.data?.success) {
+      if (res.status === HttpStatusCode.OK || res.data?.success) {
         toast.success(`${memberName} has been blocked`);
         setMembers(prev => prev.filter(m => m.userId !== memberId));
         if (onMemberRemoved) {
@@ -189,7 +190,7 @@ export const ChannelMembersSidebar = ({
     
     try {
       const res = await ChannelService.unblockMember(workspaceId, channelId, memberId);
-      if (res.status === 200 || res.data?.success) {
+      if (res.status === HttpStatusCode.OK || res.data?.success) {
         toast.success(`${memberName} has been unblocked`);
         setBlockedMembers(prev => prev.filter(m => m.userId !== memberId));
       }

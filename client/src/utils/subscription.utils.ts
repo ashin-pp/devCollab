@@ -1,7 +1,8 @@
 import { isAxiosError } from 'axios';
+import { HttpStatusCode } from '../enums/HttpStatusCode';
 
 export const isSubscriptionExpiredError = (err: unknown): boolean => {
-  if (!isAxiosError(err) || err.response?.status !== 403) {
+  if (!isAxiosError(err) || err.response?.status !== HttpStatusCode.FORBIDDEN) {
     return false;
   }
 

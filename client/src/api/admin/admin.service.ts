@@ -127,6 +127,18 @@ export const AdminService = {
         const response = await api.get(API_ENDPOINTS.ADMIN.SALES, { params });
         return response.data;
     },
+    downloadSalesReportPdf: async (params?: {
+        status?: string;
+        planName?: string;
+        from?: string;
+        to?: string;
+    }) => {
+        const response = await api.get(API_ENDPOINTS.ADMIN.SALES_PDF, {
+            params,
+            responseType: 'blob',
+        });
+        return response;
+    },
     getWallet: async (params?: { page?: number; limit?: number }) => {
         const response = await api.get(API_ENDPOINTS.ADMIN.WALLET, { params });
         return response.data;

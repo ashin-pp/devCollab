@@ -12,6 +12,7 @@ export const USECASE_TOKENS = {
     IUpdateWorkspaceMemberStatusUseCase: 'IUpdateWorkspaceMemberStatusUseCase',
     IGetAdminDashboardStatsUseCase: 'IGetAdminDashboardStatsUseCase',
     IGetAdminSalesReportUseCase: 'IGetAdminSalesReportUseCase',
+    IDownloadAdminSalesReportPdfUseCase: 'IDownloadAdminSalesReportPdfUseCase',
     IGetAdminWalletUseCase: 'IGetAdminWalletUseCase',
 
     ICreateAIReminderUseCase: 'ICreateAIReminderUseCase',

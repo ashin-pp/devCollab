@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { isAxiosError } from 'axios';
+import { HttpStatusCode } from '../../enums/HttpStatusCode';
 import { UserLayout } from '../../layouts/UserLayout';
 import { PlanService, type Plan } from '../../api/plan/plan.service';
 import { PaymentService } from '../../api/payment/payment.service';
@@ -229,7 +230,7 @@ export const BillingPage = () => {
   };
 
   const isPaymentRequiredError = (err: unknown) =>
-    isAxiosError(err) && err.response?.status === 402;
+    isAxiosError(err) && err.response?.status === HttpStatusCode.PAYMENT_REQUIRED;
 
   const goSuccess = (plan: Plan) => {
     const params = new URLSearchParams({

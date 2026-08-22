@@ -4,6 +4,7 @@ import { UserService } from '../../api/user/user.service';
 import { WorkspaceService } from '../../api/workspace/workspace.service';
 import toast from 'react-hot-toast';
 import { validateInviteEmail } from '../../validation';
+import { HttpStatusCode } from '../../enums/HttpStatusCode';
 
 interface InviteMemberModalProps {
   isOpen: boolean;
@@ -60,7 +61,7 @@ export const InviteMemberModal = ({ isOpen, onClose, workspaceId }: InviteMember
       };
       const apiMessage = err.response?.data?.message || err.response?.data?.error?.message || '';
       const looksLikeMissingUser =
-        err.response?.status === 404 ||
+        err.response?.status === HttpStatusCode.NOT_FOUND ||
         /not found|no user|does not exist/i.test(apiMessage);
 
       if (looksLikeMissingUser) {

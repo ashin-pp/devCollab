@@ -81,6 +81,7 @@ export const API_ENDPOINTS = {
     PLAN_DETAIL: (planId: string) => `/admin/plans/${planId}`,
     DASHBOARD: '/admin/dashboard',
     SALES: '/admin/sales',
+    SALES_PDF: '/admin/sales/pdf',
     WALLET: '/admin/wallet',
   },
 

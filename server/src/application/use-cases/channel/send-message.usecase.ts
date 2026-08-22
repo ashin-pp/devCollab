@@ -97,7 +97,7 @@ export class SendMessageUseCase implements ISendMessageUseCase {
             content,
             messageType,
             undefined,
-            imageUrl,
+            imageUrl?.split("?")[0],
             resolvedParentMessageId,
             threadRootId,
             resolvedVisibility,

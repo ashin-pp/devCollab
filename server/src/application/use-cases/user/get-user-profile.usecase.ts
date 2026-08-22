@@ -1,6 +1,7 @@
 import { inject, injectable } from 'tsyringe';
 import type { IUserRepository } from "../../../application/interfaces/repositories/user.repository.interface";
 import type { IPlanEntitlementService } from "../../interfaces/services/plan-entitlement.service.interface";
+import type { IStorageService } from "../../interfaces/services/storage.service.interface";
 import { ErrorMessage } from "../../../domain/enums/ErrorMessage";
 import { HttpStatusCode } from "../../../domain/enums/HttpStatusCode";
 import { AppError } from "../../../domain/errors/AppError";
@@ -15,7 +16,8 @@ import { SERVICE_TOKENS } from "../../../infrastructure/di/service.tokens";
 export class GetUserProfileUseCase implements IGetUserProfileUseCase {
     constructor(
         @inject(REPOSITORY_TOKENS.IUserRepository) private _userRepository: IUserRepository,
-        @inject(SERVICE_TOKENS.IPlanEntitlementService) private _planEntitlementService: IPlanEntitlementService
+        @inject(SERVICE_TOKENS.IPlanEntitlementService) private _planEntitlementService: IPlanEntitlementService,
+        @inject(SERVICE_TOKENS.IStorageService) private _storageService: IStorageService
     ) {}
 
     async execute(payload: { userId: string}): Promise<UserProfileResponseDto> {
@@ -39,7 +41,9 @@ export class GetUserProfileUseCase implements IGetUserProfileUseCase {
             id: user.id,
             name: user.name,
             email: user.email,
-            profileImage: user.profileImage,
+            profileImage: user.profileImage
+                ? await this._storageService.getSignedUrl(user.profileImage)
+                : user.profileImage,
             bio: user.bio,
             skills: user.skills || [],
             github: user.github,

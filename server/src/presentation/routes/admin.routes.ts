@@ -39,6 +39,11 @@ adminRouter.get(
     adminController.getDashboardStats
 );
 adminRouter.get(
+    "/sales/pdf",
+    validate({ query: adminSalesQuerySchema }),
+    adminController.downloadSalesReportPdf
+);
+adminRouter.get(
     "/sales",
     validate({ query: adminSalesQuerySchema }),
     adminController.getSalesReport

@@ -2,6 +2,7 @@ import axios from 'axios';
 import { store } from '../store';
 import { setCredentials, logout } from '../store/slices/authSlice';
 import { getApiBaseUrl } from '../config/urls';
+import { HttpStatusCode } from '../enums/HttpStatusCode';
 
 const BASE_URL = getApiBaseUrl();
 
@@ -41,7 +42,7 @@ api.interceptors.response.use(
 
     // Don't retry refresh itself — missing cookie on login/register is expected.
     if (
-      error.response?.status === 401 &&
+      error.response?.status === HttpStatusCode.UNAUTHORIZED &&
       originalRequest &&
       !originalRequest._retry &&
       !isRefreshRequest(originalRequest.url) &&

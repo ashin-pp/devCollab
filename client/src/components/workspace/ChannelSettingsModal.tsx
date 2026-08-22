@@ -3,6 +3,7 @@ import { X, Settings, Trash2, Lock, Globe } from 'lucide-react';
 import { ChannelService } from '../../api/workspace/channel.service';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
+import { HttpStatusCode } from '../../enums/HttpStatusCode';
 import type { ChannelSettingsModalProps } from '../../types/component.types';
 import { normalizeChannelName, validateChannelName } from '../../validation';
 
@@ -48,7 +49,7 @@ export const ChannelSettingsModal = ({
         description,
         privacy,
       });
-      if (res.data?.success || res.status === 200) {
+      if (res.data?.success || res.status === HttpStatusCode.OK) {
         toast.success('Channel settings updated');
         onChannelUpdated();
         onClose();
@@ -85,7 +86,7 @@ export const ChannelSettingsModal = ({
     setIsDeleting(true);
     try {
       const res = await ChannelService.deleteChannel(workspaceId, channelId);
-      if (res.data?.success || res.status === 200) {
+      if (res.data?.success || res.status === HttpStatusCode.OK) {
         toast.success('Channel deleted');
         onChannelDeleted();
         onClose();

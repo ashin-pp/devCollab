@@ -1,12 +1,16 @@
+import { GetObjectCommand, PutObjectCommand, DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { injectable } from 'tsyringe';
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { IStorageService } from "../../application/interfaces/services/storage.service.interface";
 import { envConfig } from "../../config/envConfig";
+
+const SIGNED_URL_EXPIRES_SECONDS = 60 * 60;
 
 @injectable()
 export class AwsS3StorageService implements IStorageService {
     private s3Client: S3Client;
     private bucketName: string;
+    private region: string;
 
     constructor() {
         const { awsAccessKeyId, awsSecretAccessKey, awsRegion, awsS3BucketName } = envConfig;
@@ -16,9 +20,10 @@ export class AwsS3StorageService implements IStorageService {
         }
 
         this.bucketName = awsS3BucketName || '';
-        
+        this.region = awsRegion || 'us-east-1';
+
         this.s3Client = new S3Client({
-            region: awsRegion || 'us-east-1',
+            region: this.region,
             credentials: {
                 accessKeyId: awsAccessKeyId || '',
                 secretAccessKey: awsSecretAccessKey || '',
@@ -38,17 +43,36 @@ export class AwsS3StorageService implements IStorageService {
 
         await this.s3Client.send(command);
 
-        return `https://${this.bucketName}.s3.${envConfig.awsRegion || 'us-east-1'}.amazonaws.com/${key}`;
+        return this.getSignedUrl(this.toCanonicalUrl(key));
+    }
+
+    async getSignedUrl(fileUrl: string, expiresInSeconds = SIGNED_URL_EXPIRES_SECONDS): Promise<string> {
+        const key = this.extractKey(fileUrl);
+        if (!key || !this.bucketName) {
+            return this.toPersistentUrl(fileUrl);
+        }
+
+        return getSignedUrl(
+            this.s3Client,
+            new GetObjectCommand({
+                Bucket: this.bucketName,
+                Key: key,
+            }),
+            { expiresIn: expiresInSeconds }
+        );
+    }
+
+    toPersistentUrl(fileUrl: string): string {
+        if (!fileUrl) return fileUrl;
+        return fileUrl.split("?")[0] ?? fileUrl;
     }
 
     async deleteFile(fileUrl: string): Promise<void> {
         if (!fileUrl) return;
 
         try {
-            const urlParts = fileUrl.split('.amazonaws.com/');
-            if (urlParts.length !== 2) return;
-            
-            const key = urlParts[1];
+            const key = this.extractKey(fileUrl);
+            if (!key) return;
 
             const command = new DeleteObjectCommand({
                 Bucket: this.bucketName,
@@ -59,5 +83,20 @@ export class AwsS3StorageService implements IStorageService {
         } catch (error) {
             console.error("Failed to delete S3 image:", error);
         }
+    }
+
+    private toCanonicalUrl(key: string): string {
+        return `https://${this.bucketName}.s3.${this.region}.amazonaws.com/${key}`;
+    }
+
+    private extractKey(fileUrl: string): string | null {
+        if (!fileUrl) return null;
+        const withoutQuery = fileUrl.split("?")[0] ?? fileUrl;
+        const marker = ".amazonaws.com/";
+        const idx = withoutQuery.indexOf(marker);
+        if (idx === -1) {
+            return withoutQuery.startsWith("http") ? null : withoutQuery.replace(/^\//, "");
+        }
+        return withoutQuery.slice(idx + marker.length) || null;
     }
 }

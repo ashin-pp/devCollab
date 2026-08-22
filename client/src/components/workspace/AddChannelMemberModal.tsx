@@ -3,6 +3,7 @@ import { X, Check, Search } from 'lucide-react';
 import { ChannelService } from '../../api/workspace/channel.service';
 import { WorkspaceService } from '../../api/workspace/workspace.service';
 import toast from 'react-hot-toast';
+import { HttpStatusCode } from '../../enums/HttpStatusCode';
 import type { AddChannelMemberModalProps } from '../../types/component.types';
 import type { ChannelMemberData } from '../../types/channel.types';
 import type { MemberData } from '../../types/workspace.types';
@@ -73,7 +74,7 @@ export const AddChannelMemberModal = ({ isOpen, onClose, workspaceId, channelId 
     setIsSubmitting(true);
     try {
       const res = await ChannelService.addMembers(workspaceId, channelId, Array.from(selectedUserIds));
-      if (res.data?.success || res.status === 201) {
+      if (res.data?.success || res.status === HttpStatusCode.CREATED) {
         toast.success(`Added ${selectedUserIds.size} member(s) to channel`);
         onClose();
       }

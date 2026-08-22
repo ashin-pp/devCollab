@@ -13,6 +13,7 @@ import type { IToggleWorkspaceStatusUseCase } from "../../application/interfaces
 import type { IUpdateWorkspaceMemberStatusUseCase } from "../../application/interfaces/use-cases/admin/update-workspace-member-status.usecase.interface";
 import type { IGetAdminDashboardStatsUseCase } from "../../application/interfaces/use-cases/admin/get-admin-dashboard-stats.usecase.interface";
 import type { IGetAdminSalesReportUseCase } from "../../application/interfaces/use-cases/admin/get-admin-sales-report.usecase.interface";
+import type { IDownloadAdminSalesReportPdfUseCase } from "../../application/interfaces/use-cases/admin/download-admin-sales-report-pdf.usecase.interface";
 import type { IGetAdminWalletUseCase } from "../../application/interfaces/use-cases/admin/get-admin-wallet.usecase.interface";
 import type { IVerifyResetOtpUseCase } from "../../application/interfaces/use-cases/auth/verify-reset-otp.usecase.interface";
 import type { PaymentTransactionStatus } from "../../domain/types/payment-transaction-status";
@@ -51,6 +52,7 @@ export class AdminController {
         @inject(USECASE_TOKENS.IUpdateWorkspaceMemberStatusUseCase) private _adminUpdateWorkspaceMemberStatusUseCase: IUpdateWorkspaceMemberStatusUseCase,
         @inject(USECASE_TOKENS.IGetAdminDashboardStatsUseCase) private _getAdminDashboardStatsUseCase: IGetAdminDashboardStatsUseCase,
         @inject(USECASE_TOKENS.IGetAdminSalesReportUseCase) private _getAdminSalesReportUseCase: IGetAdminSalesReportUseCase,
+        @inject(USECASE_TOKENS.IDownloadAdminSalesReportPdfUseCase) private _downloadAdminSalesReportPdfUseCase: IDownloadAdminSalesReportPdfUseCase,
         @inject(USECASE_TOKENS.IGetAdminWalletUseCase) private _getAdminWalletUseCase: IGetAdminWalletUseCase
     ) { }
 
@@ -215,6 +217,19 @@ export class AdminController {
         });
         const response = ApiResponse.success(SuccessMessage.ADMIN_SALES_REPORT_FETCHED, report);
         res.status(HttpStatusCode.OK).json(response);
+        })
+
+  public downloadSalesReportPdf = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+        const query = req.query as unknown as z.infer<typeof adminSalesQuerySchema>;
+        const { buffer, filename } = await this._downloadAdminSalesReportPdfUseCase.execute({
+            status: query.status,
+            planName: query.planName,
+            from: query.from,
+            to: query.to,
+        });
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+        res.status(HttpStatusCode.OK).send(buffer);
         })
 
   public getWallet = catchAsync(async (req: Request, res: Response, next: NextFunction) => {

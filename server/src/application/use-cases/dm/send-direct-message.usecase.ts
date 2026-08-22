@@ -39,7 +39,14 @@ export class SendDirectMessageUseCase implements ISendDirectMessageUseCase {
             throw new AppError(ErrorMessage.NOT_CONVERSATION_PARTICIPANT, HttpStatusCode.FORBIDDEN);
         }
 
-        const message = new DirectMessage(conversationId, senderId, content, false, messageType, imageUrl);
+        const message = new DirectMessage(
+            conversationId,
+            senderId,
+            content,
+            false,
+            messageType,
+            imageUrl?.split("?")[0]
+        );
         const savedMessage = await this._dmRepository.create(message);
 
         await this._conversationRepository.updateLastMessageTime(conversationId, new Date());

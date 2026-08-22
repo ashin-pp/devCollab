@@ -15,6 +15,7 @@ import type { MemberData } from '../types/workspace.types';
 import type { Conversation, DirectMessage } from '../types/dm.types';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
+import { HttpStatusCode } from '../enums/HttpStatusCode';
 import { CreateChannelModal } from '../components/workspace/CreateChannelModal';
 import { InviteMemberModal } from '../components/workspace/InviteMemberModal';
 import { NotificationBell } from '../components/notifications/NotificationBell';
@@ -156,7 +157,7 @@ export const WorkspaceLayout = ({ children }: WorkspaceLayoutProps) => {
         }
       }).catch((error: unknown) => {
         const err = error as { response?: { status?: number, data?: { message?: string, error?: { message?: string } } } };
-        if (err.response?.status === 403 || err.response?.status === 404) {
+        if (err.response?.status === HttpStatusCode.FORBIDDEN || err.response?.status === HttpStatusCode.NOT_FOUND) {
           toast.error(err.response?.data?.error?.message || err.response?.data?.message || 'Access Denied');
           navigate('/dashboard');
         } else {

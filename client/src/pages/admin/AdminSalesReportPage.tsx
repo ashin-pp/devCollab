@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { isAxiosError } from 'axios';
 import toast from 'react-hot-toast';
-import { jsPDF } from 'jspdf';
 import {
   BarChart3,
   ChevronLeft,
@@ -56,7 +55,8 @@ export const AdminSalesReportPage = () => {
   const [items, setItems] = useState<SalesItem[]>([]);
   const [planNames, setPlanNames] = useState<string[]>([]);
   const [summary, setSummary] = useState<SalesSummary | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
@@ -112,82 +112,57 @@ export const AdminSalesReportPage = () => {
     setSearchParams(params, { replace: true });
   }, [currentPage, statusFilter, planFilter, from, to, setSearchParams]);
 
-  const downloadPdf = () => {
+  const downloadPdf = async () => {
     if (items.length === 0) {
       toast.error('No transactions to download');
       return;
     }
 
-    const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
-    const marginX = 36;
-    let y = 40;
-
-    doc.setFontSize(14);
-    doc.text('DevCollab Sales Report', marginX, y);
-    y += 18;
-    doc.setFontSize(9);
-    doc.setTextColor(100);
-    doc.text(
-      `Generated: ${new Date().toLocaleString('en-GB')} · Page ${currentPage}/${totalPages} · Showing ${items.length} row(s)`,
-      marginX,
-      y
-    );
-    y += 12;
-    doc.text(
-      `Filters: status=${statusFilter}, plan=${planFilter}, from=${from || '—'}, to=${to || '—'}`,
-      marginX,
-      y
-    );
-    y += 20;
-    doc.setTextColor(0);
-
-    const columns = [
-      { label: 'Date', x: marginX },
-      { label: 'User', x: marginX + 110 },
-      { label: 'Plan', x: marginX + 280 },
-      { label: 'Amount', x: marginX + 380 },
-      { label: 'Status', x: marginX + 460 },
-      { label: 'Order', x: marginX + 530 },
-    ];
-
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
-    columns.forEach((col) => doc.text(col.label, col.x, y));
-    y += 8;
-    doc.setDrawColor(180);
-    doc.line(marginX, y, 800, y);
-    y += 14;
-    doc.setFont('helvetica', 'normal');
-
-    items.forEach((item) => {
-      if (y > 540) {
-        doc.addPage();
-        y = 40;
-      }
-
-      const date = new Date(item.createdAt).toLocaleString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
+    setIsDownloading(true);
+    try {
+      const response = await AdminService.downloadSalesReportPdf({
+        status: statusFilter === 'ALL' ? undefined : statusFilter,
+        planName: planFilter === 'ALL' ? undefined : planFilter,
+        from: from || undefined,
+        to: to || undefined,
       });
-      const user = (item.userName || item.userEmail || item.userId || 'Unknown').slice(0, 28);
-      const plan = item.planName.slice(0, 18);
-      const amount = formatMoney(item.amount, item.currency);
-      const order = item.razorpayOrderId.slice(0, 22);
 
-      doc.text(date, columns[0].x, y);
-      doc.text(user, columns[1].x, y);
-      doc.text(plan, columns[2].x, y);
-      doc.text(amount, columns[3].x, y);
-      doc.text(item.status, columns[4].x, y);
-      doc.text(order, columns[5].x, y);
-      y += 16;
-    });
-
-    doc.save(`devcollab-sales-page-${currentPage}.pdf`);
-    toast.success('PDF downloaded');
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const disposition = response.headers['content-disposition'] as string | undefined;
+      const match = disposition?.match(/filename="([^"]+)"/);
+      link.href = url;
+      link.download = match?.[1] || 'devcollab-sales-report.pdf';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success('PDF downloaded');
+    } catch (err: unknown) {
+      let errMsg = 'Failed to download sales report';
+      if (isAxiosError(err)) {
+        const data = err.response?.data;
+        if (data instanceof Blob) {
+          try {
+            const parsed = JSON.parse(await data.text()) as {
+              message?: string;
+              error?: { message?: string };
+            };
+            errMsg = parsed.error?.message || parsed.message || errMsg;
+          } catch {
+            /* keep default */
+          }
+        } else {
+          errMsg = err.response?.data?.error?.message || err.response?.data?.message || errMsg;
+        }
+      } else if (err instanceof Error) {
+        errMsg = err.message;
+      }
+      toast.error(errMsg);
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const columns = useMemo<AdminDataTableColumn<SalesItem>[]>(
@@ -266,12 +241,12 @@ export const AdminSalesReportPage = () => {
           </div>
           <button
             type="button"
-            onClick={downloadPdf}
-            disabled={isLoading || items.length === 0}
+            onClick={() => void downloadPdf()}
+            disabled={isLoading || isDownloading || items.length === 0}
             className="inline-flex items-center gap-2 px-3 py-2 text-[10px] font-bold tracking-widest uppercase rounded border border-amber-500/40 bg-amber-500/10 text-amber-400 hover:bg-amber-500 hover:text-black disabled:opacity-40 transition-colors"
           >
             <Download className="w-3.5 h-3.5" />
-            Download PDF
+            {isDownloading ? 'Downloading…' : 'Download PDF'}
           </button>
         </div>
       </div>

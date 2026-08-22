@@ -13,6 +13,7 @@ import { ToggleWorkspaceStatusUseCase } from "../../../application/use-cases/adm
 import { UpdateWorkspaceMemberStatusUseCase } from "../../../application/use-cases/admin/update-workspace-member-status.usecase";
 import { GetAdminDashboardStatsUseCase } from "../../../application/use-cases/admin/get-admin-dashboard-stats.usecase";
 import { GetAdminSalesReportUseCase } from "../../../application/use-cases/admin/get-admin-sales-report.usecase";
+import { DownloadAdminSalesReportPdfUseCase } from "../../../application/use-cases/admin/download-admin-sales-report-pdf.usecase";
 import { GetAdminWalletUseCase } from "../../../application/use-cases/admin/get-admin-wallet.usecase";
 
 export function registerAdminUseCases() {
@@ -29,5 +30,6 @@ export function registerAdminUseCases() {
     container.register(USECASE_TOKENS.IAdminGetWorkspaceMembersUseCase, { useClass: AdminGetWorkspaceMembersUseCase });
     container.register(USECASE_TOKENS.IGetAdminDashboardStatsUseCase, { useClass: GetAdminDashboardStatsUseCase });
     container.register(USECASE_TOKENS.IGetAdminSalesReportUseCase, { useClass: GetAdminSalesReportUseCase });
+    container.register(USECASE_TOKENS.IDownloadAdminSalesReportPdfUseCase, { useClass: DownloadAdminSalesReportPdfUseCase });
     container.register(USECASE_TOKENS.IGetAdminWalletUseCase, { useClass: GetAdminWalletUseCase });
 }

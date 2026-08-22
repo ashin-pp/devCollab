@@ -147,4 +147,5 @@ export const ErrorMessage = {
     VALIDATION_FAILED: "Request validation failed",
     NO_FILE_UPLOADED: "No file uploaded",
     MESSAGE_CONTENT_OR_IMAGE_REQUIRED: "Message content or image is required",
+    SALES_REPORT_EMPTY: "No transactions to download",
 } as const;

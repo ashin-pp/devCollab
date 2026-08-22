@@ -29,9 +29,10 @@ export class UploadProfileImageUseCase implements IUploadProfileImageUseCase {
         }
 
         const uniqueFileName = `profiles/${userId}-${Date.now()}-${fileName.replace(/\s+/g, '-')}`;
-        const newImageUrl = await this._storageService.uploadFile(fileBuffer, uniqueFileName, contentType);
+        const signedImageUrl = await this._storageService.uploadFile(fileBuffer, uniqueFileName, contentType);
+        const persistentImageUrl = this._storageService.toPersistentUrl(signedImageUrl);
 
-        const updatedUser = await this._userRepository.update(userId, { profileImage: newImageUrl });
+        const updatedUser = await this._userRepository.update(userId, { profileImage: persistentImageUrl });
         if (!updatedUser || !updatedUser.id) {
              throw new AppError(ErrorMessage.FAILED_TO_UPDATE_PROFILE, HttpStatusCode.INTERNAL_SERVER);
         }
@@ -40,7 +41,7 @@ export class UploadProfileImageUseCase implements IUploadProfileImageUseCase {
             id: updatedUser.id,
             name: updatedUser.name,
             email: updatedUser.email,
-            profileImage: updatedUser.profileImage,
+            profileImage: signedImageUrl,
             bio: updatedUser.bio,
             skills: updatedUser.skills || [],
             github: updatedUser.github,
